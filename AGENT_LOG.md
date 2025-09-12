@@ -210,3 +210,25 @@ Added `@mdx-js/mdx` as a dependency. Implemented the `emitShortNoteModule` funct
 - Enforces word-boundaries (Unicode letters/digits or underscore) on both sides.
 - Longest-match preference at each start index; non-overlapping, left-to-right.
 - Performance smoke test included with a loose 3s threshold.
+
+# Milestone 8: Remark Transform
+
+## Files added/updated
+
+- `packages/remark-linkify-med/src/transform.ts` (new): Remark plugin replacing text matches with `<SmartLink/>` MDX JSX elements, skipping code/inline-code/links/images and H1–H3.
+- `packages/remark-linkify-med/src/index.ts` (updated): export the real plugin and re-export matcher types.
+- `packages/remark-linkify-med/tests/transform.test.ts` (new): end-to-end tests with parse → plugin → stringify.
+
+## Test results
+
+- `pnpm -r --filter remark-linkify-med run build`: Succeeded.
+- `pnpm -r --filter remark-linkify-med run test`: Passed (3 files, 12 tests).
+- `pnpm test`: All workspace tests passed.
+- `pnpm site:build`: Succeeded (site unchanged).
+
+## Notes
+
+- Uses Milestone 7 matcher for all-occurrence, longest, non-overlapping matching.
+- Deterministic tie-breaking for shared synonym literals by smallest `id` (temporary rule for M8).
+- Skips transformation within MDX JSX and headings depth 1–3 using visit SKIP to avoid recursing.
+- Tests assert replacement, skip contexts, Unicode handling, and deterministic behavior.
