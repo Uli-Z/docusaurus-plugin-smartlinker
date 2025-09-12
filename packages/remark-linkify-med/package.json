@@ -1,0 +1,30 @@
+{
+  "name": "remark-linkify-med",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node ./scripts/build-cjs.js",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/unist": "^3.0.2",
+    "typescript": "^5.5.4",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.0.0",
+    "vitest": "^2.0.5"
+  },
+  "peerDependencies": {
+    "unified": "^11.0.0"
+  }
+}
