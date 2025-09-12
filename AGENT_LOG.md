@@ -83,3 +83,35 @@ This change was made to unblock the Docusaurus v3 build. Docusaurus expects an "
 - `pnpm site:build`: **Succeeded.**
 
 The Docusaurus example site now builds successfully.
+
+---
+
+# Milestone 1: Frontmatter Loader (raw)
+
+## Summary
+
+Implemented a pure frontmatter loader for `@linkify-med/docusaurus-plugin` that parses MD/MDX files with `gray-matter`, validates shape with `zod`, and returns normalized `IndexRawEntry[]` with structured warnings. Added fixtures and Vitest tests.
+
+## Changes
+
+- Added `gray-matter` and `zod` to `@linkify-med/docusaurus-plugin`.
+- Created core files:
+  - `packages/docusaurus-plugin-linkify-med/src/types.ts`
+  - `packages/docusaurus-plugin-linkify-med/src/frontmatter.ts`
+  - `packages/docusaurus-plugin-linkify-med/src/frontmatterAdapter.ts`
+- Added test fixtures under `packages/docusaurus-plugin-linkify-med/tests/fixtures/docs/`:
+  - `ok-amoxicillin.mdx`, `ok-vancomycin.md`, `skip-linkify-false.mdx`,
+    `bad-missing-id.mdx`, `bad-empty-synonyms.mdx`, `bad-slug.mdx`, `bad-notarray-synonyms.mdx`
+- Added unit tests: `packages/docusaurus-plugin-linkify-med/tests/frontmatter.test.ts`.
+
+## Test Results
+
+- Package builds: OK
+- `pnpm -r --filter @linkify-med/docusaurus-plugin run test`: 2 files, 4 tests passed.
+- Repo-wide: `pnpm -r --filter './packages/**' run test`: all package tests passed.
+- Example site: `pnpm site:build`: success (unchanged behavior).
+
+## Notes
+
+- Fixtures were adjusted to remove stray leading `mdx`/`md` lines so frontmatter is at the file start.
+- Minor test string fix for an inline YAML block literal to avoid a syntax error.
