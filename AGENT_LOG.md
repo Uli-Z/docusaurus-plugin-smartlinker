@@ -476,3 +476,18 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - chore(example): integrate remark-linkify-med in docs/pages remarkPlugins
 - test(example): add smoke mdx page verifying SmartLink injection
 - docs: update AGENT_LOG with milestone 11 status
+
+# Milestone 11.1: MDX/ESM Hardening
+
+## Changes
+- Root package.json: add "engines": { "node": ">=18 <21" }.
+- Root package.json: add pnpm.overrides for estree-walker, estree-util-build-jsx, recma-build-jsx.
+- Ensured no "type": "module" at root and in examples/site package.json.
+
+## Verification
+- pnpm install: OK
+- pnpm -r run build (packages): OK
+- pnpm site:build: reaches SSG (no ERR_PACKAGE_PATH_NOT_EXPORTED)
+
+## Notes
+- SmartLink mapping may still fail at SSG; fixed in Milestone 11.2.
