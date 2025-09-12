@@ -115,3 +115,20 @@ Implemented a pure frontmatter loader for `@linkify-med/docusaurus-plugin` that 
 
 - Fixtures were adjusted to remove stray leading `mdx`/`md` lines so frontmatter is at the file start.
 - Minor test string fix for an inline YAML block literal to avoid a syntax error.
+
+# Milestone 2: Path Distance & Collision Resolver
+
+## Files added
+
+- `packages/docusaurus-plugin-linkify-med/src/proximity.ts`
+- `packages/docusaurus-plugin-linkify-med/tests/proximity.test.ts`
+
+## Test results
+
+- `pnpm -r --filter @linkify-med/docusaurus-plugin run test`: All 11 tests in 3 files passed.
+- `pnpm test`: All project tests passed.
+- `pnpm site:build`: Succeeded.
+
+## Notes
+
+The `distance` and `resolveCollision` functions were implemented as pure functions with no side effects. Unit tests cover same-folder, ancestor, and sibling path distances, as well as collision resolution logic for single candidates, nearest candidates, and tie-breaking scenarios.
