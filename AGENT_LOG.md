@@ -189,3 +189,24 @@ Added `@mdx-js/mdx` as a dependency. Implemented the `emitShortNoteModule` funct
 - Only entries with a corresponding `NoteModule` get an imported `ShortNote` component; others omit the field.
 - Always includes `id`, `slug`, and optional `icon` fields.
 - Small fix: adjusted the unit test regex to correctly match across newlines when asserting presence of `ShortNote` inside the `amoxicillin` entry.
+
+# Milestone 7: Synonym Matcher
+
+## Files added
+
+- `packages/remark-linkify-med/src/matcher.ts`
+- `packages/remark-linkify-med/tests/matcher.test.ts`
+
+## Test results
+
+- `pnpm -r --filter remark-linkify-med run build`: Succeeded.
+- `pnpm -r --filter remark-linkify-med run test`: Passed (2 files, 7 tests).
+- `pnpm test`: All workspace package tests passed.
+- `pnpm site:build`: Succeeded (site unchanged).
+
+## Notes
+
+- Unicode-aware, case-insensitive matcher using a trie for performance.
+- Enforces word-boundaries (Unicode letters/digits or underscore) on both sides.
+- Longest-match preference at each start index; non-overlapping, left-to-right.
+- Performance smoke test included with a loose 3s threshold.
