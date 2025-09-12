@@ -1,7 +1,7 @@
 {
   "name": "@examples/site",
   "private": true,
-  
+
   "scripts": {
     "dev": "docusaurus start",
     "build": "docusaurus build",
@@ -11,6 +11,8 @@
     "@docusaurus/core": "^3.0.0",
     "@docusaurus/preset-classic": "^3.0.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "@linkify-med/docusaurus-plugin": "workspace:*",
+    "remark-linkify-med": "workspace:*"
   }
 }

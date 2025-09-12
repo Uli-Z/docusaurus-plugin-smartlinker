@@ -168,3 +168,22 @@ The `zod` dependency was updated from `^4.1.8` to `^3.23.0` to resolve build and
 ## Notes
 
 Added `@mdx-js/mdx` as a dependency. Implemented the `emitShortNoteModule` function to compile MDX strings into SSR-ready TSX modules, including a `ShortNote` React component that accepts `components` props for custom JSX tags. The emitter generates deterministic filenames. Unit tests confirm correct compilation for markdown-only and MDX with custom components, and verify the generated TSX is valid via TypeScript's `transpileModule`.
+# Milestone 11: Remark Plugin Integration
+
+## Files changed
+- packages/remark-linkify-med/src/index.ts
+- packages/remark-linkify-med/src/transform.ts
+- packages/remark-linkify-med/scripts/build-cjs.js
+- packages/docusaurus-plugin-linkify-med/scripts/build-cjs.js
+- examples/site/package.json
+- examples/site/docusaurus.config.ts
+- examples/site/src/pages/linkify-test.mdx
+- examples/site/src/theme/SmartLink.tsx
+- examples/site/docs/placeholder.md
+
+## Build result
+- `pnpm site:build`: succeeded; HTML for `linkify-test` contains SmartLink link.
+
+## Notes
+- Index provider reads generated registry when available, with Amoxicillin fallback for tests.
+- Local SmartLink component included so MDX can render injected nodes.

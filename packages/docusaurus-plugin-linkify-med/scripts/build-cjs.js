@@ -1,17 +1,15 @@
-// Converts ESM index.js to a trivial CJS re-export for Node CJS consumers.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { rmSync, renameSync } from 'node:fs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const esm = readFileSync(join(__dirname, '../dist/index.js'), 'utf8');
-const cjs = `
-'use strict';
-var m = {};
-module.exports = m;
-(() => {
-  const mod = (function(){ ${esm} ; return exports || {}; })();
-  Object.assign(m, mod);
-})();
-`;
-writeFileSync(join(__dirname, '../dist/index.cjs'), cjs);
+
+const pkgRoot = join(__dirname, '..');
+execSync('tsc -p tsconfig.json --module commonjs --moduleResolution node --outDir dist-cjs', {
+  cwd: pkgRoot,
+  stdio: 'inherit',
+});
+renameSync(join(pkgRoot, 'dist-cjs/index.js'), join(pkgRoot, 'dist/index.cjs'));
+rmSync(join(pkgRoot, 'dist-cjs'), { recursive: true, force: true });

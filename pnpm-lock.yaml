@@ -33,12 +33,18 @@ importers:
       '@docusaurus/preset-classic':
         specifier: ^3.0.0
         version: 3.8.1(@algolia/client-search@5.37.0)(@mdx-js/react@3.1.1(@types/react@19.1.12)(react@18.3.1))(@types/react@19.1.12)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.3)(typescript@5.9.2)
+      '@linkify-med/docusaurus-plugin':
+        specifier: workspace:*
+        version: link:../../packages/docusaurus-plugin-linkify-med
       react:
         specifier: ^18.2.0
         version: 18.3.1
       react-dom:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
+      remark-linkify-med:
+        specifier: workspace:*
+        version: link:../../packages/remark-linkify-med
 
   packages/docusaurus-plugin-linkify-med:
     dependencies:
