@@ -17,59 +17,125 @@
   Mobile: Tap on **icon** shows tooltip; tap on **text** navigates.
 - Icons are configured in plugin options (`id → /path.svg|png`). Default icon via `defaultIcon`. Icon is rendered **after** the link text.
 
-## Milestones (with DoD)
-1. **Skeleton + Tests**  
-   - `/packages/docusaurus-plugin-linkify-med/` + `/packages/remark-linkify-med/`  
-   - `/examples/site/` minimal.  
-   - DoD: Example site builds, test runner runs.
 
-2. **Frontmatter Loader (raw)**  
-   - Parse: `id, slug, synonyms[], linkify, icon, shortNote`.  
-   - DoD: Unit tests (missing fields → skip; `linkify:false` → skip).
+## Milestones
 
-3. **Path Distance & Resolver**  
-   - `distance(from, to)` + collision resolution + warn logger.  
-   - DoD: Unit tests with folder matrix; deterministic tie-breaker.
+### Milestone 0 — Skeleton & Tests ✅
+- Set up pnpm monorepo:  
+  - `packages/docusaurus-plugin-linkify-med`  
+  - `packages/remark-linkify-med`  
+  - `examples/site`
+- Smoke tests for both packages.
+- Fix Docusaurus build issue by removing `"type": "module"` in root + site.
 
-4. **Icon Config**  
-   - Options: `icons`, `defaultIcon`, `iconProps`, optional `darkModeIcons`.  
-   - DoD: Unit tests (ID mapping, fallback).
+---
 
-5. **MDX→TSX Compiler for `shortNote`**  
-   - MDX string → SSR-ready TSX via `@mdx-js/mdx`; `createData` → `@generated/linkify/notes/<id>.tsx`.  
-   - Component scope: `src/theme/LinkifyComponents.ts`.  
-   - DoD: Markdown & JSX (e.g. `<DrugTip/>`) compile; missing component → clear build error.
+### Milestone 1 — Frontmatter Loader ✅
+- Parse frontmatter from MD/MDX with `gray-matter` + `zod`.
+- Validate fields: `id`, `slug`, `synonyms[]`, `shortNote?`, `linkify?`, `icon?`.
+- Unit tests with fixtures.
 
-6. **Tooltip Registry Codegen**  
-   - `@generated/linkify/registry.ts`: `tipKey → { kind: "mdx"|"html", Component|html, icon, slug }`.  
-   - DoD: Only entries with non-empty `shortNote`; stable keys.
+---
 
-7. **Synonym Matcher**  
-   - Trie/Aho-Corasick, word boundaries, all occurrences, longest-match.  
-   - DoD: Unit tests (multi-word > single-word, umlauts/ß, overlaps, performance smoke test).
+### Milestone 2 — Path Distance & Collision Resolver ✅
+- Pure functions to measure path proximity between source files.
+- Collision resolution: choose nearest by folder; tie-break by deterministic rules.
+- Unit tests for folder structures + tie-breaking.
 
-8. **Remark Transform**  
-   - Replace text outside skip contexts with `<SmartLink to icon tipKey match>`.  
-   - DoD: Snapshot tests on sample MDX; all occurrences replaced; skips correct.
+---
 
-9. **Theme Components**  
-   - `SmartLink`, `Tooltip`, `IconResolver` (SSR-friendly).  
-   - DoD: RTL tests for a11y & props; icon after text; desktop/mobile behavior.
+### Milestone 4 — Icon Configuration & Resolver ✅
+- Plugin options schema (`icons`, `darkModeIcons`, `defaultIcon`, `iconProps`).
+- Validator with structured warnings.
+- Pure resolver API: `resolveIconId`, `resolveIconSrc`.
+- Unit tests for validation + dark-mode overrides.
 
-10. **Wiring in Docusaurus**  
-    - `plugins: ['docusaurus-plugin-linkify-med']`  
-    - `docs/blog/pages.beforeDefaultRemarkPlugins: [require('remark-linkify-med')]`  
-    - DoD: Example site with real antibiotic pages builds & renders as specified.
+---
 
-11. **Performance & DX**  
-    - Benchmark script (large texts, many synonyms).  
-    - Error handling with clear messages (missing `slug`, duplicate synonyms, unknown icon ID).  
-    - DoD: Benchmarks below threshold X; unit tests for error cases.
+### Milestone 5 — MDX→TSX ShortNote Compiler ✅
+- Compile `shortNote` (MDX string) into TSX modules exporting `ShortNote`.
+- Deterministic filenames under `notes/<id>.tsx`.
+- TypeScript transpilation test ensures output compiles.
+- Unit tests: markdown-only, JSX with custom tags, empty notes → null.
 
-12. **Docs & Release**  
-    - `README.md`, `docs/usage.md`, examples.  
-    - tsup/tsc build, types, ESM/CJS.  
-    - DoD: Fresh example site installs the package → build succeeds.
+---
+
+### Milestone 6 — Tooltip Registry Codegen ✅
+- Emit `registry.tsx` mapping `id → { slug, icon?, ShortNote? }`.
+- Import note modules automatically.
+- Deterministic order by `id`.
+- Unit tests for with/without shortNote, tie-breaking, deterministic sort.
+
+---
+
+### Milestone 7 — Synonym Matcher ✅
+- Trie-based matcher, Unicode-aware, case-insensitive.
+- Word boundaries enforced (`\p{L}\p{N}_`).
+- Longest non-overlapping matches, left-to-right.
+- Unit + performance tests.
+
+---
+
+### Milestone 8 — Remark Transform ✅
+- Remark plugin replaces text matches with `<SmartLink>` MDX JSX elements.
+- Skip contexts: code blocks, inline code, links, images, H1–H3, MDX JSX.
+- Deterministic tie-breaking (temporary: smallest `id`).
+- E2E tests with remark-parse/mdx/stringify.
+
+---
+
+### Milestone 9 — Theme Components (Radix Tooltip) ✅
+- Contexts: `LinkifyRegistryProvider`, `IconConfigProvider`.
+- Components:
+  - `Tooltip` (Radix wrapper).
+  - `IconResolver` (resolves light/dark icons).
+  - `SmartLink`: hover tooltips (desktop), icon-tap toggle (mobile), icon after text.
+- RTL tests: hover, mobile, dark mode, no ShortNote fallback.
+
+---
+
+### Milestone 10 — Docusaurus Wiring ✅
+- Plugin lifecycles:
+  - `loadContent`: scan MD/MDX files, parse, compile notes, prepare registry.
+  - `contentLoaded`: emit generated note modules + registry via `createData`.
+  - `setGlobalData`: provide validated icon options.
+- Theme `Root.tsx`: wraps site in providers with registry + icon resolver.
+- Example site enabled with plugin.
+- Smoke test for pipeline.
+
+---
+
+### Milestone 11 — Remark Plugin Integration 🚧
+- Integrate `remark-linkify-med` into Docusaurus config (`docs` + `pages`).
+- Use `IndexProvider` that proxies to generated registry.
+- Smoke MDX page in example site proves SmartLink injection.
+
+---
+
+### Milestone 12 — Example Site as Full Docusaurus Docs Site 🚧
+- Expand `examples/site` into a complete Docusaurus docs setup:
+  - Configure `sidebars.ts` with categories (Antibiotics, Bacteria, Examples).
+  - Add multiple `.mdx` doc files demonstrating SmartLink in context.
+  - Ensure navigation via sidebar/Inhaltsverzeichnis works.
+  - Provide one or two example pages where tooltips + icons are active.
+- Goal: Allow users to click through a structured docs site and see linkify in action.
+- Smoke test: build + manually verify sidebar navigation + SmartLink working.
+
+---
+
+### Milestone 13+ — Enhancements (planned)
+- Proximity-based collision resolution (use Milestone 2).
+- Styling refinements (icons, tooltip design).
+- Persistence options (reset checklist, user interaction).
+- Plugin configuration: glob patterns, opt-in/out sections.
+- Documentation for plugin usage outside example site.
+
+---
+
+## Conventions
+- Every milestone:
+  - Cod
+
 
 ## Agent Checklist (for each run)
 - [ ] **Load context**: This file + `/packages/*` + `/examples/site`.
