@@ -7,6 +7,9 @@ settings:
 overrides:
   react: ^18.2.0
   react-dom: ^18.2.0
+  estree-walker: ^3.0.3
+  estree-util-build-jsx: ^3.0.1
+  recma-build-jsx: ^1.0.0
 
 importers:
 

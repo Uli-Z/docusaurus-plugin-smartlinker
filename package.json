@@ -2,6 +2,7 @@
   "name": "linkify-med-monorepo",
   "private": true,
   "packageManager": "pnpm@9.0.0",
+  "engines": { "node": ">=18 <21" },
   
   "scripts": {
     "build": "pnpm -r --filter './packages/**' run build",
@@ -20,7 +21,10 @@
   "pnpm": {
     "overrides": {
       "react": "^18.2.0",
-      "react-dom": "^18.2.0"
+      "react-dom": "^18.2.0",
+      "estree-walker": "^3.0.3",
+      "estree-util-build-jsx": "^3.0.1",
+      "recma-build-jsx": "^1.0.0"
     }
   }
 }
