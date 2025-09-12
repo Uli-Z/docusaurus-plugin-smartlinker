@@ -45,6 +45,9 @@ importers:
       '@docusaurus/core':
         specifier: ^3.0.0
         version: 3.8.1(@mdx-js/react@3.1.1(@types/react@19.1.12)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2)
+      '@mdx-js/mdx':
+        specifier: ^3.1.1
+        version: 3.1.1
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3

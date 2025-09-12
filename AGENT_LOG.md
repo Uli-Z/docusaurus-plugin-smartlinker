@@ -150,3 +150,21 @@ The `distance` and `resolveCollision` functions were implemented as pure functio
 ## Notes
 
 The `zod` dependency was updated from `^4.1.8` to `^3.23.0` to resolve build and test failures. The icon configuration and resolver functions (`validateOptions` and `createIconResolver`) were implemented and tested. They handle options validation, structured warnings, and icon resolution with dark-mode overrides and default fallbacks.
+
+# Milestone 5: MDX→TSX Compiler & Emitter
+
+## Files added
+
+- `packages/docusaurus-plugin-linkify-med/src/codegen/notesEmitter.ts`
+- `packages/docusaurus-plugin-linkify-med/tests/notesEmitter.test.ts`
+
+## Test results
+
+- `pnpm -r --filter @linkify-med/docusaurus-plugin run build`: Succeeded.
+- `pnpm -r --filter @linkify-med/docusaurus-plugin run test`: All 22 tests in 5 files passed.
+- `pnpm test`: All project tests passed.
+- `pnpm site:build`: Succeeded.
+
+## Notes
+
+Added `@mdx-js/mdx` as a dependency. Implemented the `emitShortNoteModule` function to compile MDX strings into SSR-ready TSX modules, including a `ShortNote` React component that accepts `components` props for custom JSX tags. The emitter generates deterministic filenames. Unit tests confirm correct compilation for markdown-only and MDX with custom components, and verify the generated TSX is valid via TypeScript's `transpileModule`.

@@ -1,0 +1,66 @@
+import { compile } from '@mdx-js/mdx';
+
+/**
+ * Result of emitting a TSX module for a given shortNote.
+ */
+export interface NoteModule {
+  filename: string;   // e.g., "notes/amoxicillin.tsx"
+  contents: string;   // TSX source string
+}
+
+/**
+ * Sanitize an id into a safe filename segment.
+ */
+function safeId(id: string): string {
+  return id.toLowerCase().replace(/[^a-z0-9-_]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Compile a shortNote (MDX string) into a TSX module that exports:
+ *   export function ShortNote(props: { components?: Record<string, any> })
+ *
+ * The compiled MDXContent will receive props.components as its MDX components map,
+ * so that custom tags (e.g., <DrugTip/>) can be provided by the caller at render time.
+ *
+ * @param id stable page id (used to generate filename)
+ * @param shortNote raw MDX string (already trimmed by the frontmatter parser)
+ * @returns NoteModule or null if shortNote is empty/undefined
+ */
+export async function emitShortNoteModule(
+  id: string,
+  shortNote?: string
+): Promise<NoteModule | null> {
+  const sn = (shortNote ?? '').trim();
+  if (!sn) return null;
+
+  // Compile MDX into ESM (string); MDX v3 defaults to the automatic runtime.
+  const compiled = await compile(sn, {
+    // Important: keep ESM output (string), we will wrap it into our TSX module.
+    // We do not inject provider import source here; we pass components via props.
+    development: false,
+    // Ensure we output a full "program" so we can wrap/re-export cleanly.
+    outputFormat: 'program',
+  });
+
+  // compiled.value is a string of ESM JS, typically exporting `MDXContent`.
+  const esm = String(compiled.value);
+
+  // Wrap into a TSX module that re-exports a stable API.
+  // We forward `components` through to MDXContent so <DrugTip/> etc. resolve.
+  const mod = `
+/* AUTO-GENERATED: do not edit by hand */
+import * as React from 'react';
+
+// The MDX compiler output:
+${esm}
+
+// Stable wrapper API expected by the theme:
+export function ShortNote(props: { components?: Record<string, any> }) {
+  // MDXContent is the default export from the compiled MDX above
+  return React.createElement(MDXContent, { components: props?.components ?? {} });
+}
+`.trimStart();
+
+  const filename = `notes/${safeId(id)}.tsx`;
+  return { filename, contents: mod };
+}
