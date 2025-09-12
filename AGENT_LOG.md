@@ -264,3 +264,40 @@ Added `@mdx-js/mdx` as a dependency. Implemented the `emitShortNoteModule` funct
 - feat(plugin/theme): IconResolver consuming plugin icon resolver
 - test(plugin/theme): RTL tests for SmartLink behavior and Radix tooltip
 - docs: update AGENT_LOG with milestone 9 status
+
+# Milestone 10: Docusaurus Wiring & Generated Registry Providers
+
+## Summary
+
+Wired the Docusaurus plugin lifecycles to scan MD/MDX files, compile `shortNote` MDX to TSX note modules, emit a single generated registry module, and provide a theme Root wrapper to inject contexts. Enabled the plugin in the example site.
+
+## Files added/updated
+
+- packages/docusaurus-plugin-linkify-med/src/node/fsScan.ts
+- packages/docusaurus-plugin-linkify-med/src/node/buildPipeline.ts
+- packages/docusaurus-plugin-linkify-med/src/index.ts (replaced with lifecycle wiring)
+- packages/docusaurus-plugin-linkify-med/src/theme/Root.tsx (new theme provider)
+- packages/docusaurus-plugin-linkify-med/src/theme/generated.d.ts (ambient type for @generated import)
+- packages/docusaurus-plugin-linkify-med/tests/buildPipeline.test.ts (smoke test)
+- examples/site/docusaurus.config.ts (plugin enabled)
+
+## Test/Build results
+
+- Package build: Succeeded.
+- Vitest: All existing tests pass; added pipeline smoke test passes locally. Root test script updated to forward flags so `pnpm -s test -- --single-thread` works reliably in this sandbox.
+- Example site build: Succeeds; generated files appear under `.docusaurus/docusaurus-plugin-linkify-med/`.
+
+## Notes
+
+- Generated registry path: `@generated/docusaurus-plugin-linkify-med/registry`.
+- Emitted files: `registry.tsx` and `notes/<id>.tsx`.
+- Root provider composes `LinkifyRegistryProvider` + `IconConfigProvider` with `usePluginData`.
+- Site build fix: switch plugin package to ESM main (`dist/index.js`) and change `@mdx-js/mdx` usage to dynamic import inside `notesEmitter` to avoid ESM require issues at plugin load-time.
+
+## Suggested commits
+
+- feat(plugin): wire docusaurus lifecycles to generate notes and registry
+- feat(plugin/theme): add Root provider composing registry + icon resolver
+- chore(example): enable @linkify-med/docusaurus-plugin in site config
+- test(plugin): add build pipeline smoke test
+- docs: update AGENT_LOG with milestone 10 status

@@ -1,4 +1,4 @@
-import { compile } from '@mdx-js/mdx';
+// Note: dynamic import to avoid resolving ESM-only deps at plugin load time
 
 /**
  * Result of emitting a TSX module for a given shortNote.
@@ -34,6 +34,7 @@ export async function emitShortNoteModule(
   if (!sn) return null;
 
   // Compile MDX into ESM (string); MDX v3 defaults to the automatic runtime.
+  const { compile } = await import('@mdx-js/mdx');
   const compiled = await compile(sn, {
     // Important: keep ESM output (string), we will wrap it into our TSX module.
     // We do not inject provider import source here; we pass components via props.

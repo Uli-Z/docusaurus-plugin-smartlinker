@@ -26,6 +26,9 @@ const config: Config = {
       },
     ],
   ],
+  plugins: [
+    '@linkify-med/docusaurus-plugin',
+  ],
 };
 
 export default config;
