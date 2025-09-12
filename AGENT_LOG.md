@@ -132,3 +132,21 @@ Implemented a pure frontmatter loader for `@linkify-med/docusaurus-plugin` that 
 ## Notes
 
 The `distance` and `resolveCollision` functions were implemented as pure functions with no side effects. Unit tests cover same-folder, ancestor, and sibling path distances, as well as collision resolution logic for single candidates, nearest candidates, and tie-breaking scenarios.
+
+# Milestone 4: Icon Configuration & Resolver
+
+## Files added
+
+- `packages/docusaurus-plugin-linkify-med/src/options.ts`
+- `packages/docusaurus-plugin-linkify-med/tests/options.test.ts`
+
+## Test results
+
+- `pnpm -r --filter @linkify-med/docusaurus-plugin run build`: Succeeded.
+- `pnpm -r --filter @linkify-med/docusaurus-plugin run test`: All 18 tests in 4 files passed.
+- `pnpm test`: All project tests passed.
+- `pnpm site:build`: Succeeded.
+
+## Notes
+
+The `zod` dependency was updated from `^4.1.8` to `^3.23.0` to resolve build and test failures. The icon configuration and resolver functions (`validateOptions` and `createIconResolver`) were implemented and tested. They handle options validation, structured warnings, and icon resolution with dark-mode overrides and default fallbacks.
