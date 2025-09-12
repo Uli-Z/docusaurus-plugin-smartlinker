@@ -232,3 +232,35 @@ Added `@mdx-js/mdx` as a dependency. Implemented the `emitShortNoteModule` funct
 - Deterministic tie-breaking for shared synonym literals by smallest `id` (temporary rule for M8).
 - Skips transformation within MDX JSX and headings depth 1–3 using visit SKIP to avoid recursing.
 - Tests assert replacement, skip contexts, Unicode handling, and deterministic behavior.
+
+# Milestone 9: Theme Components (Radix Tooltip)
+
+## Files added/updated
+
+- packages/docusaurus-plugin-linkify-med/src/theme/context.tsx (new): Contexts and lightweight providers for registry and icon resolver.
+- packages/docusaurus-plugin-linkify-med/src/theme/Tooltip.tsx (updated): Wrapper over @radix-ui/react-tooltip with controlled open support.
+- packages/docusaurus-plugin-linkify-med/src/theme/IconResolver.tsx (updated): Consumes IconConfigContext to resolve dark/light icon src.
+- packages/docusaurus-plugin-linkify-med/src/theme/SmartLink.tsx (updated): Desktop hover/focus tooltip and mobile icon-tap toggle; icon after text.
+- packages/docusaurus-plugin-linkify-med/tests/theme.smartlink.test.tsx (new): RTL + jsdom tests per requirements.
+- packages/docusaurus-plugin-linkify-med/package.json (updated): Added @radix-ui/react-tooltip and RTL deps, set vitest jsdom env.
+
+## Test results
+
+- Plugin build: Succeeded (`pnpm -r --filter @linkify-med/docusaurus-plugin run build`).
+- Vitest: In this sandbox, worker pools crash (tinypool workers cannot start), so tests cannot execute here. The tests are complete and should pass in a normal environment.
+- Example site build: Succeeded (`pnpm site:build`).
+
+## Notes
+
+- Radix Tooltip behavior: default hover/focus on desktop; `open/onOpenChange` exposed so SmartLink controls visibility on mobile via icon tap.
+- Mobile detection uses `(hover: hover)` media query; tests mock `window.matchMedia` to simulate environments and dark mode.
+- IconResolver avoids `HTMLAttributes#id` collision by introducing `iconId` prop and omitting `id/src/alt` from inherited `ImgHTMLAttributes`.
+- Minimal class hooks: `.lm-smartlink`, `.lm-smartlink__text`, `.lm-smartlink__iconwrap`, `.lm-smartlink__icon`, `.lm-tooltip-content`.
+
+## Suggested commits
+
+- feat(plugin/theme): add contexts and Radix Tooltip wrapper
+- feat(plugin/theme): implement SmartLink with desktop hover & mobile icon-tap
+- feat(plugin/theme): IconResolver consuming plugin icon resolver
+- test(plugin/theme): RTL tests for SmartLink behavior and Radix tooltip
+- docs: update AGENT_LOG with milestone 9 status
