@@ -168,3 +168,24 @@ The `zod` dependency was updated from `^4.1.8` to `^3.23.0` to resolve build and
 ## Notes
 
 Added `@mdx-js/mdx` as a dependency. Implemented the `emitShortNoteModule` function to compile MDX strings into SSR-ready TSX modules, including a `ShortNote` React component that accepts `components` props for custom JSX tags. The emitter generates deterministic filenames. Unit tests confirm correct compilation for markdown-only and MDX with custom components, and verify the generated TSX is valid via TypeScript's `transpileModule`.
+
+# Milestone 6: Tooltip Registry Codegen
+
+## Files added
+
+- `packages/docusaurus-plugin-linkify-med/src/codegen/registryEmitter.ts`
+- `packages/docusaurus-plugin-linkify-med/tests/registryEmitter.test.ts`
+
+## Test results
+
+- `pnpm -r --filter @linkify-med/docusaurus-plugin run build`: Succeeded.
+- `pnpm -r --filter @linkify-med/docusaurus-plugin run test`: All tests passed, including new registry emitter tests.
+- `pnpm test`: All workspace package tests passed.
+- `pnpm site:build`: Succeeded (example site unchanged).
+
+## Notes
+
+- `emitRegistry` generates a deterministic TSX module `registry.tsx` exporting `registry: Record<string, TooltipEntry>`.
+- Only entries with a corresponding `NoteModule` get an imported `ShortNote` component; others omit the field.
+- Always includes `id`, `slug`, and optional `icon` fields.
+- Small fix: adjusted the unit test regex to correctly match across newlines when asserting presence of `ShortNote` inside the `amoxicillin` entry.
