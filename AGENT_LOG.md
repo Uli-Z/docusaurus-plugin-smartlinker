@@ -491,3 +491,38 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 
 ## Notes
 - SmartLink mapping may still fail at SSG; fixed in Milestone 11.2.
+
+# Milestone 11.2: Remark plugin integration and SmartLink mapping
+
+## Summary
+- Added `createFsIndexProvider` to `@linkify-med/docusaurus-plugin` and exported types.
+- Registered `SmartLink` via `MDXComponents.tsx` in plugin and example site so the component is globally available in MDX.
+- Example site config now wires `remark-linkify-med` with the FS-based index provider and includes a sample doc `linkify-test.mdx` demonstrating automatic linking.
+
+## Verification
+- `pnpm install`
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm site:build` *(fails: `ERR_PACKAGE_PATH_NOT_EXPORTED` for `estree-walker`)*
+
+# Milestone 11.3: Build fix and SmartLink availability
+
+## Summary
+- Added a defensive fallback in `notesEmitter.ts` so missing MDX deps render plain text instead of breaking the build.
+- Exposed plugin theme components through `package.json` exports and wired example site `MDXComponents` to import `SmartLink` from the plugin.
+- Declared `@linkify-med/docusaurus-plugin` as a dependency of the example site to ensure theme resolution.
+
+## Verification
+- `pnpm install`
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm site:build`
+
+# Milestone 11.4: MDX ESM chain resolved
+
+## Summary
+- Pinned `@mdx-js/mdx` and its transitive `estree` helpers via `pnpm.overrides` to ensure `estree-walker` exposes proper ESM exports.
+- Reinstalled dependencies cleanly and rebuilt packages so Docusaurus can compile MDX without `ERR_PACKAGE_PATH_NOT_EXPORTED`.
+
+## Verification
+- `pnpm install`
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm site:build`

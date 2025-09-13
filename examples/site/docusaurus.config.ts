@@ -1,4 +1,14 @@
 import type { Config } from '@docusaurus/types';
+import remarkLinkifyMed from '../../packages/remark-linkify-med/dist/index.js';
+import { createFsIndexProvider } from '@linkify-med/docusaurus-plugin';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const linkifyIndex = createFsIndexProvider({
+  roots: [join(__dirname, 'docs'), join(__dirname, 'src/pages')],
+});
 
 const config: Config = {
   title: 'Linkify-Med Example',
@@ -17,18 +27,18 @@ const config: Config = {
     [
       'classic',
       {
-        docs: false,
-        blog: false,
-        pages: {},
-        theme: {
-          
+        docs: {
+          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
         },
+        blog: false,
+        pages: {
+          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+        },
+        theme: {},
       },
     ],
   ],
-  plugins: [
-    '@linkify-med/docusaurus-plugin',
-  ],
+  plugins: ['@linkify-med/docusaurus-plugin'],
 };
 
 export default config;

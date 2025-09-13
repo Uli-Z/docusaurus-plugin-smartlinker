@@ -4,6 +4,13 @@ import { validateOptions, type PluginOptions, type NormalizedOptions } from './o
 import { scanMdFiles } from './node/fsScan';
 import { buildArtifacts } from './node/buildPipeline';
 
+export type {
+  FsIndexProviderOptions,
+  IndexProvider,
+  TargetInfo,
+} from './fsIndexProvider';
+export { createFsIndexProvider } from './fsIndexProvider';
+
 export type { PluginOptions } from './options';
 
 type Content = {
