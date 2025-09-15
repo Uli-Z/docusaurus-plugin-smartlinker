@@ -578,3 +578,16 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm -r --filter './packages/**' test`
 - `pnpm site:build`
+
+# Milestone 11.10: Reuse pnpm cache on reset
+
+## Summary
+
+- Updated the root `reset` script to keep the pnpm store and lockfile, using `pnpm install --prefer-offline` so dependencies are reused instead of re-downloaded.
+
+## Verification
+
+- `pnpm install`
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm -r --filter './packages/**' test`
+- `pnpm site:build`

@@ -12,7 +12,7 @@
     "site:dev": "pnpm --filter @examples/site dev",
     "site:build": "pnpm --filter @examples/site build",
     "site:serve": "pnpm --filter @examples/site serve",
-    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules pnpm-lock.yaml && pnpm store prune && pnpm install && pnpm -r --filter './packages/**' run build && pnpm site:build"
+    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && pnpm install --prefer-offline && pnpm -r --filter './packages/**' run build && pnpm site:build"
   },
   "devDependencies": {
     "@docusaurus/types": "^3.8.1",
