@@ -591,3 +591,16 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm -r --filter './packages/**' test`
 - `pnpm site:build`
+
+# Milestone 11.11: Restore global providers for SmartLink icons
+
+## Summary
+
+- Wrapped the plugin's root component around Docusaurus' original root so global data providers remain active, enabling icon resolution and tooltip context.
+- Declared `@theme-original/Root` and `useGlobalData` shim modules for TypeScript.
+
+## Verification
+
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm -r --filter './packages/**' test`
+- `pnpm site:build`
