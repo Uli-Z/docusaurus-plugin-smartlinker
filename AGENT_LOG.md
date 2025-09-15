@@ -568,3 +568,13 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm install`
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm site:build`
+# Milestone 11.9: Cache reset script
+
+## Summary
+- Added a root `reset` npm script that removes dependency caches, reinstalls packages, and rebuilds all workspaces and the example site in one step.
+
+## Verification
+- `pnpm install`
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm -r --filter './packages/**' test`
+- `pnpm site:build`
