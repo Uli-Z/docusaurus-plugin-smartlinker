@@ -98,3 +98,8 @@ export function createFsIndexProvider(opts: FsIndexProviderOptions): IndexProvid
 - `SmartLink` is globally mapped in both the plugin and the example site’s MDX components.
 - The build failure originates from the MDX/ESM dependency chain; updating `estree-walker`, `estree-util-build-jsx`, and `recma-build-jsx` versions via `pnpm.overrides` may resolve the missing export.
 - Ensure all packages involved in MDX processing provide proper `exports` fields compatible with Node’s ESM resolution.
+
+## Missing SmartLink Icons
+- Symptom: SmartLink anchors render without their expected emoji/icon.
+- Cause: The plugin's `getThemePath()` returns a path inside `dist`, so Docusaurus fails to load the theme's `Root` component. Without the `IconConfigProvider`, `IconResolver` receives no icon configuration and renders nothing.
+- Fix: Point `getThemePath()` to the source `src/theme` directory or provide the icon context manually so `IconResolver` can resolve icon sources.

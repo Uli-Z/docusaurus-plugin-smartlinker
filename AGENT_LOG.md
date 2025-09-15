@@ -604,3 +604,16 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm -r --filter './packages/**' test`
 - `pnpm site:build`
+
+# Milestone 11.12: Allow Node 24
+
+## Summary
+
+- Allowed development with Node.js 24 by widening the root engine constraint.
+
+## Verification
+
+- `pnpm install`
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm -r --filter './packages/**' test`
+- `pnpm site:build`
