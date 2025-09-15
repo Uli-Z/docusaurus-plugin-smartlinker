@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const linkifyIndex = createFsIndexProvider({
-  roots: [join(__dirname, 'docs'), join(__dirname, 'src/pages')],
+  roots: [join(__dirname, 'docs')],
 });
 
 const config: Config = {
@@ -28,6 +28,7 @@ const config: Config = {
       'classic',
       {
         docs: {
+          sidebarPath: require.resolve('./sidebars.ts'),
           remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
         },
         blog: false,
