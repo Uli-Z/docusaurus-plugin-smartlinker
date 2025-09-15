@@ -557,3 +557,14 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm install`
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm site:build`
+
+# Milestone 11.8: Tooltip styles and emoji icon support
+
+## Summary
+- Added global CSS for SmartLink and tooltip components so hover text becomes visible.
+- Extended `IconResolver` to render emoji when icon sources start with `emoji:` and wired the example site to use a pill emoji.
+
+## Verification
+- `pnpm install`
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm site:build`

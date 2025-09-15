@@ -12,9 +12,25 @@ export default function IconResolver({ iconId, className, ...rest }: IconResolve
   if (!iconId || !api) return null;
 
   // naive prefers-light; could read prefers-color-scheme if needed
-  const mode: 'light' | 'dark' = (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  const mode: 'light' | 'dark' =
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
   const src = api.resolveIconSrc(iconId, mode);
   if (!src) return null;
+
+  if (src.startsWith('emoji:')) {
+    const emoji = src.slice('emoji:'.length);
+    return (
+      <span
+        className={['lm-icon', 'lm-icon-emoji', className].filter(Boolean).join(' ')}
+        aria-hidden="true"
+        {...rest}
+      >
+        {emoji}
+      </span>
+    );
+  }
 
   return (
     <img

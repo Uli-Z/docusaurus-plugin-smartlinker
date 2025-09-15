@@ -40,7 +40,11 @@ const config: Config = {
       },
     ],
   ],
-  plugins: ['@linkify-med/docusaurus-plugin'],
+  plugins: [
+    ['@linkify-med/docusaurus-plugin', {
+      icons: { pill: 'emoji:💊' }
+    }]
+  ],
 };
 
 export default config;

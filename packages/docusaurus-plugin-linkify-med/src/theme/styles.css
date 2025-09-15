@@ -1,0 +1,39 @@
+.lm-smartlink {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: underline;
+  gap: 0.2em;
+}
+
+.lm-smartlink__iconwrap {
+  display: inline-flex;
+  margin-left: 0.15em;
+}
+
+.lm-smartlink__icon {
+  cursor: pointer;
+}
+
+.lm-icon {
+  width: 1em;
+  height: 1em;
+}
+
+.lm-icon-emoji {
+  font-size: 1em;
+  line-height: 1;
+}
+
+.lm-tooltip-content {
+  --lm-tooltip-bg: var(--ifm-color-emphasis-100);
+  background: var(--lm-tooltip-bg);
+  color: var(--ifm-font-color-base-inverse);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  box-shadow: var(--ifm-global-shadow-md);
+  font-size: 0.875rem;
+}
+
+.lm-tooltip-content + svg {
+  fill: var(--lm-tooltip-bg);
+}
