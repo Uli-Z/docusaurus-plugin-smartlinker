@@ -526,3 +526,13 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm install`
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm site:build`
+
+# Milestone 11.5: Browser demo page
+
+## Summary
+- Added `smartlink-demo.mdx` to example site's pages to showcase SmartLink transformation in the browser.
+
+## Verification
+- `pnpm install`
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm site:build`
