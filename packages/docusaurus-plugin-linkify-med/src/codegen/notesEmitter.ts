@@ -33,22 +33,23 @@ export async function emitShortNoteModule(
   const sn = (shortNote ?? '').trim();
   if (!sn) return null;
 
-  // Compile MDX into ESM (string); MDX v3 defaults to the automatic runtime.
-  const { compile } = await import('@mdx-js/mdx');
-  const compiled = await compile(sn, {
-    // Important: keep ESM output (string), we will wrap it into our TSX module.
-    // We do not inject provider import source here; we pass components via props.
-    development: false,
-    // Ensure we output a full "program" so we can wrap/re-export cleanly.
-    outputFormat: 'program',
-  });
+  try {
+    // Compile MDX into ESM (string); MDX v3 defaults to the automatic runtime.
+    const { compile } = await import('@mdx-js/mdx');
+    const compiled = await compile(sn, {
+      // Important: keep ESM output (string), we will wrap it into our TSX module.
+      // We do not inject provider import source here; we pass components via props.
+      development: false,
+      // Ensure we output a full "program" so we can wrap/re-export cleanly.
+      outputFormat: 'program',
+    });
 
-  // compiled.value is a string of ESM JS, typically exporting `MDXContent`.
-  const esm = String(compiled.value);
+    // compiled.value is a string of ESM JS, typically exporting `MDXContent`.
+    const esm = String(compiled.value);
 
-  // Wrap into a TSX module that re-exports a stable API.
-  // We forward `components` through to MDXContent so <DrugTip/> etc. resolve.
-  const mod = `
+    // Wrap into a TSX module that re-exports a stable API.
+    // We forward `components` through to MDXContent so <DrugTip/> etc. resolve.
+    const mod = `
 /* AUTO-GENERATED: do not edit by hand */
 import * as React from 'react';
 
@@ -62,6 +63,20 @@ export function ShortNote(props: { components?: Record<string, any> }) {
 }
 `.trimStart();
 
-  const filename = `notes/${safeId(id)}.tsx`;
-  return { filename, contents: mod };
+    const filename = `notes/${safeId(id)}.tsx`;
+    return { filename, contents: mod };
+  } catch {
+    // If MDX compilation fails (e.g., due to ESM loader issues), fall back to plain text
+    const text = JSON.stringify(sn);
+    const mod = `
+/* AUTO-GENERATED: fallback plain-text note */
+import * as React from 'react';
+
+export function ShortNote() {
+  return React.createElement(React.Fragment, null, ${text});
+}
+`.trimStart();
+    const filename = `notes/${safeId(id)}.tsx`;
+    return { filename, contents: mod };
+  }
 }

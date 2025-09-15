@@ -69,4 +69,12 @@ describe('icon resolver', () => {
     expect(res.iconId).toBeNull();
     expect(res.src).toBeNull();
   });
+
+  it('supports emoji icon strings', () => {
+    const { options } = validateOptions({ icons: { pill: 'emoji:💊' } });
+    const { resolveIconId } = createIconResolver(options);
+    const res = resolveIconId('pill', 'light');
+    expect(res.iconId).toBe('pill');
+    expect(res.src).toBe('emoji:💊');
+  });
 });

@@ -107,4 +107,11 @@ describe('SmartLink (theme)', () => {
     const img = screen.getByRole('img', { hidden: true }) as HTMLImageElement;
     expect(img.src).toMatch('/img/pill-dark.svg');
   });
+
+  it('renders emoji when icon resolves to emoji string', () => {
+    const iconApi = { resolveIconSrc: () => 'emoji:💊', iconProps: {} };
+    setup(<SmartLink to="/x" icon="pill">Amoxi</SmartLink>, { registry: {}, iconApi });
+    const emoji = screen.getByText('💊');
+    expect(emoji).toHaveClass('lm-icon-emoji');
+  });
 });
