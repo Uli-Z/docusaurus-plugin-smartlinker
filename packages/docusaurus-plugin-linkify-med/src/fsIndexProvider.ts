@@ -3,6 +3,11 @@ import { loadIndexFromFiles } from './frontmatterAdapter';
 
 export interface FsIndexProviderOptions {
   roots: string[]; // absolute directories to scan
+  /**
+   * Optional slug prefix to prepend to every `slug` discovered in frontmatter.
+   * Useful when docs are served from a subroute like `/docs`.
+   */
+  slugPrefix?: string;
 }
 
 export interface TargetInfo {
@@ -26,9 +31,10 @@ export function createFsIndexProvider(opts: FsIndexProviderOptions): IndexProvid
   const files = scanMdFiles({ roots: opts.roots });
   const { entries } = loadIndexFromFiles(files);
 
+  const prefix = opts.slugPrefix ?? '';
   const targets: TargetInfo[] = entries.map(e => ({
     id: e.id,
-    slug: e.slug,
+    slug: `${prefix}${e.slug}`,
     icon: e.icon,
     sourcePath: e.sourcePath,
     synonyms: e.synonyms,

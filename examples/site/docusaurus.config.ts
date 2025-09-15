@@ -8,6 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const linkifyIndex = createFsIndexProvider({
   roots: [join(__dirname, 'docs')],
+  slugPrefix: '/docs',
 });
 
 const config: Config = {

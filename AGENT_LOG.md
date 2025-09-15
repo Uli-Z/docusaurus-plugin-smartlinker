@@ -546,3 +546,14 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm install`
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm site:build`
+
+# Milestone 11.7: Correct SmartLink targets & tooltip build
+
+## Summary
+- Added optional `slugPrefix` to the FS index provider and configured the example site to use `/docs`, so generated SmartLinks point to the correct documentation URLs.
+- Pinned `estree-walker` and related MDX helpers via `pnpm.overrides` to satisfy ESM exports, allowing the plugin to inject tooltip data during the site build.
+
+## Verification
+- `pnpm install`
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm site:build`
