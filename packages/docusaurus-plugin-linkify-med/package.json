@@ -7,13 +7,14 @@
   "exports": {
     ".": "./dist/index.js",
     "./theme": "./dist/theme/index.js",
-    "./theme/*": "./dist/theme/*"
+    "./theme/styles.css": "./dist/theme/styles.css",
+    "./theme/*": "./dist/theme/runtime/*"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && node ./scripts/postbuild-verify.mjs",
+    "build": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true});\" && tsc -p tsconfig.json && node ./scripts/postbuild-verify.mjs",
     "test": "vitest run"
   },
   "vitest": {

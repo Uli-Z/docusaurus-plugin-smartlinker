@@ -2,8 +2,8 @@ import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import SmartLink from '../src/theme/SmartLink.js';
-import { LinkifyRegistryProvider, IconConfigProvider } from '../src/theme/context.js';
+import SmartLink from '../src/theme/runtime/SmartLink.js';
+import { LinkifyRegistryProvider, IconConfigProvider } from '../src/theme/runtime/context.js';
 
 function setup(ui: React.ReactNode, { registry = {}, iconApi } = {} as any) {
   const api = iconApi ?? {

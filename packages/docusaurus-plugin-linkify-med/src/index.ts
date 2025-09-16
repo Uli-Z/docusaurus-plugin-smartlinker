@@ -63,7 +63,7 @@ export default function linkifyMedPlugin(_context: LoadContext, optsIn?: PluginO
     },
 
     getThemePath() {
-      return join(moduleDir, 'theme');
+      return join(moduleDir, 'theme', 'runtime');
     },
 
     getClientModules() {

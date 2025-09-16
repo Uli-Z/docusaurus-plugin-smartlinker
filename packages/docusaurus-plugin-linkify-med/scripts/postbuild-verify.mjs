@@ -7,6 +7,7 @@ const __dirname = dirname(__filename);
 const packageDir = join(__dirname, '..');
 const distDir = join(packageDir, 'dist');
 const themeDistDir = join(distDir, 'theme');
+const runtimeDistDir = join(themeDistDir, 'runtime');
 const themeSrcDir = join(packageDir, 'src', 'theme');
 
 function assert(condition, message) {
@@ -20,11 +21,12 @@ assert(existsSync(distDir), 'dist directory is missing. Run tsc before postbuild
 const requiredFiles = [
   join(distDir, 'index.js'),
   join(distDir, 'index.d.ts'),
-  join(themeDistDir, 'Root.js'),
-  join(themeDistDir, 'SmartLink.js'),
-  join(themeDistDir, 'Tooltip.js'),
-  join(themeDistDir, 'IconResolver.js'),
-  join(themeDistDir, 'context.js'),
+  join(themeDistDir, 'index.js'),
+  join(runtimeDistDir, 'Root.js'),
+  join(runtimeDistDir, 'SmartLink.js'),
+  join(runtimeDistDir, 'Tooltip.js'),
+  join(runtimeDistDir, 'IconResolver.js'),
+  join(runtimeDistDir, 'context.js'),
 ];
 
 for (const file of requiredFiles) {

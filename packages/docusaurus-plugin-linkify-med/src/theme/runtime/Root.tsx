@@ -4,8 +4,8 @@ import { usePluginData } from '@docusaurus/useGlobalData';
 import { MDXProvider } from '@mdx-js/react';
 import { IconConfigProvider, LinkifyRegistryProvider, type LinkifyRegistry } from './context.js';
 import SmartLink from './SmartLink.js';
-import { createIconResolver, type NormalizedOptions } from '../options.js';
-import { PLUGIN_NAME } from '../pluginName.js';
+import { createIconResolver, type NormalizedOptions } from '../../options.js';
+import { PLUGIN_NAME } from '../../pluginName.js';
 import {
   registry as generatedRegistry,
   type GeneratedRegistryEntry,

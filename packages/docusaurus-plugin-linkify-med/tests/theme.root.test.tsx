@@ -2,8 +2,8 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import Root from '../src/theme/Root.js';
-import SmartLink from '../src/theme/SmartLink.js';
+import Root from '../src/theme/runtime/Root.js';
+import SmartLink from '../src/theme/runtime/SmartLink.js';
 import { PLUGIN_NAME } from '../src/pluginName.js';
 
 vi.mock('@theme-init/Root', () => ({

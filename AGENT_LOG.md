@@ -617,3 +617,17 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm -r --filter './packages/**' test`
 - `pnpm site:build`
+
+# Fix: dist theme runtime split
+
+## Summary
+
+- Moved the plugin's runtime components into `src/theme/runtime` and added a dist-facing `theme/index.ts` so the published `./theme` entry is stable while `getThemePath()` only exposes runtime files to Docusaurus.
+- Updated the postbuild verification script to require the new runtime layout, copy CSS, and verify explicit extensions after wiping `dist` before each build.
+- Adjusted package exports so `@linkify-med/docusaurus-plugin/theme/*` resolves into `dist/theme/runtime/*` while keeping `./theme/styles.css` available, and rewired tests to import from the runtime folder.
+
+## Verification
+
+- `pnpm --filter @linkify-med/docusaurus-plugin run build`
+- `pnpm -r --filter './packages/**' run test`
+- `CI=1 pnpm site:build`
