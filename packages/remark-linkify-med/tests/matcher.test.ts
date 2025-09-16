@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildMatcher, type SynonymEntry } from '../src/matcher';
+import { buildMatcher, type SynonymEntry } from '../src/matcher.js';
 
 describe('matcher basics', () => {
   it('finds all occurrences, non-overlapping, left-to-right', () => {

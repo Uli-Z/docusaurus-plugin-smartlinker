@@ -1,4 +1,4 @@
-import type { IndexRawEntry } from './types';
+import type { IndexRawEntry } from './types.js';
 
 export function distance(from: string, to: string): number {
   const fromParts = norm(from).split('/');

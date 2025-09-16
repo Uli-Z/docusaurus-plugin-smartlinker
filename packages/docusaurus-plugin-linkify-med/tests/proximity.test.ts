@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { distance, resolveCollision } from '../src/proximity';
-import type { IndexRawEntry } from '../src/types';
+import { distance, resolveCollision } from '../src/proximity.js';
+import type { IndexRawEntry } from '../src/types.js';
 
 function fakeEntry(id: string, slug: string, path: string): IndexRawEntry {
   return {

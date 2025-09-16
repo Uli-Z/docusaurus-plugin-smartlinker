@@ -1,11 +1,11 @@
 // Note: dynamic import to avoid resolving ESM-only deps at plugin load time
 
 /**
- * Result of emitting a TSX module for a given shortNote.
+ * Result of emitting an ESM module for a given shortNote.
  */
 export interface NoteModule {
-  filename: string;   // e.g., "notes/amoxicillin.tsx"
-  contents: string;   // TSX source string
+  filename: string;   // e.g., "notes/amoxicillin.js"
+  contents: string;   // ESM source string
 }
 
 /**
@@ -16,8 +16,8 @@ function safeId(id: string): string {
 }
 
 /**
- * Compile a shortNote (MDX string) into a TSX module that exports:
- *   export function ShortNote(props: { components?: Record<string, any> })
+ * Compile a shortNote (MDX string) into an ESM module that exports:
+ *   export function ShortNote(props)
  *
  * The compiled MDXContent will receive props.components as its MDX components map,
  * so that custom tags (e.g., <DrugTip/>) can be provided by the caller at render time.
@@ -57,13 +57,14 @@ import * as React from 'react';
 ${esm}
 
 // Stable wrapper API expected by the theme:
-export function ShortNote(props: { components?: Record<string, any> }) {
+export function ShortNote(props) {
+  const components = props?.components ?? {};
   // MDXContent is the default export from the compiled MDX above
-  return React.createElement(MDXContent, { components: props?.components ?? {} });
+  return React.createElement(MDXContent, { components });
 }
 `.trimStart();
 
-    const filename = `notes/${safeId(id)}.tsx`;
+    const filename = `notes/${safeId(id)}.js`;
     return { filename, contents: mod };
   } catch {
     // If MDX compilation fails (e.g., due to ESM loader issues), fall back to plain text
@@ -76,7 +77,7 @@ export function ShortNote() {
   return React.createElement(React.Fragment, null, ${text});
 }
 `.trimStart();
-    const filename = `notes/${safeId(id)}.tsx`;
+    const filename = `notes/${safeId(id)}.js`;
     return { filename, contents: mod };
   }
 }

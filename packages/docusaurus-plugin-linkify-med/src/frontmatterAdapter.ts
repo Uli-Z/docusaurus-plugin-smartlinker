@@ -1,5 +1,5 @@
-import type { RawDocFile, FrontmatterParseResult } from './types';
-import { parseFrontmatter } from './frontmatter';
+import type { RawDocFile, FrontmatterParseResult } from './types.js';
+import { parseFrontmatter } from './frontmatter.js';
 
 /**
  * Thin adapter kept for future evolution (e.g., integrating with Docusaurus content files).

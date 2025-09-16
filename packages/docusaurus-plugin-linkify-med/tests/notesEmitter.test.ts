@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import ts from 'typescript';
-import { emitShortNoteModule } from '../src/codegen/notesEmitter';
+import { emitShortNoteModule } from '../src/codegen/notesEmitter.js';
 
 function transpiles(code: string): { ok: boolean; diagnostics: string[] } {
   const res = ts.transpileModule(code, {
@@ -27,17 +27,17 @@ describe('emitShortNoteModule', () => {
     expect(m2).toBeNull();
   });
 
-  it('emits TSX for markdown-only content', async () => {
+  it('emits JS for markdown-only content', async () => {
     const note = `**Aminopenicillin.** p.o./i.v.`;
     const mod = await emitShortNoteModule('amoxicillin', note);
     expect(mod).not.toBeNull();
-    expect(mod!.filename).toBe('notes/amoxicillin.tsx');
+    expect(mod!.filename).toBe('notes/amoxicillin.js');
     expect(mod!.contents).toMatch(/export function ShortNote/);
     const tr = transpiles(mod!.contents);
     expect(tr.ok).toBe(true);
   });
 
-  it('emits TSX that forwards components for custom JSX tags', async () => {
+  it('emits JS that forwards components for custom JSX tags', async () => {
     const note = `
 **Aminopenicillin**
 <DrugTip note="Good oral bioavailability" />
@@ -46,13 +46,13 @@ describe('emitShortNoteModule', () => {
     expect(mod).not.toBeNull();
     // Should reference MDXContent and accept components prop
     expect(mod!.contents).toMatch(/React\.createElement\(MDXContent/);
-    expect(mod!.contents).toMatch(/components: props\?\._?components/);
+    expect(mod!.contents).toContain('const components = props?.components ?? {};');
     const tr = transpiles(mod!.contents);
     expect(tr.ok).toBe(true);
   });
 
   it('sanitizes filename from id', async () => {
     const mod = await emitShortNoteModule('Pip/Tazo 1.0', '**Note**');
-    expect(mod!.filename).toBe('notes/pip-tazo-1-0.tsx');
+    expect(mod!.filename).toBe('notes/pip-tazo-1-0.js');
   });
 });

@@ -24,16 +24,36 @@
   line-height: 1;
 }
 
+.lm-tooltip {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(0.25rem) scale(0.97);
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+  z-index: var(--ifm-z-index-overlay, 400);
+}
+
+.lm-tooltip[data-state='delayed-open'],
+.lm-tooltip[data-state='instant-open'] {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(-0.1rem) scale(1);
+}
+
+.lm-tooltip[data-state='closed'] {
+  visibility: hidden;
+}
+
 .lm-tooltip-content {
-  --lm-tooltip-bg: var(--ifm-color-emphasis-100);
+  --lm-tooltip-bg: var(--ifm-color-emphasis-800);
   background: var(--lm-tooltip-bg);
-  color: var(--ifm-font-color-base-inverse);
+  color: var(--ifm-color-emphasis-0);
   padding: 0.5rem 0.75rem;
   border-radius: 4px;
   box-shadow: var(--ifm-global-shadow-md);
   font-size: 0.875rem;
+  max-width: min(90vw, 32rem);
 }
 
-.lm-tooltip-content + svg {
+.lm-tooltip-arrow {
   fill: var(--lm-tooltip-bg);
 }

@@ -1,7 +1,7 @@
-import type { RawDocFile, IndexRawEntry } from '../types';
-import { parseFrontmatter } from '../frontmatter';
-import { emitShortNoteModule, type NoteModule } from '../codegen/notesEmitter';
-import { emitRegistry, type RegistryModule } from '../codegen/registryEmitter';
+import type { RawDocFile, IndexRawEntry } from '../types.js';
+import { parseFrontmatter } from '../frontmatter.js';
+import { emitShortNoteModule, type NoteModule } from '../codegen/notesEmitter.js';
+import { emitRegistry, type RegistryModule } from '../codegen/registryEmitter.js';
 
 /**
  * Pure build pipeline used by the plugin:
@@ -27,7 +27,7 @@ export async function buildArtifacts(files: RawDocFile[]): Promise<BuildArtifact
     }
   }
 
-  // Emit registry (imports will refer to the emitted `notes/<id>.tsx`)
+  // Emit registry (imports will refer to the emitted `notes/<id>.js`)
   const registry = emitRegistry(entries, notes);
 
   return { entries, notes, registry };

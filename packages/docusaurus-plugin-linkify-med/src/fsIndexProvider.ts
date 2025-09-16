@@ -1,5 +1,5 @@
-import { scanMdFiles } from './node/fsScan';
-import { loadIndexFromFiles } from './frontmatterAdapter';
+import { scanMdFiles } from './node/fsScan.js';
+import { loadIndexFromFiles } from './frontmatterAdapter.js';
 
 export interface FsIndexProviderOptions {
   roots: string[]; // absolute directories to scan

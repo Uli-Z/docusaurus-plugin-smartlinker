@@ -1,62 +1,73 @@
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Plugin } from '@docusaurus/types';
 import type { LoadContext, PluginContentLoadedActions } from '@docusaurus/types';
-import { validateOptions, type PluginOptions, type NormalizedOptions } from './options';
-import { scanMdFiles } from './node/fsScan';
-import { buildArtifacts } from './node/buildPipeline';
+import { validateOptions, type PluginOptions, type NormalizedOptions } from './options.js';
+import { scanMdFiles } from './node/fsScan.js';
+import { buildArtifacts } from './node/buildPipeline.js';
+import type { IndexRawEntry } from './types.js';
+import type { NoteModule } from './codegen/notesEmitter.js';
+import type { RegistryModule } from './codegen/registryEmitter.js';
+import { PLUGIN_NAME } from './pluginName.js';
 
 export type {
   FsIndexProviderOptions,
   IndexProvider,
   TargetInfo,
-} from './fsIndexProvider';
-export { createFsIndexProvider } from './fsIndexProvider';
+} from './fsIndexProvider.js';
+export { createFsIndexProvider } from './fsIndexProvider.js';
+export { PLUGIN_NAME } from './pluginName.js';
 
-export type { PluginOptions } from './options';
+export type { PluginOptions } from './options.js';
 
 type Content = {
-  noteFiles: string[];
-  registryFile: string;
+  entries: IndexRawEntry[];
+  notes: NoteModule[];
+  registry: RegistryModule;
   opts: NormalizedOptions;
 };
+
+const moduleDir = dirname(fileURLToPath(import.meta.url));
+const pluginName = PLUGIN_NAME;
 
 export default function linkifyMedPlugin(_context: LoadContext, optsIn?: PluginOptions): Plugin<Content> {
   const { options: normOpts } = validateOptions(optsIn);
 
   return {
-    name: 'docusaurus-plugin-linkify-med',
+    name: pluginName,
 
     async loadContent() {
       const roots = [_context.siteDir];
       const files = scanMdFiles({ roots });
-      const { notes, registry } = await buildArtifacts(files);
+      const { entries, notes, registry } = await buildArtifacts(files);
 
       return {
-        noteFiles: notes.map(n => n.filename),
-        registryFile: registry.filename,
+        entries,
+        notes,
+        registry,
         opts: normOpts,
-      } as Content;
+      } satisfies Content;
     },
 
     async contentLoaded({ content, actions }: { content: Content; actions: PluginContentLoadedActions }) {
       if (!content) return;
-      const roots = [_context.siteDir];
-      const files = scanMdFiles({ roots });
-      const { notes, registry } = await buildArtifacts(files);
+      const { notes, registry, entries, opts } = content;
 
       for (const note of notes) {
         await actions.createData(note.filename, note.contents);
       }
       await actions.createData(registry.filename, registry.contents);
 
-      actions.setGlobalData({ options: content.opts });
+      const registryMeta = entries.map(({ id, slug, icon }) => ({ id, slug, icon }));
+      actions.setGlobalData({ options: opts, entries: registryMeta });
     },
 
     getThemePath() {
-      return './src/theme';
+      return join(moduleDir, 'theme', 'runtime');
     },
 
     getClientModules() {
-      return [];
+      return [join(moduleDir, 'theme/styles.css')];
     },
   };
 }

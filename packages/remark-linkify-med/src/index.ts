@@ -1,3 +1,3 @@
-import plugin from './transform';
+import plugin from './transform.js';
 export default plugin;
-export * from './matcher';
+export * from './matcher.js';

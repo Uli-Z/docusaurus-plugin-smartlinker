@@ -617,3 +617,30 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm -r --filter './packages/**' test`
 - `pnpm site:build`
+
+# Fix: dist theme runtime split
+
+## Summary
+
+- Moved the plugin's runtime components into `src/theme/runtime` and added a dist-facing `theme/index.ts` so the published `./theme` entry is stable while `getThemePath()` only exposes runtime files to Docusaurus.
+- Updated the postbuild verification script to require the new runtime layout, copy CSS, and verify explicit extensions after wiping `dist` before each build.
+- Adjusted package exports so `@linkify-med/docusaurus-plugin/theme/*` resolves into `dist/theme/runtime/*` while keeping `./theme/styles.css` available, and rewired tests to import from the runtime folder.
+
+## Verification
+
+- `pnpm --filter @linkify-med/docusaurus-plugin run build`
+- `pnpm -r --filter './packages/**' run test`
+- `CI=1 pnpm site:build`
+
+# Fix: tooltip visibility and styling
+
+## Summary
+
+- Added a dedicated `.lm-tooltip` wrapper class in the runtime Tooltip component so Radix content can be hidden by default, and passed consistent portal offsets plus arrow styling hooks.
+- Restyled tooltip CSS to gate visibility via data-state, animate entry slightly, and use high-contrast theme tokens for background and text so notes are readable in light and dark modes.
+
+## Verification
+
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm -r run test`
+- `pnpm --filter @examples/site run build`

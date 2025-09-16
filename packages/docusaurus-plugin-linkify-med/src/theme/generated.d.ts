@@ -1,4 +1,11 @@
-declare module '@generated/docusaurus-plugin-linkify-med/registry' {
-  export const registry: Record<string, any>;
+declare module '@generated/docusaurus-plugin-linkify-med/default/registry' {
+  import type { ComponentType } from 'react';
+  export interface GeneratedRegistryEntry {
+    id: string;
+    slug: string;
+    icon?: string;
+    ShortNote?: ComponentType<{ components?: Record<string, unknown> }>;
+  }
+  export const registry: Record<string, GeneratedRegistryEntry>;
 }
 

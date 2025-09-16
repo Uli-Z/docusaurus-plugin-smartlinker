@@ -1,7 +1,7 @@
 import React from 'react';
-import Tooltip from './Tooltip';
-import IconResolver from './IconResolver';
-import { LinkifyRegistryContext } from './context';
+import Tooltip from './Tooltip.js';
+import IconResolver from './IconResolver.js';
+import { LinkifyRegistryContext } from './context.js';
 
 export interface SmartLinkProps extends React.PropsWithChildren {
   to: string;          // slug
@@ -70,7 +70,13 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
 
   // We wrap trigger as the anchor itself for desktop hover/focus
   const trigger = (
-    <a href={to} className="lm-smartlink" onClick={onAnchorClick} onBlur={close}>
+    <a
+      href={to}
+      className="lm-smartlink"
+      data-tipkey={tipKey ?? undefined}
+      onClick={onAnchorClick}
+      onBlur={close}
+    >
       <span className="lm-smartlink__text">{children}</span>
       {iconNode}
     </a>

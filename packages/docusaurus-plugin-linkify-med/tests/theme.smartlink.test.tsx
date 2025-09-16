@@ -2,8 +2,8 @@ import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import SmartLink from '../src/theme/SmartLink';
-import { LinkifyRegistryProvider, IconConfigProvider } from '../src/theme/context';
+import SmartLink from '../src/theme/runtime/SmartLink.js';
+import { LinkifyRegistryProvider, IconConfigProvider } from '../src/theme/runtime/context.js';
 
 function setup(ui: React.ReactNode, { registry = {}, iconApi } = {} as any) {
   const api = iconApi ?? {
@@ -29,6 +29,7 @@ describe('SmartLink (theme)', () => {
     );
     const a = screen.getByRole('link', { name: /Amoxi/ });
     expect(a).toHaveAttribute('href', '/antibiotics/amoxicillin');
+    expect(a).toHaveAttribute('data-tipkey', 'amoxicillin');
 
     // The icon img should be present and logically after text in DOM order
     const text = screen.getByText('Amoxi');
@@ -45,6 +46,7 @@ describe('SmartLink (theme)', () => {
       { registry: { amoxicillin: { id: 'amoxicillin', slug: '/x', icon: 'pill', ShortNote: Note } } }
     );
     const link = screen.getByRole('link', { name: /Amoxi/ });
+    expect(link).toHaveAttribute('data-tipkey', 'amoxicillin');
     // hover
     await userEvent.hover(link);
     // content should appear (Radix may render multiple nodes)
