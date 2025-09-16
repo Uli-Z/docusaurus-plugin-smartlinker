@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Root from '../src/theme/runtime/Root.js';
 import SmartLink from '../src/theme/runtime/SmartLink.js';
+import LinkifyShortNote from '../src/theme/runtime/LinkifyShortNote.js';
 import { PLUGIN_NAME } from '../src/pluginName.js';
 
 vi.mock('@theme-init/Root', () => ({
@@ -59,5 +60,16 @@ describe('theme Root provider', () => {
     const notes = await screen.findAllByTestId('shortnote');
     expect(notes.length).toBeGreaterThan(0);
     expect(notes[0]).toHaveTextContent('Short note!');
+  });
+
+  it('exposes LinkifyShortNote through the MDX provider', () => {
+    render(
+      <Root>
+        <LinkifyShortNote tipKey="amoxicillin" />
+      </Root>
+    );
+
+    const note = screen.getByTestId('shortnote');
+    expect(note).toHaveTextContent('Short note!');
   });
 });

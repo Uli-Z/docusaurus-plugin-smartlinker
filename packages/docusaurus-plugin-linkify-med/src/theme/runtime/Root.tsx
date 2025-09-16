@@ -4,6 +4,7 @@ import { usePluginData } from '@docusaurus/useGlobalData';
 import { MDXProvider } from '@mdx-js/react';
 import { IconConfigProvider, LinkifyRegistryProvider, type LinkifyRegistry } from './context.js';
 import SmartLink from './SmartLink.js';
+import LinkifyShortNote from './LinkifyShortNote.js';
 import { createIconResolver, type NormalizedOptions } from '../../options.js';
 import { PLUGIN_NAME } from '../../pluginName.js';
 import { generatedRegistry, type GeneratedRegistryEntry } from './generatedRegistry.js';
@@ -39,7 +40,7 @@ function Providers({ children }: { children: React.ReactNode }) {
   return (
     <IconConfigProvider api={iconApi}>
       <LinkifyRegistryProvider registry={registryValue}>
-        <MDXProvider components={{ SmartLink }}>{children}</MDXProvider>
+        <MDXProvider components={{ SmartLink, LinkifyShortNote }}>{children}</MDXProvider>
       </LinkifyRegistryProvider>
     </IconConfigProvider>
   );
