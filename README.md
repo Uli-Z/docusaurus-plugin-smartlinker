@@ -49,6 +49,39 @@ For example, a site can round the surface and brighten the tooltip background by
   --lm-tooltip-radius: 0.75rem;
   --lm-tooltip-padding: 0.75rem 1rem;
 }
+
+## Styling & Swizzle
+
+Override the default look and feel by targeting the SmartLink and tooltip hooks from a site-level stylesheet such as `src/css/custom.css`.
+
+```css
+/* src/css/custom.css */
+:root {
+  --lm-tooltip-bg: #1d1f4f;
+}
+
+.lm-tooltip-content {
+  background: var(--lm-tooltip-bg);
+  color: var(--ifm-color-white);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.lm-tooltip-arrow {
+  fill: var(--lm-tooltip-bg);
+}
+
+.lm-smartlink__iconwrap {
+  display: none;
+}
+```
+
+For deeper React customisations swizzle the runtime components and wire in your own versions.  The SmartLink and Tooltip entry points are exposed by the plugin:
+
+```bash
+npx docusaurus swizzle docusaurus-plugin-linkify-med Tooltip
+npx docusaurus swizzle docusaurus-plugin-linkify-med SmartLink
 ```
 
 ## Swizzle notes
