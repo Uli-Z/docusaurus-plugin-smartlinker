@@ -1,7 +1,7 @@
 import React from 'react';
 import Root from '@theme-init/Root';
 import { usePluginData } from '@docusaurus/useGlobalData';
-import { MDXProvider } from '@mdx-js/react';
+import { MDXProvider, useMDXComponents } from '@mdx-js/react';
 import { IconConfigProvider, LinkifyRegistryProvider, type LinkifyRegistry } from './context.js';
 import SmartLink from './SmartLink.js';
 import { createIconResolver, type NormalizedOptions } from '../../options.js';
@@ -21,6 +21,15 @@ function Providers({ children }: { children: React.ReactNode }) {
   const data = usePluginData<PluginData | null>(pluginName) ?? null;
   const normalizedOptions = data?.options ?? EMPTY_OPTIONS;
   const iconApi = React.useMemo(() => createIconResolver(normalizedOptions), [normalizedOptions]);
+  const existingComponents = useMDXComponents();
+  const mdxComponents = React.useMemo<Record<string, React.ComponentType<any>>>(
+    () => ({
+      ...existingComponents,
+      ...tooltipComponents,
+      SmartLink,
+    }),
+    [existingComponents],
+  );
 
   const registryValue = React.useMemo<LinkifyRegistry>(() => {
     const entries = data?.entries ?? [];
@@ -40,13 +49,7 @@ function Providers({ children }: { children: React.ReactNode }) {
   return (
     <IconConfigProvider api={iconApi}>
       <LinkifyRegistryProvider registry={registryValue}>
-        <MDXProvider
-          components={(existing) => ({
-            ...existing,
-            ...tooltipComponents,
-            SmartLink,
-          })}
-        >
+        <MDXProvider components={mdxComponents}>
           {children}
         </MDXProvider>
       </LinkifyRegistryProvider>
