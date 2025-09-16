@@ -10,6 +10,26 @@ The Docusaurus theme now ships from the compiled `dist/theme` directory.  All ru
 
 `@linkify-med/docusaurus-plugin` wires its providers in `@theme/Root`.  The plugin injects `<SmartLink>` into the global `MDXProvider`, so MDX content can use `<SmartLink>` without local imports or swizzle overrides.
 
+## Tooltip content
+
+Short notes defined in frontmatter are compiled as MDX. This enables Markdown formatting inside the tooltip (for example `**bold**`, lists, and links) and supports custom React components. Register tooltip components in the plugin options so they are available while rendering MDX:
+
+```ts
+plugins: [
+  [
+    '@linkify-med/docusaurus-plugin',
+    {
+      icons: { pill: 'emoji:💊' },
+      tooltipComponents: {
+        DrugTip: '@site/src/components/DrugTip',
+      },
+    },
+  ],
+];
+```
+
+With this configuration a short note can use `<DrugTip note="Take with food" />` alongside Markdown syntax and the tooltip will render the component.
+
 ## CSS loading
 
 The plugin exposes its CSS via `getClientModules()`.  When the plugin is enabled Docusaurus automatically loads `dist/theme/styles.css`, no manual stylesheet import is required.

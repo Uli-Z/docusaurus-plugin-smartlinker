@@ -7,9 +7,10 @@ import SmartLink from './SmartLink.js';
 import { createIconResolver, type NormalizedOptions } from '../../options.js';
 import { PLUGIN_NAME } from '../../pluginName.js';
 import { generatedRegistry, type GeneratedRegistryEntry } from './generatedRegistry.js';
+import { tooltipComponents } from './generatedTooltipComponents.js';
 
 const pluginName = PLUGIN_NAME;
-const EMPTY_OPTIONS: NormalizedOptions = { icons: {} };
+const EMPTY_OPTIONS: NormalizedOptions = { icons: {}, tooltipComponents: {} };
 
 type PluginData = {
   options: NormalizedOptions;
@@ -39,7 +40,15 @@ function Providers({ children }: { children: React.ReactNode }) {
   return (
     <IconConfigProvider api={iconApi}>
       <LinkifyRegistryProvider registry={registryValue}>
-        <MDXProvider components={{ SmartLink }}>{children}</MDXProvider>
+        <MDXProvider
+          components={(existing) => ({
+            ...existing,
+            ...tooltipComponents,
+            SmartLink,
+          })}
+        >
+          {children}
+        </MDXProvider>
       </LinkifyRegistryProvider>
     </IconConfigProvider>
   );

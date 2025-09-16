@@ -1,4 +1,5 @@
 import React from 'react';
+import { useMDXComponents } from '@mdx-js/react';
 import Tooltip from './Tooltip.js';
 import IconResolver from './IconResolver.js';
 import { LinkifyRegistryContext } from './context.js';
@@ -20,6 +21,7 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   const registry = React.useContext(LinkifyRegistryContext);
   const Entry = tipKey && registry ? registry[tipKey] : undefined;
   const Short = Entry?.ShortNote;
+  const mdxComponents = useMDXComponents();
 
   // Mobile detection (rough): browsers that don't support hover
   const [isHoverCapable, setIsHoverCapable] = React.useState(true);
@@ -38,7 +40,7 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   const close = React.useCallback(() => setOpen(false), []);
 
   // Tooltip content: render ShortNote if available; otherwise no tooltip
-  const content = Short ? <Short /> : undefined;
+  const content = Short ? <Short components={mdxComponents} /> : undefined;
 
   // Anchor onClick should close tooltip on navigation
   const onAnchorClick: React.MouseEventHandler<HTMLAnchorElement> = () => {

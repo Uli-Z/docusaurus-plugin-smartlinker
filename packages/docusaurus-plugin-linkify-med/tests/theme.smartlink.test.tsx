@@ -1,25 +1,51 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
+import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MDXProvider } from '@mdx-js/react';
 import SmartLink from '../src/theme/runtime/SmartLink.js';
 import { LinkifyRegistryProvider, IconConfigProvider } from '../src/theme/runtime/context.js';
+import { emitShortNoteModule } from '../src/codegen/notesEmitter.js';
 
-function setup(ui: React.ReactNode, { registry = {}, iconApi } = {} as any) {
+function setup(
+  ui: React.ReactNode,
+  { registry = {}, iconApi, mdxComponents }: any = {}
+) {
   const api = iconApi ?? {
     resolveIconSrc: (id: string, mode: 'light'|'dark') => `/img/${id}-${mode}.svg`,
     iconProps: { width: 14, height: 14 }
   };
+  const wrapped = mdxComponents
+    ? <MDXProvider components={mdxComponents}>{ui}</MDXProvider>
+    : ui;
   return render(
     <IconConfigProvider api={api}>
       <LinkifyRegistryProvider registry={registry}>
-        {ui}
+        {wrapped}
       </LinkifyRegistryProvider>
     </IconConfigProvider>
   );
 }
 
 const Note: React.FC = () => <div data-testid="tooltip-note">Note!</div>;
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+async function loadShortNoteComponent(mod: { filename: string; contents: string }) {
+  const baseDir = join(__dirname, '.tmp');
+  await mkdir(baseDir, { recursive: true });
+  const tmpDir = await mkdtemp(join(baseDir, 'note-'));
+  await writeFile(join(tmpDir, 'package.json'), JSON.stringify({ type: 'module' }));
+  const absPath = join(tmpDir, mod.filename);
+  await mkdir(dirname(absPath), { recursive: true });
+  await writeFile(absPath, mod.contents, 'utf8');
+  const url = `${pathToFileURL(absPath).href}?t=${Date.now()}`;
+  const imported = await import(/* @vite-ignore */ url);
+  return imported.ShortNote as React.ComponentType<any>;
+}
 
 describe('SmartLink (theme)', () => {
   it('renders icon after text and anchor href equals slug', () => {
@@ -91,6 +117,43 @@ describe('SmartLink (theme)', () => {
     // there should be no tooltip content rendered
     const tip = screen.queryByTestId('tooltip-note');
     expect(tip).toBeNull();
+  });
+
+  it('renders markdown and custom components within tooltip content', async () => {
+    const short = await emitShortNoteModule(
+      'amoxicillin',
+      `**Aminopenicillin.** [Visit link](https://example.com)\n<DrugTip note="Take with food" />`
+    );
+    expect(short).not.toBeNull();
+    const ShortNote = await loadShortNoteComponent(short!);
+
+    const DrugTip: React.FC<{ note: string }> = ({ note }) => (
+      <div data-testid="drug-tip">
+        <strong>Tip:</strong> {note}
+      </div>
+    );
+
+    setup(
+      <SmartLink to="/x" icon="pill" tipKey="amoxicillin">Amoxi</SmartLink>,
+      {
+        registry: {
+          amoxicillin: { id: 'amoxicillin', slug: '/x', icon: 'pill', ShortNote },
+        },
+        mdxComponents: { DrugTip },
+      }
+    );
+
+    const link = screen.getByRole('link', { name: /Amoxi/ });
+    await userEvent.hover(link);
+
+    const bold = await screen.findAllByText('Aminopenicillin.', { selector: 'strong' });
+    expect(bold.length).toBeGreaterThan(0);
+
+    const tooltipLink = await screen.findAllByRole('link', { name: 'Visit link' });
+    expect(tooltipLink[0]).toHaveAttribute('href', 'https://example.com');
+
+    const custom = await screen.findAllByTestId('drug-tip');
+    expect(custom[0]).toHaveTextContent('Take with food');
   });
 
   it('icon resolver uses dark/light paths', () => {

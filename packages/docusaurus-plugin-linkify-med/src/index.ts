@@ -8,6 +8,7 @@ import { buildArtifacts } from './node/buildPipeline.js';
 import type { IndexRawEntry } from './types.js';
 import type { NoteModule } from './codegen/notesEmitter.js';
 import type { RegistryModule } from './codegen/registryEmitter.js';
+import { emitTooltipComponentsModule } from './codegen/tooltipComponentsEmitter.js';
 import { PLUGIN_NAME } from './pluginName.js';
 
 export type {
@@ -57,6 +58,14 @@ export default function linkifyMedPlugin(_context: LoadContext, optsIn?: PluginO
         await actions.createData(note.filename, note.contents);
       }
       await actions.createData(registry.filename, registry.contents);
+
+      const tooltipComponentsModule = emitTooltipComponentsModule(
+        opts.tooltipComponents ?? {}
+      );
+      await actions.createData(
+        tooltipComponentsModule.filename,
+        tooltipComponentsModule.contents
+      );
 
       const registryMeta = entries.map(({ id, slug, icon }) => ({ id, slug, icon }));
       actions.setGlobalData({ options: opts, entries: registryMeta });

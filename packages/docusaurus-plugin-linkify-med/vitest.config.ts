@@ -20,6 +20,10 @@ export default defineConfig({
         __dirname,
         'tests/mocks/generatedRegistry.ts'
       ),
+      '@generated/docusaurus-plugin-linkify-med/default/tooltipComponents': resolve(
+        __dirname,
+        'tests/mocks/generatedTooltipComponents.ts'
+      ),
     },
   },
 });

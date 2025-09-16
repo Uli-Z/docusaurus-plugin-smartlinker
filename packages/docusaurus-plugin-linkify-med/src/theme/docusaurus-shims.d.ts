@@ -14,6 +14,11 @@ declare module '@mdx-js/react' {
     children?: ReactNode;
   }
   export const MDXProvider: ComponentType<MDXProviderProps>;
+  export function useMDXComponents(
+    components?:
+      | Record<string, ComponentType<any>>
+      | ((current: Record<string, ComponentType<any>>) => Record<string, ComponentType<any>>)
+  ): Record<string, ComponentType<any>>;
 }
 
 declare module '@theme/SmartLink' {
