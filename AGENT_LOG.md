@@ -631,3 +631,16 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm --filter @linkify-med/docusaurus-plugin run build`
 - `pnpm -r --filter './packages/**' run test`
 - `CI=1 pnpm site:build`
+
+# Fix: tooltip visibility and styling
+
+## Summary
+
+- Added a dedicated `.lm-tooltip` wrapper class in the runtime Tooltip component so Radix content can be hidden by default, and passed consistent portal offsets plus arrow styling hooks.
+- Restyled tooltip CSS to gate visibility via data-state, animate entry slightly, and use high-contrast theme tokens for background and text so notes are readable in light and dark modes.
+
+## Verification
+
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm -r run test`
+- `pnpm --filter @examples/site run build`

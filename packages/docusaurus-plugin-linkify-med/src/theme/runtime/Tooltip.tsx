@@ -45,17 +45,19 @@ export default function Tooltip({
             {/* SmartLink will wrap proper trigger element */}
             {children}
           </RT.Trigger>
-          <RT.Portal forceMount>
+          <RT.Portal>
             <RT.Content
-              forceMount
+              className="lm-tooltip"
               side="top"
               align="center"
-              style={{ maxWidth, zIndex: 50 }}
+              sideOffset={8}
+              collisionPadding={8}
+              style={{ maxWidth }}
             >
               <div className="lm-tooltip-content">
                 {content}
               </div>
-              <RT.Arrow />
+              <RT.Arrow className="lm-tooltip-arrow" />
             </RT.Content>
           </RT.Portal>
         </RT.Root>
