@@ -1,6 +1,30 @@
 ---
 id: smartlink-demo
 title: SmartLink Demo
+sidebar_position: 4
 ---
 
-This demo shows how terms like Amoxi and Cdiff automatically link to their reference pages.
+# SmartLink Demo
+
+This walkthrough illustrates how a single paragraph referencing Amoxi and Cdiff is
+instantly upgraded with contextual links.
+
+## Step-by-step tour
+
+1. Authors write natural language instructions that mention treatments and pathogens.
+2. The Linkify-Med plugin scans the text, matching terms such as **Amoxicillin** or **Cdiff**.
+3. Matching phrases are wrapped with rich links that surface icons, quick notes, and
+   shortcut navigation to deeper documentation.
+
+:::tip No manual markup required
+The underlying Markdown files remain clean. The plugin injects links and previews
+on the fly based on your vocabulary configuration.
+:::
+
+## Combined example
+
+> Continue Amoxi for 5 days and monitor closely for signs of Clostridioides difficile.
+
+In the published site, the snippet above produces two interactive anchors — one for the
+antibiotic and another for the infection. Readers can then jump into the related
+reference sheets for dosing recommendations or infection-control protocols.
