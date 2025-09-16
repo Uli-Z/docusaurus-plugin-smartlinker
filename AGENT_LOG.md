@@ -658,3 +658,15 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm -r --filter './packages/**' run test`
 - `pnpm site:build`
+
+# Status Sync — Plan aktualisiert
+
+## Summary
+
+- `AGENT_PLAN.md` angepasst: Milestone 11 als abgeschlossen markiert und festgehalten, dass der Remark-Einsatz jetzt über einen FS-basierten IndexProvider ohne Registry-Kopplung läuft.
+- Milestone 12 konkretisiert: Fokus auf vollwertige Docs-Struktur im Beispielprojekt, inklusive Sidebar, mehreren Demo-Dokumenten und manueller SmartLink-Prüfung nach dem Build.
+
+## Nächste Schritte
+
+- Aufbau der Docs-Inhalte und Navigationsstruktur für Milestone 12 umsetzen.
+- Nach jedem größeren Schritt `pnpm site:build` ausführen und SmartLinks (Tooltip, Icons, Navigation) manuell prüfen.
