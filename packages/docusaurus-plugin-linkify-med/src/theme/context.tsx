@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type ShortNoteComponent = React.FC<{ components?: Record<string, any> }>;
+export type ShortNoteComponent = React.ComponentType<{ components?: Record<string, any> }>;
 
 export interface RegistryEntry {
   id: string;

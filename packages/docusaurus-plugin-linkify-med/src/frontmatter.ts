@@ -1,6 +1,11 @@
 import matter from 'gray-matter';
 import { z } from 'zod';
-import type { RawDocFile, FrontmatterParseResult, IndexRawEntry, FrontmatterWarning } from './types';
+import type {
+  RawDocFile,
+  FrontmatterParseResult,
+  IndexRawEntry,
+  FrontmatterWarning,
+} from './types.js';
 
 const SupportedExt = new Set(['.md', '.mdx']);
 

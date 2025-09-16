@@ -3,21 +3,17 @@
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
-    },
-    "./theme/*": "./src/theme/*"
+    ".": "./dist/index.js",
+    "./theme": "./dist/theme/index.js",
+    "./theme/*": "./dist/theme/*"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && node ./scripts/build-cjs.js",
+    "build": "tsc -p tsconfig.json && node ./scripts/postbuild-verify.mjs",
     "test": "vitest run"
   },
   "vitest": {
@@ -37,6 +33,7 @@
     "react-dom": "^18.2.0"
   },
   "dependencies": {
+    "@mdx-js/react": "^3.1.1",
     "@mdx-js/mdx": "^3.1.1",
     "@radix-ui/react-tooltip": "^1.2.8",
     "gray-matter": "^4.0.3",

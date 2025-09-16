@@ -1,5 +1,5 @@
-import type { IndexRawEntry } from '../types';
-import type { NoteModule } from './notesEmitter';
+import type { IndexRawEntry } from '../types.js';
+import type { NoteModule } from './notesEmitter.js';
 
 export interface TooltipEntry {
   id: string;
@@ -27,7 +27,7 @@ export function emitRegistry(
   // Create quick lookup from filename base → NoteModule
   const noteById = new Map<string, NoteModule>();
   for (const m of noteModules) {
-    const base = m.filename.replace(/^notes\//, '').replace(/\.tsx$/, '');
+    const base = m.filename.replace(/^notes\//, '').replace(/\.js$/, '');
     noteById.set(base, m);
   }
 
@@ -45,12 +45,13 @@ export function emitRegistry(
       shortNoteField = `ShortNote: ${importName},`;
     }
 
+    const iconField = e.icon ? `    icon: "${e.icon}",\n` : '';
+    const shortField = shortNoteField ? `    ${shortNoteField}\n` : '';
+
     records.push(`  "${e.id}": {
     id: "${e.id}",
     slug: "${e.slug}",
-    ${e.icon ? `icon: "${e.icon}",` : ''}
-    ${shortNoteField}
-  }`);
+${iconField}${shortField}  }`);
   }
 
   const mod = `
@@ -58,18 +59,11 @@ export function emitRegistry(
 import * as React from 'react';
 ${imports.join('\n')}
 
-export interface TooltipEntry {
-  id: string;
-  slug: string;
-  icon?: string;
-  ShortNote?: React.FC<{ components?: Record<string, any> }>;
-}
-
-export const registry: Record<string, TooltipEntry> = {
+export const registry = {
 ${records.join(',\n')}
 };
 `.trimStart();
 
-  return { filename: 'registry.tsx', contents: mod };
+  return { filename: 'registry.js', contents: mod };
 }
 

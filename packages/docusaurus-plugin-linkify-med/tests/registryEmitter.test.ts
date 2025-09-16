@@ -1,9 +1,9 @@
 
 import { describe, it, expect } from 'vitest';
 import ts from 'typescript';
-import { emitRegistry } from '../src/codegen/registryEmitter';
-import type { IndexRawEntry } from '../src/types';
-import type { NoteModule } from '../src/codegen/notesEmitter';
+import { emitRegistry } from '../src/codegen/registryEmitter.js';
+import type { IndexRawEntry } from '../src/types.js';
+import type { NoteModule } from '../src/codegen/notesEmitter.js';
 
 function transpiles(code: string): boolean {
   const res = ts.transpileModule(code, {
@@ -24,13 +24,14 @@ describe('emitRegistry', () => {
   ];
 
   const noteModules: NoteModule[] = [
-    { filename: 'notes/amoxicillin.tsx', contents: '// dummy' }
+    { filename: 'notes/amoxicillin.js', contents: '// dummy' }
   ];
 
   it('emits imports and registry entries with ShortNote when available', () => {
     const { filename, contents } = emitRegistry(entries, noteModules);
-    expect(filename).toBe('registry.tsx');
+    expect(filename).toBe('registry.js');
     expect(contents).toMatch(/import { ShortNote as ShortNote_amoxicillin }/);
+    expect(contents).toContain("'./notes/amoxicillin.js'");
     expect(contents).toMatch(/"amoxicillin": \{[^}]*ShortNote:/s);
     expect(contents).toMatch(/"vancomycin": \{/);
     expect(transpiles(contents)).toBe(true);

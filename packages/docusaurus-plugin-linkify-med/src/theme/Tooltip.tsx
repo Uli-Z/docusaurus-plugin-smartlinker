@@ -30,26 +30,36 @@ export default function Tooltip({
   if (!content) {
     return <>{children}</>;
   }
+  const isBrowser = typeof window !== 'undefined';
+
   return (
-    <RT.Provider delayDuration={delayDuration} skipDelayDuration={0}>
-      <RT.Root open={open} onOpenChange={onOpenChange}>
-        <RT.Trigger asChild>
-          {/* SmartLink will wrap proper trigger element */}
-          {children}
-        </RT.Trigger>
-        <RT.Portal>
-          <RT.Content
-            side="top"
-            align="center"
-            style={{ maxWidth, zIndex: 50 }}
-          >
-            <div className="lm-tooltip-content">
-              {content}
-            </div>
-            <RT.Arrow />
-          </RT.Content>
-        </RT.Portal>
-      </RT.Root>
-    </RT.Provider>
+    <>
+      {!isBrowser && (
+        <div className="lm-tooltip-content" data-ssr-hidden="true" style={{ display: 'none' }}>
+          {content}
+        </div>
+      )}
+      <RT.Provider delayDuration={delayDuration} skipDelayDuration={0}>
+        <RT.Root open={open} onOpenChange={onOpenChange}>
+          <RT.Trigger asChild>
+            {/* SmartLink will wrap proper trigger element */}
+            {children}
+          </RT.Trigger>
+          <RT.Portal forceMount>
+            <RT.Content
+              forceMount
+              side="top"
+              align="center"
+              style={{ maxWidth, zIndex: 50 }}
+            >
+              <div className="lm-tooltip-content">
+                {content}
+              </div>
+              <RT.Arrow />
+            </RT.Content>
+          </RT.Portal>
+        </RT.Root>
+      </RT.Provider>
+    </>
   );
 }

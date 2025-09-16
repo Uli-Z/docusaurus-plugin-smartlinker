@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadIndexFromFiles } from '../src/frontmatterAdapter';
-import type { RawDocFile } from '../src/types';
+import { loadIndexFromFiles } from '../src/frontmatterAdapter.js';
+import type { RawDocFile } from '../src/types.js';
 
 function fx(name: string): string {
   return readFileSync(join(__dirname, 'fixtures', 'docs', name), 'utf8');

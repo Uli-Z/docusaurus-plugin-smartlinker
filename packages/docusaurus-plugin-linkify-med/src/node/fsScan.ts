@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import type { RawDocFile } from '../types';
+import type { RawDocFile } from '../types.js';
 
 const IGNORE = new Set(['node_modules', '.docusaurus', 'build', '.git']);
 

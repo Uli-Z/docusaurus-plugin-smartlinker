@@ -42,7 +42,10 @@ const config: Config = {
   ],
   plugins: [
     ['@linkify-med/docusaurus-plugin', {
-      icons: { pill: 'emoji:💊' }
+      icons: {
+        pill: 'emoji:💊',
+        bug: '/img/bug.svg',
+      }
     }]
   ],
 };

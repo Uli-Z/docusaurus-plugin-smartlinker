@@ -3,7 +3,7 @@ import { visit, SKIP } from 'unist-util-visit';
 import { toString } from 'mdast-util-to-string';
 import type { Parent } from 'unist';
 import type { Content, Root, Text, PhrasingContent } from 'mdast';
-import { buildMatcher, type SynonymEntry } from './matcher';
+import { buildMatcher, type SynonymEntry } from './matcher.js';
 
 export interface TargetInfo {
   id: string;

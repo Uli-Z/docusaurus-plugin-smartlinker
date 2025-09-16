@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateOptions, createIconResolver } from '../src/options';
+import { validateOptions, createIconResolver } from '../src/options.js';
 
 describe('options validation', () => {
   it('warns on empty icons map and accepts minimal config', () => {

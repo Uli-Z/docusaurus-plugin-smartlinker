@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconConfigContext } from './context';
+import { IconConfigContext } from './context.js';
 
 export interface IconResolverProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'id' | 'src' | 'alt'> {
   iconId?: string | null;

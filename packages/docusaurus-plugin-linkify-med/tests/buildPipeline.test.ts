@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildArtifacts } from '../src/node/buildPipeline';
+import { buildArtifacts } from '../src/node/buildPipeline.js';
 
 describe('buildArtifacts (pure pipeline)', async () => {
   it('parses entries, compiles notes, and emits registry', async () => {
@@ -28,8 +28,8 @@ Body`
     const { entries, notes, registry } = await buildArtifacts(files);
     expect(entries.map(e => e.id).sort()).toEqual(['amoxicillin', 'vancomycin']);
     expect(notes.length).toBe(1);
-    expect(notes[0].filename).toMatch(/^notes\/amoxicillin\.tsx$/);
-    expect(registry.filename).toBe('registry.tsx');
+    expect(notes[0].filename).toMatch(/^notes\/amoxicillin\.js$/);
+    expect(registry.filename).toBe('registry.js');
     expect(registry.contents).toContain('export const registry');
     expect(registry.contents).toContain('ShortNote as ShortNote_amoxicillin');
   });
