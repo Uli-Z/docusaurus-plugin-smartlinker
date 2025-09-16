@@ -1,3 +1,5 @@
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Plugin } from '@docusaurus/types';
 import type { LoadContext, PluginContentLoadedActions } from '@docusaurus/types';
 import { validateOptions, type PluginOptions, type NormalizedOptions } from './options';
@@ -18,6 +20,10 @@ type Content = {
   registryFile: string;
   opts: NormalizedOptions;
 };
+
+const moduleDirname = dirname(fileURLToPath(import.meta.url));
+const themePath = join(moduleDirname, '../src/theme');
+const tsThemePath = themePath;
 
 export default function linkifyMedPlugin(_context: LoadContext, optsIn?: PluginOptions): Plugin<Content> {
   const { options: normOpts } = validateOptions(optsIn);
@@ -52,7 +58,11 @@ export default function linkifyMedPlugin(_context: LoadContext, optsIn?: PluginO
     },
 
     getThemePath() {
-      return './src/theme';
+      return themePath;
+    },
+
+    getTypeScriptThemePath() {
+      return tsThemePath;
     },
 
     getClientModules() {

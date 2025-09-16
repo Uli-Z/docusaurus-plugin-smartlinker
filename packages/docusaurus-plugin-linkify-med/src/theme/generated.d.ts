@@ -1,4 +1,4 @@
-declare module '@generated/docusaurus-plugin-linkify-med/registry' {
+declare module '@generated/docusaurus-plugin-linkify-med/default/registry' {
   export const registry: Record<string, any>;
 }
 

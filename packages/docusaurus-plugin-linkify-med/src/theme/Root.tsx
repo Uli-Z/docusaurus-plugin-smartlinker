@@ -1,9 +1,9 @@
 import React from 'react';
-import Root from '@theme-original/Root';
+import Root from '@theme-init/Root';
 import useGlobalData from '@docusaurus/useGlobalData';
 import { IconConfigProvider, LinkifyRegistryProvider } from './context';
 import { createIconResolver, type NormalizedOptions } from '../options';
-import { registry } from '@generated/docusaurus-plugin-linkify-med/registry';
+import { registry } from '@generated/docusaurus-plugin-linkify-med/default/registry';
 import './styles.css';
 
 type GlobalData = { options: NormalizedOptions };
