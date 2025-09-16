@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SmartLink from '../src/theme/runtime/SmartLink.js';
@@ -94,20 +94,20 @@ describe('SmartLink (theme)', () => {
   });
 
   it('icon resolver uses dark/light paths', () => {
-    // pretend dark mode
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: (query: string) => ({
-        matches: query.includes('prefers-color-scheme: dark'),
-        media: query, addEventListener() {}, removeEventListener() {}, onchange: null, addListener() {}, removeListener() {}
-      })
+    const resolveIconSrc = vi.fn((id: string, mode: 'light' | 'dark') => `/img/${id}-${mode}.svg`);
+
+    const { container } = setup(<SmartLink to="/x" icon="pill">Amoxi</SmartLink>, {
+      registry: {},
+      iconApi: { resolveIconSrc, iconProps: { width: 14, height: 14 } },
     });
 
-    setup(<SmartLink to="/x" icon="pill">Amoxi</SmartLink>, {
-      registry: {}
-    });
-    const img = screen.getByRole('img', { hidden: true }) as HTMLImageElement;
-    expect(img.src).toMatch('/img/pill-dark.svg');
+    expect(resolveIconSrc).toHaveBeenCalledWith('pill', 'light');
+    expect(resolveIconSrc).toHaveBeenCalledWith('pill', 'dark');
+
+    const img = container.querySelector('img.lm-icon') as HTMLImageElement;
+    expect(img).toBeTruthy();
+    expect(img.dataset.light).toBe('/img/pill-light.svg');
+    expect(img.dataset.dark).toBe('/img/pill-dark.svg');
   });
 
   it('renders emoji when icon resolves to emoji string', () => {

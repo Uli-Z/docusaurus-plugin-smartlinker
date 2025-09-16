@@ -58,9 +58,10 @@ ${esm}
 
 // Stable wrapper API expected by the theme:
 export function ShortNote(props) {
-  const components = props?.components ?? {};
+  const { components, ...rest } = props ?? {};
+  const mdxProps = components ? { components, ...rest } : rest;
   // MDXContent is the default export from the compiled MDX above
-  return React.createElement(MDXContent, { components });
+  return React.createElement(MDXContent, mdxProps);
 }
 `.trimStart();
 

@@ -1,4 +1,6 @@
 import React from 'react';
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import ThemedImage from '@theme/ThemedImage';
 import { IconConfigContext } from './context.js';
 
 export interface IconResolverProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'id' | 'src' | 'alt'> {
@@ -11,16 +13,13 @@ export default function IconResolver({ iconId, className, ...rest }: IconResolve
   const api = React.useContext(IconConfigContext);
   if (!iconId || !api) return null;
 
-  // naive prefers-light; could read prefers-color-scheme if needed
-  const mode: 'light' | 'dark' =
-    typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
-  const src = api.resolveIconSrc(iconId, mode);
-  if (!src) return null;
+  const lightSrcRaw = api.resolveIconSrc(iconId, 'light');
+  const darkSrcRaw = api.resolveIconSrc(iconId, 'dark');
+  const primarySrc = lightSrcRaw ?? darkSrcRaw;
+  if (!primarySrc) return null;
 
-  if (src.startsWith('emoji:')) {
-    const emoji = src.slice('emoji:'.length);
+  if (primarySrc.startsWith('emoji:')) {
+    const emoji = primarySrc.slice('emoji:'.length);
     return (
       <span
         className={['lm-icon', 'lm-icon-emoji', className].filter(Boolean).join(' ')}
@@ -32,13 +31,28 @@ export default function IconResolver({ iconId, className, ...rest }: IconResolve
     );
   }
 
-  return (
-    <img
-      src={src}
-      className={['lm-icon', className].filter(Boolean).join(' ')}
-      aria-hidden="true"
-      {...(api.iconProps ?? {})}
-      {...rest}
-    />
-  );
+  const lightSrc = lightSrcRaw ? useBaseUrl(lightSrcRaw) : undefined;
+  const darkSrc = darkSrcRaw ? useBaseUrl(darkSrcRaw) : undefined;
+  const fallbackSrc = lightSrc ?? darkSrc;
+  if (!fallbackSrc) return null;
+
+  const baseClassName = ['lm-icon', className].filter(Boolean).join(' ');
+  const sharedImageProps = {
+    className: baseClassName,
+    'aria-hidden': 'true' as const,
+    ...(api.iconProps ?? {}),
+    ...rest,
+  };
+
+  if (darkSrc && darkSrc !== fallbackSrc) {
+    return (
+      <ThemedImage
+        sources={{ light: fallbackSrc, dark: darkSrc }}
+        alt=""
+        {...sharedImageProps}
+      />
+    );
+  }
+
+  return <img src={fallbackSrc} alt="" {...sharedImageProps} />;
 }

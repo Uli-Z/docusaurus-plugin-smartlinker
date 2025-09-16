@@ -6,10 +6,7 @@ import { IconConfigProvider, LinkifyRegistryProvider, type LinkifyRegistry } fro
 import SmartLink from './SmartLink.js';
 import { createIconResolver, type NormalizedOptions } from '../../options.js';
 import { PLUGIN_NAME } from '../../pluginName.js';
-import {
-  registry as generatedRegistry,
-  type GeneratedRegistryEntry,
-} from '@generated/docusaurus-plugin-linkify-med/default/registry';
+import { generatedRegistry, type GeneratedRegistryEntry } from './generatedRegistry.js';
 
 const pluginName = PLUGIN_NAME;
 const EMPTY_OPTIONS: NormalizedOptions = { icons: {} };
