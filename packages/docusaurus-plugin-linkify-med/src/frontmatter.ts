@@ -114,8 +114,8 @@ export function parseFrontmatter(files: RawDocFile[]): FrontmatterParseResult {
         continue;
       }
 
-      const synonyms = normalizeSynonyms(fm.synonyms);
-      if (!synonyms) {
+      const normalizedSynonyms = normalizeSynonyms(fm.synonyms);
+      if (!normalizedSynonyms) {
         warnings.push({
           path: file.path,
           code: 'EMPTY_SYNONYMS',
@@ -123,6 +123,13 @@ export function parseFrontmatter(files: RawDocFile[]): FrontmatterParseResult {
         });
         continue;
       }
+
+      const title = typeof fm.title === 'string' ? fm.title.trim() : '';
+      const lowerSynonyms = new Set(normalizedSynonyms.map(s => s.toLocaleLowerCase()));
+      const synonyms =
+        title && !lowerSynonyms.has(title.toLocaleLowerCase())
+          ? [title, ...normalizedSynonyms]
+          : normalizedSynonyms;
 
       const shortRaw = typeof fm.shortNote === 'string' ? fm.shortNote.trim() : '';
       const shortNote = shortRaw ? shortRaw : undefined;

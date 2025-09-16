@@ -26,7 +26,7 @@ describe('frontmatter loader (raw)', () => {
     expect(entries.map(e => e.id).sort()).toEqual(['amoxicillin', 'vancomycin']);
     const amox = entries.find(e => e.id === 'amoxicillin')!;
     expect(amox.slug).toBe('/antibiotics/amoxicillin');
-    expect(amox.synonyms).toEqual(['Amoxi', 'Amox', 'Amoxicillinum']);
+    expect(amox.synonyms).toEqual(['Amoxicillin', 'Amoxi', 'Amox', 'Amoxicillinum']);
     expect(amox.linkify).toBe(true);
     expect(amox.icon).toBe('pill');
     expect(amox.shortNote).toMatch(/Aminopenicillin/);
@@ -63,5 +63,25 @@ describe('frontmatter loader (raw)', () => {
     const { entries } = loadIndexFromFiles(files);
     expect(entries.length).toBe(1);
     expect(entries[0].shortNote).toBeUndefined();
+  });
+
+  it('includes the page title as a synonym and avoids duplicates', () => {
+    const files: RawDocFile[] = [
+      {
+        path: '/docs/title-only.mdx',
+        content: '---\nid: title-only\nslug: /title-only\ntitle: Canonical Name\nsynonyms: [Alias]\n---\n'
+      },
+      {
+        path: '/docs/title-duplicate.mdx',
+        content: '---\nid: title-duplicate\nslug: /title-duplicate\ntitle: Already There\nsynonyms: [Already There]\n---\n'
+      }
+    ];
+
+    const { entries } = loadIndexFromFiles(files);
+    const withTitle = entries.find(e => e.id === 'title-only');
+    const withDuplicate = entries.find(e => e.id === 'title-duplicate');
+
+    expect(withTitle?.synonyms).toEqual(['Canonical Name', 'Alias']);
+    expect(withDuplicate?.synonyms).toEqual(['Already There']);
   });
 });
