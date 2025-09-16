@@ -26,9 +26,9 @@ function safeId(id: string): string {
  * @param shortNote raw MDX string (already trimmed by the frontmatter parser)
  * @returns NoteModule or null if shortNote is empty/undefined
  */
-type CompileMdx = (
+export type CompileMdx = (
   value: string,
-  options: Record<string, unknown>
+  options?: Record<string, unknown>
 ) => Promise<{ value: unknown }>;
 
 export async function emitShortNoteModule(

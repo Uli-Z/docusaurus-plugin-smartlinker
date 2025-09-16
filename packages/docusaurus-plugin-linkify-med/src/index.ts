@@ -10,6 +10,7 @@ import type { NoteModule } from './codegen/notesEmitter.js';
 import type { RegistryModule } from './codegen/registryEmitter.js';
 import { emitTooltipComponentsModule } from './codegen/tooltipComponentsEmitter.js';
 import { PLUGIN_NAME } from './pluginName.js';
+import { createTooltipMdxCompiler } from './node/tooltipMdxCompiler.js';
 
 export type {
   FsIndexProviderOptions,
@@ -40,7 +41,10 @@ export default function linkifyMedPlugin(_context: LoadContext, optsIn?: PluginO
     async loadContent() {
       const roots = [_context.siteDir];
       const files = scanMdFiles({ roots });
-      const { entries, notes, registry } = await buildArtifacts(files);
+      const compileMdx = await createTooltipMdxCompiler(_context);
+      const { entries, notes, registry } = await buildArtifacts(files, {
+        compileMdx,
+      });
 
       return {
         entries,
