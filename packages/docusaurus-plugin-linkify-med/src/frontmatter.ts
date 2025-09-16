@@ -46,6 +46,77 @@ function normalizeSynonyms(list: unknown): string[] | null {
   return uniq.length ? uniq : null;
 }
 
+function cleanHeadingText(text: string): string {
+  let t = text.trim();
+  if (!t) return '';
+  t = t.replace(/\s+#+\s*$/, '');
+  t = t.replace(/\s*\{#.+\}\s*$/, '');
+  t = t.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+  t = t.replace(/`([^`]+)`/g, '$1');
+  t = t.replace(/\*\*([^*]+)\*\*/g, '$1');
+  t = t.replace(/__([^_]+)__/g, '$1');
+  t = t.replace(/\*([^*]+)\*/g, '$1');
+  t = t.replace(/_([^_]+)_/g, '$1');
+  t = t.replace(/~~([^~]+)~~/g, '$1');
+  t = t.replace(/<\/?.+?>/g, '');
+  t = t.replace(/\s+/g, ' ');
+  return t.trim();
+}
+
+function extractFirstHeadingTitle(body: string): string {
+  if (!body) return '';
+  const lines = body.split(/\r?\n/);
+  let inFence = false;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('```') || line.startsWith('~~~')) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const match = /^#{1,6}\s+(.+)$/.exec(line);
+    if (match) {
+      const cleaned = cleanHeadingText(match[1]);
+      if (cleaned) return cleaned;
+    }
+  }
+  return '';
+}
+
+function capitalizeWord(word: string): string {
+  if (!word) return '';
+  if (word.length === 1) return word.toLocaleUpperCase();
+  return word[0].toLocaleUpperCase() + word.slice(1);
+}
+
+function slugToTitle(slug: string): string {
+  const trimmed = slug.trim();
+  if (!trimmed) return '';
+  const parts = trimmed.split('/').filter(Boolean);
+  if (!parts.length) return '';
+  const last = parts[parts.length - 1] ?? '';
+  const base = last.replace(/\.[^./]+$/, '');
+  if (!base) return '';
+  const segments = base.split(/[-_]/).filter(Boolean);
+  if (!segments.length) {
+    return capitalizeWord(base);
+  }
+  const words = segments.map(capitalizeWord).filter(Boolean);
+  const candidate = words.join(' ').trim();
+  return candidate || capitalizeWord(base);
+}
+
+function pushUnique(list: string[], seen: Set<string>, value: string | undefined): void {
+  if (typeof value !== 'string') return;
+  const trimmed = value.trim();
+  if (!trimmed) return;
+  const key = trimmed.toLocaleLowerCase();
+  if (seen.has(key)) return;
+  seen.add(key);
+  list.push(trimmed);
+}
+
 export function parseFrontmatter(files: RawDocFile[]): FrontmatterParseResult {
   const entries: IndexRawEntry[] = [];
   const warnings: FrontmatterWarning[] = [];
@@ -61,7 +132,7 @@ export function parseFrontmatter(files: RawDocFile[]): FrontmatterParseResult {
     }
 
     try {
-      const { data } = matter(file.content ?? '');
+      const { data, content: bodyContent } = matter(file.content ?? '');
       const res = FM.safeParse(data ?? {});
       if (!res.success) {
         warnings.push({
@@ -114,14 +185,36 @@ export function parseFrontmatter(files: RawDocFile[]): FrontmatterParseResult {
         continue;
       }
 
-      const synonyms = normalizeSynonyms(fm.synonyms);
-      if (!synonyms) {
+      const normalizedSynonyms = normalizeSynonyms(fm.synonyms);
+      if (!normalizedSynonyms) {
         warnings.push({
           path: file.path,
           code: 'EMPTY_SYNONYMS',
           message: '`synonyms` must be a non-empty array of non-empty strings.'
         });
         continue;
+      }
+
+      const explicitTitle = typeof fm.title === 'string' ? fm.title.trim() : '';
+      const headingTitle = explicitTitle ? '' : extractFirstHeadingTitle(bodyContent ?? '');
+      const canonicalTitle = explicitTitle || headingTitle;
+      const canonicalTitleLower = canonicalTitle ? canonicalTitle.toLocaleLowerCase() : '';
+      const slugTitle = slug ? slugToTitle(slug) : '';
+
+      const seenSynonyms = new Set<string>();
+      const synonyms: string[] = [];
+
+      pushUnique(synonyms, seenSynonyms, canonicalTitle);
+
+      if (slugTitle) {
+        const slugLower = slugTitle.toLocaleLowerCase();
+        if (!canonicalTitleLower || canonicalTitleLower.startsWith(slugLower)) {
+          pushUnique(synonyms, seenSynonyms, slugTitle);
+        }
+      }
+
+      for (const syn of normalizedSynonyms) {
+        pushUnique(synonyms, seenSynonyms, syn);
       }
 
       const shortRaw = typeof fm.shortNote === 'string' ? fm.shortNote.trim() : '';

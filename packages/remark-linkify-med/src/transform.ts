@@ -1,6 +1,6 @@
 import type { Transformer } from 'unified';
 import { visit, SKIP } from 'unist-util-visit';
-import { toString } from 'mdast-util-to-string';
+import { normalize } from 'node:path';
 import type { Parent } from 'unist';
 import type { Content, Root, Text, PhrasingContent } from 'mdast';
 import { buildMatcher, type SynonymEntry } from './matcher.js';
@@ -25,6 +25,9 @@ export interface RemarkLinkifyMedOptions {
   iconAttr?: string;
   tipKeyAttr?: string;
   matchAttr?: string;
+  shortNoteComponentName?: string;
+  shortNoteTipKeyAttr?: string;
+  shortNotePlaceholder?: string;
 }
 
 type MdastNode = Content | Root;
@@ -42,7 +45,7 @@ function isSkippable(node: MdastNode): boolean {
 function toMdxJsxTextElement(
   name: string,
   attrs: Record<string, string | undefined>,
-  text: string
+  text?: string
 ): any {
   const attributes = Object.entries(attrs)
     .filter(([, v]) => typeof v === 'string' && v.length > 0)
@@ -52,16 +55,19 @@ function toMdxJsxTextElement(
       value
     }));
 
+  const children: PhrasingContent[] = [];
+  if (typeof text === 'string' && text.length > 0) {
+    children.push({
+      type: 'text',
+      value: text
+    } as Text);
+  }
+
   return {
     type: 'mdxJsxTextElement',
     name,
     attributes,
-    children: [
-      {
-        type: 'text',
-        value: text
-      }
-    ]
+    children
   };
 }
 
@@ -71,6 +77,9 @@ export default function remarkLinkifyMed(opts: RemarkLinkifyMedOptions): Transfo
   const iconAttr = opts.iconAttr ?? 'icon';
   const tipKeyAttr = opts.tipKeyAttr ?? 'tipKey';
   const matchAttr = opts.matchAttr ?? 'match';
+  const shortNoteComponentName = opts.shortNoteComponentName ?? 'LinkifyShortNote';
+  const shortNoteTipKeyAttr = opts.shortNoteTipKeyAttr ?? tipKeyAttr;
+  const shortNotePlaceholder = opts.shortNotePlaceholder ?? '%%SHORT_NOTICE%%';
 
   const targets = opts.index.getAllTargets();
 
@@ -98,8 +107,26 @@ export default function remarkLinkifyMed(opts: RemarkLinkifyMedOptions): Transfo
 
   const matcher = buildMatcher(synEntries);
 
+  const targetByPath = new Map<string, TargetInfo>();
+  const targetById = new Map<string, TargetInfo>();
+  const targetBySlug = new Map<string, TargetInfo>();
+  for (const t of targets) {
+    if (t.sourcePath) {
+      const key = normalizePath(t.sourcePath);
+      if (key) targetByPath.set(key, t);
+    }
+    if (t.id) targetById.set(t.id, t);
+    if (t.slug) targetBySlug.set(t.slug, t);
+  }
+
   return (tree: any, file: any) => {
-    const _currentPath = opts.index.getCurrentFilePath(file as any);
+    const currentTarget = findCurrentTarget({
+      file,
+      index: opts.index,
+      targetByPath,
+      targetById,
+      targetBySlug,
+    });
 
     visit(tree, (node, _index, parent: Parent | undefined) => {
       if (isSkippable(node as any)) return SKIP as any;
@@ -110,49 +137,269 @@ export default function remarkLinkifyMed(opts: RemarkLinkifyMedOptions): Transfo
       const text = textNode.value ?? '';
       if (!text || !text.trim()) return;
 
-      const matches = matcher.findAll(text);
-      if (!matches.length) return;
-
-      const newChildren: PhrasingContent[] = [];
-      let cursor = 0;
-
-      for (const m of matches) {
-        const start = m.start;
-        const end = m.end;
-        if (start > cursor) newChildren.push({ type: 'text', value: text.slice(cursor, start) } as Text);
-
-        let id = '';
-        let slug = '';
-        let icon: string | undefined = undefined;
-        {
-          const parts = m.key.split('::');
-          id = parts[0] ?? '';
-          slug = parts[1] ?? '';
-          icon = parts[2] || undefined;
-          const claimers = claimMap.get(m.synonym.toLocaleLowerCase());
-          if (claimers && claimers.length > 1) {
-            const chosen = claimers[0];
-            id = chosen.id;
-            slug = chosen.slug;
-            icon = chosen.icon;
-          }
-        }
-
-        const element = toMdxJsxTextElement(
-          componentName,
-          { [toAttr]: slug, [tipKeyAttr]: id, [matchAttr]: m.text, [iconAttr]: icon },
-          m.text
-        );
-        newChildren.push(element as any);
-        cursor = end;
-      }
-
-      if (cursor < text.length) newChildren.push({ type: 'text', value: text.slice(cursor) } as Text);
+      const result = transformText({
+        text,
+        matcher,
+        claimMap,
+        componentName,
+        toAttr,
+        tipKeyAttr,
+        matchAttr,
+        iconAttr,
+        shortNoteComponentName,
+        shortNoteTipKeyAttr,
+        shortNotePlaceholder,
+        currentTarget,
+      });
+      if (!result || !result.changed) return;
 
       const idx = (parent.children as Content[]).indexOf(node as any);
-      if (idx >= 0) (parent.children as Content[]).splice(idx, 1, ...newChildren);
+      if (idx >= 0) (parent.children as Content[]).splice(idx, 1, ...result.nodes);
     });
 
     return tree;
   };
+}
+
+function normalizePath(value: string | null | undefined): string | null {
+  if (!value || typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  try {
+    return normalize(trimmed).replace(/\\/g, '/').toLowerCase();
+  } catch {
+    return trimmed.replace(/\\/g, '/').toLowerCase();
+  }
+}
+
+interface TransformArgs {
+  text: string;
+  matcher: ReturnType<typeof buildMatcher>;
+  claimMap: Map<string, { id: string; slug: string; icon?: string }[]>;
+  componentName: string;
+  toAttr: string;
+  tipKeyAttr: string;
+  matchAttr: string;
+  iconAttr: string;
+  shortNoteComponentName: string;
+  shortNoteTipKeyAttr: string;
+  shortNotePlaceholder: string;
+  currentTarget?: TargetInfo;
+}
+
+type TransformResult = { nodes: PhrasingContent[]; changed: boolean } | null;
+
+function transformText(args: TransformArgs): TransformResult {
+  const {
+    text,
+    matcher,
+    claimMap,
+    componentName,
+    toAttr,
+    tipKeyAttr,
+    matchAttr,
+    iconAttr,
+    shortNoteComponentName,
+    shortNoteTipKeyAttr,
+    shortNotePlaceholder,
+    currentTarget,
+  } = args;
+
+  const placeholder = shortNotePlaceholder;
+  const hasPlaceholder = placeholder && placeholder.length > 0 && text.includes(placeholder);
+
+  if (hasPlaceholder && currentTarget) {
+    const segments = text.split(placeholder);
+    const nodes: PhrasingContent[] = [];
+    let changed = false;
+
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      if (segment) {
+        const segRes = transformSegment({
+          text: segment,
+          matcher,
+          claimMap,
+          componentName,
+          toAttr,
+          tipKeyAttr,
+          matchAttr,
+          iconAttr,
+          currentTarget,
+        });
+        nodes.push(...segRes.nodes);
+        if (segRes.changed) changed = true;
+      }
+
+      if (i < segments.length - 1) {
+        nodes.push(
+          toMdxJsxTextElement(
+            shortNoteComponentName,
+            { [shortNoteTipKeyAttr]: currentTarget.id },
+            undefined
+          ) as any
+        );
+        changed = true;
+      }
+    }
+
+    return { nodes, changed };
+  }
+
+  if (hasPlaceholder) {
+    // Placeholder present but no current target – leave text untouched.
+    return { nodes: [{ type: 'text', value: text } as Text], changed: false };
+  }
+
+  return transformSegment({
+    text,
+    matcher,
+    claimMap,
+    componentName,
+    toAttr,
+    tipKeyAttr,
+    matchAttr,
+    iconAttr,
+    currentTarget,
+  });
+}
+
+interface TransformSegmentArgs {
+  text: string;
+  matcher: ReturnType<typeof buildMatcher>;
+  claimMap: Map<string, { id: string; slug: string; icon?: string }[]>;
+  componentName: string;
+  toAttr: string;
+  tipKeyAttr: string;
+  matchAttr: string;
+  iconAttr: string;
+  currentTarget?: TargetInfo;
+}
+
+function transformSegment(args: TransformSegmentArgs): { nodes: PhrasingContent[]; changed: boolean } {
+  const { text, matcher, claimMap, componentName, toAttr, tipKeyAttr, matchAttr, iconAttr, currentTarget } = args;
+
+  if (!text) return { nodes: [], changed: false };
+
+  const matches = matcher.findAll(text);
+  if (!matches.length) {
+    return { nodes: [{ type: 'text', value: text } as Text], changed: false };
+  }
+
+  const newChildren: PhrasingContent[] = [];
+  let cursor = 0;
+  let anyLinkInserted = false;
+
+  for (const m of matches) {
+    const start = m.start;
+    const end = m.end;
+    if (start > cursor) newChildren.push({ type: 'text', value: text.slice(cursor, start) } as Text);
+
+    let id = '';
+    let slug = '';
+    let icon: string | undefined = undefined;
+    {
+      const parts = m.key.split('::');
+      id = parts[0] ?? '';
+      slug = parts[1] ?? '';
+      icon = parts[2] || undefined;
+      const claimers = claimMap.get(m.synonym.toLocaleLowerCase());
+      if (claimers && claimers.length > 1) {
+        const chosen = claimers[0];
+        id = chosen.id;
+        slug = chosen.slug;
+        icon = chosen.icon;
+      }
+    }
+
+    if (currentTarget && id && currentTarget.id === id) {
+      newChildren.push({ type: 'text', value: text.slice(start, end) } as Text);
+    } else {
+      const element = toMdxJsxTextElement(
+        componentName,
+        { [toAttr]: slug, [tipKeyAttr]: id, [matchAttr]: m.text, [iconAttr]: icon },
+        m.text
+      );
+      newChildren.push(element as any);
+      anyLinkInserted = true;
+    }
+
+    cursor = end;
+  }
+
+  if (cursor < text.length) newChildren.push({ type: 'text', value: text.slice(cursor) } as Text);
+
+  if (!anyLinkInserted) {
+    return { nodes: [{ type: 'text', value: text } as Text], changed: false };
+  }
+
+  return { nodes: newChildren, changed: true };
+}
+
+interface FindCurrentTargetArgs {
+  file: any;
+  index: IndexProvider;
+  targetByPath: Map<string, TargetInfo>;
+  targetById: Map<string, TargetInfo>;
+  targetBySlug: Map<string, TargetInfo>;
+}
+
+function findCurrentTarget(args: FindCurrentTargetArgs): TargetInfo | undefined {
+  const { file, index, targetByPath, targetById, targetBySlug } = args;
+
+  const pathCandidates = new Set<string>();
+  const viaIndex = index.getCurrentFilePath(file as any);
+  if (typeof viaIndex === 'string') pathCandidates.add(viaIndex);
+  if (typeof file?.path === 'string') pathCandidates.add(file.path);
+  if (Array.isArray(file?.history)) {
+    for (const entry of file.history) {
+      if (typeof entry === 'string') pathCandidates.add(entry);
+    }
+  }
+
+  for (const candidate of pathCandidates) {
+    const key = normalizePath(candidate);
+    if (!key) continue;
+    const direct = targetByPath.get(key);
+    if (direct) return direct;
+    for (const [pathKey, target] of targetByPath) {
+      if (pathKey.endsWith(key) || key.endsWith(pathKey)) {
+        return target;
+      }
+    }
+  }
+
+  const data = file?.data ?? {};
+  const idCandidates = new Set<string>();
+  const slugCandidates = new Set<string>();
+
+  const pushId = (value: unknown) => {
+    if (typeof value === 'string' && value.trim()) idCandidates.add(value.trim());
+  };
+  const pushSlug = (value: unknown) => {
+    if (typeof value === 'string' && value.trim()) slugCandidates.add(value.trim());
+  };
+
+  pushId((data as any).id);
+  pushId((data as any).docId);
+  pushId((data as any).unversionedId);
+  pushSlug((data as any).slug);
+  pushSlug((data as any).permalink);
+
+  const frontMatter = (data as any).frontMatter ?? {};
+  pushId(frontMatter?.id);
+  pushSlug(frontMatter?.slug);
+  pushSlug(frontMatter?.permalink);
+
+  for (const id of idCandidates) {
+    const target = targetById.get(id);
+    if (target) return target;
+  }
+
+  for (const slug of slugCandidates) {
+    const target = targetBySlug.get(slug);
+    if (target) return target;
+  }
+
+  return undefined;
 }
