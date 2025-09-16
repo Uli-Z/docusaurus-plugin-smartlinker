@@ -46,7 +46,8 @@ describe('emitShortNoteModule', () => {
     expect(mod).not.toBeNull();
     // Should reference MDXContent and accept components prop
     expect(mod!.contents).toMatch(/React\.createElement\(MDXContent/);
-    expect(mod!.contents).toContain('const components = props?.components ?? {};');
+    expect(mod!.contents).toContain('const { components, ...rest } = props ?? {};');
+    expect(mod!.contents).toContain('const mdxProps = components ? { components, ...rest } : rest;');
     const tr = transpiles(mod!.contents);
     expect(tr.ok).toBe(true);
   });

@@ -13,7 +13,9 @@ export default defineConfig({
     alias: {
       '@theme-init/Root': resolve(__dirname, 'tests/mocks/RootStub.tsx'),
       '@docusaurus/useGlobalData': resolve(__dirname, 'tests/mocks/useGlobalData.ts'),
+      '@docusaurus/useBaseUrl': resolve(__dirname, 'tests/mocks/useBaseUrl.ts'),
       '@mdx-js/react': resolve(__dirname, 'tests/mocks/mdx.tsx'),
+      '@theme/ThemedImage': resolve(__dirname, 'tests/mocks/ThemedImage.tsx'),
       '@generated/docusaurus-plugin-linkify-med/default/registry': resolve(
         __dirname,
         'tests/mocks/generatedRegistry.ts'
