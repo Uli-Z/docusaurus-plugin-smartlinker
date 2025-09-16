@@ -644,3 +644,17 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm -r --filter './packages/**' run build`
 - `pnpm -r run test`
 - `pnpm --filter @examples/site run build`
+
+# Fix: align theme runtime with evaluation feedback
+
+## Summary
+
+- Added ThemedImage + useBaseUrl handling to the runtime IconResolver so light/dark assets and baseUrl work consistently.
+- Updated the short note emitter to forward MDXProvider context instead of forcing an empty components map and wired tests + mocks accordingly.
+- Removed the example site's SmartLink override now that the plugin theme publishes MDX components globally.
+
+## Verification
+
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm -r --filter './packages/**' run test`
+- `pnpm site:build`
