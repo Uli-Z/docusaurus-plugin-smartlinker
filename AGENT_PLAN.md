@@ -105,10 +105,10 @@
 
 ---
 
-### Milestone 11 — Remark Plugin Integration 🚧
+### Milestone 11 — Remark Plugin Integration ✅
 - Integrate `remark-linkify-med` into Docusaurus config (`docs` + `pages`).
-- Use `IndexProvider` that proxies to generated registry.
-- Smoke MDX page in example site proves SmartLink injection.
+- Use FS-based IndexProvider that scans docs/page frontmatter (no generated registry dependency).
+- Smoke MDX page in example site proves SmartLink injection end-to-end.
 
 ---
 
@@ -118,6 +118,7 @@
   - Add multiple `.mdx` doc files demonstrating SmartLink in context.
   - Ensure navigation via sidebar/Inhaltsverzeichnis works.
   - Provide one or two example pages where tooltips + icons are active.
+- Manual smoke checklist: build site, click through docs, verify SmartLink tooltips/icons.
 - Goal: Allow users to click through a structured docs site and see linkify in action.
 - Smoke test: build + manually verify sidebar navigation + SmartLink working.
 
