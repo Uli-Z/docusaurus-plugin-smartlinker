@@ -91,4 +91,22 @@ Some text with Amoxi.
     expect(out).toContain('to="/a"');
     expect(out).toContain('tipKey="a-amox"');
   });
+
+  it('skips linking synonyms on their own page', () => {
+    const tSelf: TargetInfo[] = [
+      { id: 'self', slug: '/docs/self', sourcePath: '/docs/current.mdx', synonyms: ['Self'] },
+      { id: 'other', slug: '/docs/other', sourcePath: '/docs/other.mdx', synonyms: ['Other'] },
+    ];
+    const out = run('Self meets Other.', tSelf);
+    expect(out).toContain('Self meets <SmartLink to="/docs/other" tipKey="other" match="Other">Other</SmartLink>.');
+    expect(out).not.toContain('to="/docs/self"');
+  });
+
+  it('replaces short note placeholder with LinkifyShortNote', () => {
+    const tSelf: TargetInfo[] = [
+      { id: 'self', slug: '/docs/self', sourcePath: '/docs/current.mdx', synonyms: ['Self'] },
+    ];
+    const out = run('Intro %%SHORT_NOTICE%% outro.', tSelf);
+    expect(out).toContain('Intro <LinkifyShortNote tipKey="self" /> outro.');
+  });
 });
