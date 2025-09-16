@@ -34,7 +34,7 @@ describe('frontmatter loader (raw)', () => {
     const vanco = entries.find(e => e.id === 'vancomycin')!;
     expect(vanco.icon).toBeUndefined();
     expect(vanco.shortNote).toBeUndefined();
-    expect(vanco.synonyms).toEqual(['Vanco', 'Vancomycinum']);
+    expect(vanco.synonyms).toEqual(['Vancomycin', 'Vanco', 'Vancomycinum']);
 
     // Warnings: linkify:false, missing id, empty synonyms, bad slug, non-array synonyms
     const codes = warnings.map(w => w.code).sort();
@@ -83,5 +83,28 @@ describe('frontmatter loader (raw)', () => {
 
     expect(withTitle?.synonyms).toEqual(['Canonical Name', 'Alias']);
     expect(withDuplicate?.synonyms).toEqual(['Already There']);
+  });
+
+  it('derives the title from the first heading and adds slug-based canonical matches', () => {
+    const files: RawDocFile[] = [
+      {
+        path: '/docs/amox-heading.mdx',
+        content: [
+          '---',
+          'id: amox-heading',
+          'slug: /antibiotics/amoxicillin',
+          'synonyms: [Amoxi]',
+          '---',
+          '',
+          '# Amoxicillin reference',
+          '',
+          'Body'
+        ].join('\n')
+      }
+    ];
+
+    const { entries } = loadIndexFromFiles(files);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.synonyms).toEqual(['Amoxicillin reference', 'Amoxicillin', 'Amoxi']);
   });
 });
