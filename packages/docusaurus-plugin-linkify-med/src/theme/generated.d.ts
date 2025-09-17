@@ -9,3 +9,8 @@ declare module '@generated/docusaurus-plugin-linkify-med/default/registry' {
   export const registry: Record<string, GeneratedRegistryEntry>;
 }
 
+declare module '@generated/docusaurus-plugin-linkify-med/default/tooltipComponents' {
+  import type { ComponentType } from 'react';
+  export const tooltipComponents: Record<string, ComponentType<any>>;
+}
+

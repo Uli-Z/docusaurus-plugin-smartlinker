@@ -1,10 +1,47 @@
 import { z } from 'zod';
 
+const TrimmedString = z
+  .string()
+  .transform((value) => value.trim())
+  .refine((value) => value.length > 0, {
+    message: 'Expected a non-empty string',
+  });
+
+const TooltipComponentSchema = z.union([
+  TrimmedString,
+  z.object({
+    path: TrimmedString,
+    export: TrimmedString.optional(),
+  }),
+]);
+
+export type TooltipComponentConfig = {
+  importPath: string;
+  exportName?: string;
+};
+
 export const OptionsSchema = z.object({
-  icons: z.record(z.string()).default({}),
-  darkModeIcons: z.record(z.string()).optional(),
-  defaultIcon: z.string().optional(),
+  icons: z.record(TrimmedString).default({}),
+  darkModeIcons: z.record(TrimmedString).optional(),
+  defaultIcon: TrimmedString.optional(),
   iconProps: z.record(z.unknown()).optional(),
+  tooltipComponents: z
+    .record(TooltipComponentSchema)
+    .default({})
+    .transform((value) => {
+      const out: Record<string, TooltipComponentConfig> = {};
+      for (const [alias, spec] of Object.entries(value)) {
+        if (typeof spec === 'string') {
+          out[alias] = { importPath: spec };
+        } else {
+          out[alias] = {
+            importPath: spec.path,
+            exportName: spec.export ?? undefined,
+          };
+        }
+      }
+      return out;
+    }),
 });
 
 export type PluginOptions = z.input<typeof OptionsSchema>;
@@ -15,7 +52,8 @@ export type OptionsWarning = {
     | 'DEFAULT_ICON_UNKNOWN'
     | 'DARK_MODE_ICON_UNKNOWN'
     | 'ICON_ID_EMPTY'
-    | 'EMPTY_ICONS_OBJECT';
+    | 'EMPTY_ICONS_OBJECT'
+    | 'TOOLTIP_COMPONENT_ALIAS_EMPTY';
   message: string;
   details?: Record<string, unknown>;
 };
@@ -35,7 +73,7 @@ export function validateOptions(input: PluginOptions | undefined): ValidationRes
   if (!parsed.success) {
     // Should be rare; Zod already guards shapes.
     return {
-      options: { icons: {} },
+      options: { icons: {}, tooltipComponents: {} },
       warnings: [{
         code: 'EMPTY_ICONS_OBJECT',
         message: 'Invalid options; falling back to empty configuration.',
@@ -83,6 +121,15 @@ export function validateOptions(input: PluginOptions | undefined): ValidationRes
       warnings.push({
         code: 'ICON_ID_EMPTY',
         message: 'An icon id is an empty string.',
+      });
+    }
+  }
+
+  for (const alias of Object.keys(options.tooltipComponents)) {
+    if (!alias.trim()) {
+      warnings.push({
+        code: 'TOOLTIP_COMPONENT_ALIAS_EMPTY',
+        message: '`tooltipComponents` contains a component key that is empty.',
       });
     }
   }

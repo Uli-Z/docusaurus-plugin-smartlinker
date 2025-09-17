@@ -56,4 +56,17 @@ describe('emitShortNoteModule', () => {
     const mod = await emitShortNoteModule('Pip/Tazo 1.0', '**Note**');
     expect(mod!.filename).toBe('notes/pip-tazo-1-0.js');
   });
+
+  it('falls back to ReactMarkdown when compilation throws', async () => {
+    const mod = await emitShortNoteModule(
+      'amoxicillin',
+      '**Fallback**',
+      async () => {
+        throw new Error('boom');
+      }
+    );
+    expect(mod).not.toBeNull();
+    expect(mod!.contents).toContain('ReactMarkdown');
+    expect(mod!.contents).toContain('components ? { components, ...rest } : rest');
+  });
 });

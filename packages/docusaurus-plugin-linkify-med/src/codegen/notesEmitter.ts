@@ -26,16 +26,24 @@ function safeId(id: string): string {
  * @param shortNote raw MDX string (already trimmed by the frontmatter parser)
  * @returns NoteModule or null if shortNote is empty/undefined
  */
+export type CompileMdx = (
+  value: string,
+  options?: Record<string, unknown>
+) => Promise<{ value: unknown }>;
+
 export async function emitShortNoteModule(
   id: string,
-  shortNote?: string
+  shortNote?: string,
+  compileMdx?: CompileMdx
 ): Promise<NoteModule | null> {
   const sn = (shortNote ?? '').trim();
   if (!sn) return null;
 
   try {
+    const compile =
+      compileMdx ?? (await import('@mdx-js/mdx')).compile;
+
     // Compile MDX into ESM (string); MDX v3 defaults to the automatic runtime.
-    const { compile } = await import('@mdx-js/mdx');
     const compiled = await compile(sn, {
       // Important: keep ESM output (string), we will wrap it into our TSX module.
       // We do not inject provider import source here; we pass components via props.
@@ -68,14 +76,20 @@ export function ShortNote(props) {
     const filename = `notes/${safeId(id)}.js`;
     return { filename, contents: mod };
   } catch {
-    // If MDX compilation fails (e.g., due to ESM loader issues), fall back to plain text
+    // If MDX compilation fails (e.g., due to ESM loader issues), fall back to ReactMarkdown
     const text = JSON.stringify(sn);
     const mod = `
-/* AUTO-GENERATED: fallback plain-text note */
+/* AUTO-GENERATED: fallback markdown note */
 import * as React from 'react';
+import ReactMarkdown from 'react-markdown';
 
-export function ShortNote() {
-  return React.createElement(React.Fragment, null, ${text});
+export function ShortNote(props) {
+  const { components, ...rest } = props ?? {};
+  return React.createElement(
+    ReactMarkdown,
+    components ? { components, ...rest } : rest,
+    ${text}
+  );
 }
 `.trimStart();
     const filename = `notes/${safeId(id)}.js`;

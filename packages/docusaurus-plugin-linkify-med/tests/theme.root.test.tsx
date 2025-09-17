@@ -18,13 +18,28 @@ vi.mock('@docusaurus/useGlobalData', () => ({
   usePluginData: (name: string) => usePluginDataMock(name),
 }));
 
+vi.mock('@generated/docusaurus-plugin-linkify-med/default/tooltipComponents', () => ({
+  tooltipComponents: {
+    DrugTip: ({ note }: { note: string }) => (
+      <div data-testid="drug-tip">{note}</div>
+    ),
+  },
+}));
+
 vi.mock('@generated/docusaurus-plugin-linkify-med/default/registry', () => ({
   registry: {
     amoxicillin: {
       id: 'amoxicillin',
       slug: '/docs/amoxicillin',
       icon: 'pill',
-      ShortNote: () => <div data-testid="shortnote">Short note!</div>,
+      ShortNote: ({ components }: { components?: Record<string, React.ComponentType<any>> }) => {
+        const Tip = components?.DrugTip ?? (() => null);
+        return (
+          <div data-testid="shortnote">
+            <Tip note="From provider" />
+          </div>
+        );
+      },
     },
   },
 }));
@@ -59,7 +74,8 @@ describe('theme Root provider', () => {
     await userEvent.hover(link);
     const notes = await screen.findAllByTestId('shortnote');
     expect(notes.length).toBeGreaterThan(0);
-    expect(notes[0]).toHaveTextContent('Short note!');
+    const custom = await screen.findAllByTestId('drug-tip');
+    expect(custom[0]).toHaveTextContent('From provider');
   });
 
   it('exposes LinkifyShortNote through the MDX provider', () => {
