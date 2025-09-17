@@ -19,8 +19,8 @@ function transpiles(code: string): boolean {
 
 describe('emitRegistry', () => {
   const entries: IndexRawEntry[] = [
-    { id: 'amoxicillin', slug: '/antibiotics/amoxicillin', synonyms: ['amoxi'], linkify: true, sourcePath: '/a.mdx', icon: 'pill', shortNote: '**Note**' },
-    { id: 'vancomycin', slug: '/antibiotics/vancomycin', synonyms: ['vanco'], linkify: true, sourcePath: '/b.mdx' }
+    { id: 'amoxicillin', slug: '/antibiotics/amoxicillin', terms: ['amoxi'], linkify: true, sourcePath: '/a.mdx', icon: 'pill', shortNote: '**Note**' },
+    { id: 'vancomycin', slug: '/antibiotics/vancomycin', terms: ['vanco'], linkify: true, sourcePath: '/b.mdx' }
   ];
 
   const noteModules: NoteModule[] = [

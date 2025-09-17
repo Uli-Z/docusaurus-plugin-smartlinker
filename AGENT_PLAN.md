@@ -1,6 +1,6 @@
 # Linkify-Med (Docusaurus v3) — Agent Plan
 
-> Goal: A Docusaurus plugin + Remark plugin that automatically turns antibiotic synonyms into links with tooltips (MDX from frontmatter). Rendered at build-time, SEO-friendly, with minimal coupling.
+> Goal: A Docusaurus plugin + Remark plugin that automatically turns explicitly-listed auto-link terms into links with tooltips (MDX from frontmatter). Rendered at build-time, SEO-friendly, with minimal coupling.
 
 ## Architecture (high-level)
 - **remark-linkify-med**: Replaces text nodes during the Remark phase with `<SmartLink …>`.
@@ -8,8 +8,8 @@
 - **Theme**: `SmartLink`, `Tooltip`, `IconResolver`.
 
 ## Invariants
-- Per-page frontmatter:  
-  `id`, `slug`, `synonyms[]`, `linkify?: true`, `icon?: string`, `shortNote?: MDX string`.
+- Per-page frontmatter:
+  `id`, `slug`, `auto-link[]`, `linkify?: true`, `auto-link-icon?: string`, `auto-link-short-note?: MDX string`.
 - Matching: case-insensitive, Unicode-aware, word boundaries, **all occurrences**, longest-match, left-to-right, non-overlapping.
 - Skip contexts: code blocks, inline code, already-linked text, image alt text, headings H1–H3.
 - Collisions: **folder proximity** wins; equal distance → warning; tie-breaker: lexicographic slug.
@@ -32,7 +32,7 @@
 
 ### Milestone 1 — Frontmatter Loader ✅
 - Parse frontmatter from MD/MDX with `gray-matter` + `zod`.
-- Validate fields: `id`, `slug`, `synonyms[]`, `shortNote?`, `linkify?`, `icon?`.
+- Validate fields: `id`, `slug`, `auto-link[]`, `auto-link-short-note?`, `linkify?`, `auto-link-icon?`.
 - Unit tests with fixtures.
 
 ---
@@ -68,7 +68,7 @@
 
 ---
 
-### Milestone 7 — Synonym Matcher ✅
+### Milestone 7 — Auto-link Matcher ✅
 - Trie-based matcher, Unicode-aware, case-insensitive.
 - Word boundaries enforced (`\p{L}\p{N}_`).
 - Longest non-overlapping matches, left-to-right.

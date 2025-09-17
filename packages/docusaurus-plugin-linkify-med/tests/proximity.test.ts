@@ -6,7 +6,7 @@ function fakeEntry(id: string, slug: string, path: string): IndexRawEntry {
   return {
     id,
     slug,
-    synonyms: [id],
+    terms: [id],
     linkify: true,
     sourcePath: path
   };
@@ -30,7 +30,7 @@ describe('distance()', () => {
 describe('resolveCollision()', () => {
   it('returns single candidate if only one', () => {
     const e = fakeEntry('id1', '/slug1', '/a/b/file.mdx');
-    const { chosen, warnings } = resolveCollision('syn', '/a/b/c/doc.mdx', [e]);
+    const { chosen, warnings } = resolveCollision('term', '/a/b/c/doc.mdx', [e]);
     expect(chosen).toBe(e);
     expect(warnings.length).toBe(0);
   });
@@ -38,21 +38,21 @@ describe('resolveCollision()', () => {
   it('chooses nearest candidate by folder distance', () => {
     const e1 = fakeEntry('id1', '/slug1', '/a/b/c/file.mdx');
     const e2 = fakeEntry('id2', '/slug2', '/a/x/y/file.mdx');
-    const { chosen } = resolveCollision('syn', '/a/b/c/doc.mdx', [e1, e2]);
+    const { chosen } = resolveCollision('term', '/a/b/c/doc.mdx', [e1, e2]);
     expect(chosen).toBe(e1);
   });
 
   it('breaks tie lexicographically and warns', () => {
     const e1 = fakeEntry('id1', '/aaa', '/a/b/x/file.mdx');
     const e2 = fakeEntry('id2', '/zzz', '/a/b/y/file.mdx');
-    const { chosen, warnings } = resolveCollision('syn', '/a/b/c/doc.mdx', [e1, e2]);
+    const { chosen, warnings } = resolveCollision('term', '/a/b/c/doc.mdx', [e1, e2]);
     expect(chosen).toBe(e1);
     expect(warnings[0].code).toBe('COLLISION_TIE');
     expect(warnings[0].chosenId).toBe('id1');
   });
 
   it('returns null when no candidates', () => {
-    const { chosen, warnings } = resolveCollision('syn', '/a/b/c/doc.mdx', []);
+    const { chosen, warnings } = resolveCollision('term', '/a/b/c/doc.mdx', []);
     expect(chosen).toBeNull();
     expect(warnings.length).toBe(0);
   });

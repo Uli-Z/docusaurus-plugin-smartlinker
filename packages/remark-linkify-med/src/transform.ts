@@ -3,14 +3,14 @@ import { visit, SKIP } from 'unist-util-visit';
 import { normalize } from 'node:path';
 import type { Parent } from 'unist';
 import type { Content, Root, Text, PhrasingContent } from 'mdast';
-import { buildMatcher, type SynonymEntry } from './matcher.js';
+import { buildMatcher, type AutoLinkEntry } from './matcher.js';
 
 export interface TargetInfo {
   id: string;
   slug: string;
   icon?: string;
   sourcePath: string;
-  synonyms: string[];
+  terms: string[];
 }
 
 export interface IndexProvider {
@@ -83,20 +83,20 @@ export default function remarkLinkifyMed(opts: RemarkLinkifyMedOptions): Transfo
 
   const targets = opts.index.getAllTargets();
 
-  const synEntries: SynonymEntry[] = [];
+  const termEntries: AutoLinkEntry[] = [];
   for (const t of targets) {
-    for (const lit of t.synonyms) {
+    for (const lit of t.terms) {
       const literal = String(lit ?? '').trim();
       if (!literal) continue;
-      synEntries.push({ literal, key: `${t.id}::${t.slug}::${t.icon ?? ''}` });
+      termEntries.push({ literal, key: `${t.id}::${t.slug}::${t.icon ?? ''}` });
     }
   }
 
-  synEntries.sort((a, b) => b.literal.length - a.literal.length);
+  termEntries.sort((a, b) => b.literal.length - a.literal.length);
 
   const claimMap = new Map<string, { id: string; slug: string; icon?: string }[]>();
   for (const t of targets) {
-    for (const lit of t.synonyms) {
+    for (const lit of t.terms) {
       const ll = String(lit).toLocaleLowerCase();
       const arr = claimMap.get(ll) ?? [];
       arr.push({ id: t.id, slug: t.slug, icon: t.icon });
@@ -105,7 +105,7 @@ export default function remarkLinkifyMed(opts: RemarkLinkifyMedOptions): Transfo
   }
   for (const [, arr] of claimMap) arr.sort((a, b) => a.id.localeCompare(b.id));
 
-  const matcher = buildMatcher(synEntries);
+  const matcher = buildMatcher(termEntries);
 
   const targetByPath = new Map<string, TargetInfo>();
   const targetById = new Map<string, TargetInfo>();
@@ -303,7 +303,7 @@ function transformSegment(args: TransformSegmentArgs): { nodes: PhrasingContent[
       id = parts[0] ?? '';
       slug = parts[1] ?? '';
       icon = parts[2] || undefined;
-      const claimers = claimMap.get(m.synonym.toLocaleLowerCase());
+      const claimers = claimMap.get(m.term.toLocaleLowerCase());
       if (claimers && claimers.length > 1) {
         const chosen = claimers[0];
         id = chosen.id;

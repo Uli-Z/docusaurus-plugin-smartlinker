@@ -15,7 +15,7 @@ export interface TargetInfo {
   slug: string;
   icon?: string;
   sourcePath: string;
-  synonyms: string[];
+  terms: string[];
 }
 
 export interface IndexProvider {
@@ -37,7 +37,7 @@ export function createFsIndexProvider(opts: FsIndexProviderOptions): IndexProvid
     slug: `${prefix}${e.slug}`,
     icon: e.icon,
     sourcePath: e.sourcePath,
-    synonyms: e.synonyms,
+    terms: e.terms,
   }));
 
   return {

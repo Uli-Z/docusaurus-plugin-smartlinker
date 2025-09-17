@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { buildMatcher, type SynonymEntry } from '../src/matcher.js';
+import { buildMatcher, type AutoLinkEntry } from '../src/matcher.js';
 
 describe('matcher basics', () => {
   it('finds all occurrences, non-overlapping, left-to-right', () => {
-    const entries: SynonymEntry[] = [
+    const entries: AutoLinkEntry[] = [
       { literal: 'Amoxi', key: 'amoxicillin' },
       { literal: 'Amoxicillin', key: 'amoxicillin' },
       { literal: 'Vanco', key: 'vancomycin' },
@@ -22,7 +22,7 @@ describe('matcher basics', () => {
   });
 
   it('prefers longest match at the same start', () => {
-    const entries: SynonymEntry[] = [
+    const entries: AutoLinkEntry[] = [
       { literal: 'Amoxi', key: 'amoxicillin' },
       { literal: 'Amoxicillin', key: 'amoxicillin' },
     ];
@@ -33,7 +33,7 @@ describe('matcher basics', () => {
   });
 
   it('is case-insensitive and Unicode-aware (umlauts, ß)', () => {
-    const entries: SynonymEntry[] = [
+    const entries: AutoLinkEntry[] = [
       { literal: 'Cefuroxim', key: 'cefuroxime' },
       { literal: 'ß-Laktam', key: 'beta-lactam' },
       { literal: 'Ärzte', key: 'doctors' },
@@ -49,7 +49,7 @@ describe('matcher basics', () => {
   });
 
   it('respects word boundaries (no mid-token links)', () => {
-    const entries: SynonymEntry[] = [
+    const entries: AutoLinkEntry[] = [
       { literal: 'Amoxi', key: 'amoxicillin' },
     ];
     const m = buildMatcher(entries);
@@ -60,8 +60,8 @@ describe('matcher basics', () => {
     expect(strs).toEqual(['Amoxi', 'Amoxi']);
   });
 
-  it('multi-word synonyms match across spaces/punctuation boundaries', () => {
-    const entries: SynonymEntry[] = [
+  it('multi-word terms match across spaces/punctuation boundaries', () => {
+    const entries: AutoLinkEntry[] = [
       { literal: 'Piperacillin Tazobactam', key: 'pip-tazo' },
       { literal: 'co-amoxiclav', key: 'amox-clav' },
     ];
@@ -74,11 +74,11 @@ describe('matcher basics', () => {
 
 describe('performance smoke (loose)', () => {
   it('handles long text reasonably fast (smoke test)', () => {
-    const syns: SynonymEntry[] = [];
+    const terms: AutoLinkEntry[] = [];
     for (let i = 0; i < 2000; i++) {
-      syns.push({ literal: `Drug${i}`, key: `k${i}` });
+      terms.push({ literal: `Drug${i}`, key: `k${i}` });
     }
-    const m = buildMatcher(syns);
+    const m = buildMatcher(terms);
     const long = Array.from({ length: 200000 }).map((_, i) => (i % 1000 === 0 ? 'Drug123 ' : 'a')).join('');
     const t0 = Date.now();
     const res = m.findAll(long);
