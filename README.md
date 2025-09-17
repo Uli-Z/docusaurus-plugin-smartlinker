@@ -1,4 +1,4 @@
-# docusaurus-plugin-auto-link-abx
+# docusaurus-plugin-smartlinker
 
 *Working draft for the Smartlinker auto-linking tooling.*
 
