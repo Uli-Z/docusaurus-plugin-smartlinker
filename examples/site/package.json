@@ -1,7 +1,6 @@
 {
   "name": "@examples/site",
   "private": true,
-  
   "scripts": {
     "dev": "docusaurus start",
     "build": "docusaurus build",
@@ -9,7 +8,9 @@
   },
   "dependencies": {
     "@docusaurus/core": "^3.0.0",
-    "@docusaurus/preset-classic": "^3.0.0",
+    "@docusaurus/plugin-content-docs": "^3.8.1",
+    "@docusaurus/plugin-content-pages": "^3.8.1",
+    "@docusaurus/theme-classic": "^3.8.1",
     "@linkify-med/docusaurus-plugin": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

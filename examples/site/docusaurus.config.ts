@@ -24,23 +24,32 @@ const config: Config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
-  presets: [
+  themes: [
     [
-      'classic',
+      '@docusaurus/theme-classic',
       {
-        docs: {
-          sidebarPath: require.resolve('./sidebars.ts'),
-          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
-        },
-        blog: false,
-        pages: {
-          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
-        },
-        theme: {},
+        customCss: join(__dirname, 'src/theme/customTheme.css'),
       },
     ],
   ],
   plugins: [
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'default',
+        path: join(__dirname, 'docs'),
+        routeBasePath: 'docs',
+        sidebarPath: join(__dirname, 'sidebars.ts'),
+        remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+      },
+    ],
+    [
+      '@docusaurus/plugin-content-pages',
+      {
+        path: join(__dirname, 'src/pages'),
+        remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+      },
+    ],
     ['@linkify-med/docusaurus-plugin', {
       icons: {
         pill: 'emoji:💊',

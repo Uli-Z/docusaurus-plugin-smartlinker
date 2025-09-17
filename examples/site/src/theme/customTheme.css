@@ -1,0 +1,37 @@
+:root {
+  --ifm-font-family-base: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", Arial, sans-serif;
+  --ifm-color-primary: #2563eb;
+  --ifm-color-primary-dark: #1d4ed8;
+  --ifm-color-primary-darker: #1e40af;
+  --ifm-color-primary-darkest: #1e3a8a;
+  --ifm-color-primary-light: #3b82f6;
+  --ifm-color-primary-lighter: #60a5fa;
+  --ifm-color-primary-lightest: #93c5fd;
+  --ifm-link-color: var(--ifm-color-primary);
+  --ifm-link-hover-color: var(--ifm-color-primary-dark);
+  --ifm-link-active-color: var(--ifm-color-primary-darker);
+  --ifm-link-decoration: none;
+  --ifm-link-hover-decoration: underline;
+  --ifm-link-focus-decoration: underline;
+}
+
+html[data-theme='dark'] {
+  --ifm-color-primary: #93c5fd;
+  --ifm-color-primary-dark: #60a5fa;
+  --ifm-color-primary-darker: #3b82f6;
+  --ifm-color-primary-darkest: #1d4ed8;
+  --ifm-color-primary-light: #bfdbfe;
+  --ifm-color-primary-lighter: #dbeafe;
+  --ifm-color-primary-lightest: #eff6ff;
+  --ifm-link-color: var(--ifm-color-primary);
+  --ifm-link-hover-color: var(--ifm-color-primary-light);
+  --ifm-link-active-color: var(--ifm-color-primary-lightest);
+  --ifm-link-decoration: none;
+  --ifm-link-hover-decoration: underline;
+  --ifm-link-focus-decoration: underline;
+}
+
+.lm-smartlink {
+  font-variant-numeric: tabular-nums;
+}

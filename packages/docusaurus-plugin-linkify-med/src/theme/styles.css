@@ -1,10 +1,25 @@
 .lm-smartlink {
   display: inline-flex;
   align-items: center;
-  text-decoration: underline;
+  text-decoration: none;
   gap: var(
     --lm-smartlink-gap,
     calc(var(--ifm-spacing-horizontal, 1.5rem) / 6)
+  );
+}
+
+.lm-smartlink__text {
+  text-decoration: var(--ifm-link-decoration, inherit);
+}
+
+.lm-smartlink:hover .lm-smartlink__text {
+  text-decoration: var(--ifm-link-hover-decoration, underline);
+}
+
+.lm-smartlink:focus-visible .lm-smartlink__text {
+  text-decoration: var(
+    --ifm-link-focus-decoration,
+    var(--ifm-link-hover-decoration, underline)
   );
 }
 
@@ -14,6 +29,7 @@
     --lm-smartlink-icon-gap,
     calc(var(--ifm-spacing-horizontal, 1.5rem) / 10)
   );
+  text-decoration: none;
 }
 
 .lm-smartlink__icon {
@@ -23,6 +39,7 @@
 .lm-icon {
   width: 1em;
   height: 1em;
+  text-decoration: none;
 }
 
 .lm-icon-emoji {
