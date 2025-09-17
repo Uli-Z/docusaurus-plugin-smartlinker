@@ -32,6 +32,32 @@ type Content = {
 const moduleDir = dirname(fileURLToPath(import.meta.url));
 const pluginName = PLUGIN_NAME;
 
+const CONTENT_DIR_SEGMENTS: ReadonlyArray<ReadonlyArray<string>> = [
+  ['docs'],
+  ['src', 'pages'],
+];
+
+function toPosixPath(value: string): string {
+  return value.replace(/\\/g, '/');
+}
+
+function resolveContentRoots(siteDir: string): string[] {
+  const seen = new Set<string>();
+  for (const segments of CONTENT_DIR_SEGMENTS) {
+    seen.add(join(siteDir, ...segments));
+  }
+  return [...seen];
+}
+
+function createWatchGlobs(siteDir: string): string[] {
+  const globs = [] as string[];
+  for (const root of resolveContentRoots(siteDir)) {
+    globs.push(join(root, '**/*.md'));
+    globs.push(join(root, '**/*.mdx'));
+  }
+  return [...new Set(globs.map(toPosixPath))];
+}
+
 export default function smartlinkerPlugin(
   _context: LoadContext,
   optsIn?: PluginOptions
@@ -42,7 +68,7 @@ export default function smartlinkerPlugin(
     name: pluginName,
 
     async loadContent() {
-      const roots = [_context.siteDir];
+      const roots = resolveContentRoots(_context.siteDir);
       const files = scanMdFiles({ roots });
       const compileMdx = await createTooltipMdxCompiler(_context);
       const { entries, notes, registry } = await buildArtifacts(files, {
@@ -88,6 +114,10 @@ export default function smartlinkerPlugin(
 
     getClientModules() {
       return [join(moduleDir, 'theme/styles.css')];
+    },
+
+    getPathsToWatch() {
+      return createWatchGlobs(_context.siteDir);
     },
   };
 }
