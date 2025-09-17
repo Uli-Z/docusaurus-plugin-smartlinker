@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from '@docusaurus/types';
@@ -32,6 +33,7 @@ type Content = {
   notes: NoteModule[];
   registry: RegistryModule;
   opts: NormalizedOptions;
+  indexHash: string;
 };
 
 const moduleDir = dirname(fileURLToPath(import.meta.url));
@@ -56,6 +58,7 @@ export default function linkifyMedPlugin(
   const { options: normOpts } = validateOptions(optsIn);
   const cache = new Map<string, CachedFrontmatter>();
   const roots = [_context.siteDir];
+  const docsGeneratedRoot = join(_context.generatedFilesDir, 'docusaurus-plugin-content-docs');
 
   let compileMdxCache: CompileMdx | undefined;
   let compileMdxPromise: Promise<CompileMdx> | null = null;
@@ -152,17 +155,20 @@ export default function linkifyMedPlugin(
 
       const registry = emitRegistry(entries, notes);
 
+      const indexHash = computeIndexHash(entries);
+
       return {
         entries,
         notes,
         registry,
         opts: normOpts,
+        indexHash,
       } satisfies Content;
     },
 
     async contentLoaded({ content, actions }: { content: Content; actions: PluginContentLoadedActions }) {
       if (!content) return;
-      const { notes, registry, entries, opts } = content;
+      const { notes, registry, entries, opts, indexHash } = content;
 
       for (const note of notes) {
         await actions.createData(note.filename, note.contents);
@@ -179,6 +185,8 @@ export default function linkifyMedPlugin(
 
       const registryMeta = entries.map(({ id, slug, icon }) => ({ id, slug, icon }));
       actions.setGlobalData({ options: opts, entries: registryMeta });
+
+      updateDocsMdxDependency(docsGeneratedRoot, indexHash);
     },
 
     getThemePath() {
@@ -193,4 +201,69 @@ export default function linkifyMedPlugin(
       return [join(moduleDir, 'theme/styles.css')];
     },
   };
+}
+
+function computeIndexHash(entries: IndexRawEntry[]): string {
+  const hash = createHash('sha1');
+  for (const entry of entries) {
+    hash.update(entry.id);
+    hash.update('\0');
+    hash.update(entry.slug);
+    hash.update('\0');
+    if (entry.icon) {
+      hash.update(entry.icon);
+      hash.update('\0');
+    }
+    if (entry.shortNote) {
+      hash.update(entry.shortNote);
+      hash.update('\0');
+    }
+    for (const term of entry.terms) {
+      hash.update(term);
+      hash.update('\0');
+    }
+  }
+  return hash.digest('hex');
+}
+
+function updateDocsMdxDependency(generatedRoot: string, indexHash: string): void {
+  let entries: string[];
+  try {
+    entries = readdirSync(generatedRoot, 'utf8');
+  } catch {
+    return;
+  }
+
+  for (const dir of entries) {
+    let stats;
+    try {
+      stats = statSync(join(generatedRoot, dir));
+    } catch {
+      continue;
+    }
+    if (!stats.isDirectory()) continue;
+
+    const depPath = join(generatedRoot, dir, '__mdx-loader-dependency.json');
+    let raw: string;
+    try {
+      raw = readFileSync(depPath, 'utf8');
+    } catch {
+      continue;
+    }
+    let data: any;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      continue;
+    }
+    if (data && data.linkifyMedIndexHash === indexHash) {
+      continue;
+    }
+    try {
+      const next = { ...data, linkifyMedIndexHash: indexHash };
+      writeFileSync(depPath, JSON.stringify(next));
+    } catch {
+      // ignore write failures
+    }
+  }
 }
