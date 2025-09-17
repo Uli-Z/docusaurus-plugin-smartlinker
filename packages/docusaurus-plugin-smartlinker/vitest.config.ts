@@ -21,11 +21,11 @@ export default defineConfig({
       '@docusaurus/useBaseUrl': resolve(__dirname, 'tests/mocks/useBaseUrl.ts'),
       '@mdx-js/react': resolve(__dirname, 'tests/mocks/mdx.tsx'),
       '@theme/ThemedImage': resolve(__dirname, 'tests/mocks/ThemedImage.tsx'),
-      '@generated/docusaurus-plugin-linkify-med/default/registry': resolve(
+      '@generated/docusaurus-plugin-smartlinker/default/registry': resolve(
         __dirname,
         'tests/mocks/generatedRegistry.ts'
       ),
-      '@generated/docusaurus-plugin-linkify-med/default/tooltipComponents': resolve(
+      '@generated/docusaurus-plugin-smartlinker/default/tooltipComponents': resolve(
         __dirname,
         'tests/mocks/generatedTooltipComponents.ts'
       ),

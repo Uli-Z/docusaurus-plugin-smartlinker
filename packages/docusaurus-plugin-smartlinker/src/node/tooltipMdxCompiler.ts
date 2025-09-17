@@ -36,7 +36,7 @@ export async function createTooltipMdxCompiler(
     const filePath = join(
       siteDir,
       '.docusaurus',
-      'linkify-med',
+      'docusaurus-plugin-smartlinker',
       `tooltip-note-${counter}.mdx`
     );
 

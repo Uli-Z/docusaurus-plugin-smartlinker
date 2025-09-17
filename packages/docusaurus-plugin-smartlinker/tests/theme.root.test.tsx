@@ -18,7 +18,7 @@ vi.mock('@docusaurus/useGlobalData', () => ({
   usePluginData: (name: string) => usePluginDataMock(name),
 }));
 
-vi.mock('@generated/docusaurus-plugin-linkify-med/default/tooltipComponents', () => ({
+vi.mock('@generated/docusaurus-plugin-smartlinker/default/tooltipComponents', () => ({
   tooltipComponents: {
     DrugTip: ({ note }: { note: string }) => (
       <div data-testid="drug-tip">{note}</div>
@@ -26,7 +26,7 @@ vi.mock('@generated/docusaurus-plugin-linkify-med/default/tooltipComponents', ()
   },
 }));
 
-vi.mock('@generated/docusaurus-plugin-linkify-med/default/registry', () => ({
+vi.mock('@generated/docusaurus-plugin-smartlinker/default/registry', () => ({
   registry: {
     amoxicillin: {
       id: 'amoxicillin',
@@ -36,6 +36,7 @@ vi.mock('@generated/docusaurus-plugin-linkify-med/default/registry', () => ({
         const Tip = components?.DrugTip ?? (() => null);
         return (
           <div data-testid="shortnote">
+            Short note!
             <Tip note="From provider" />
           </div>
         );

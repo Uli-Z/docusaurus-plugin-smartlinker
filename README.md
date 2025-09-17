@@ -1,6 +1,6 @@
 # docusaurus-plugin-auto-link-abx
 
-*Working draft for the Linkify-Med auto-linking tooling.*
+*Working draft for the Smartlinker auto-linking tooling.*
 
 This monorepo hosts the Docusaurus plugin and remark helper used by the example site in `examples/site`. The intent is to turn guideline-style documentation into a modestly connected set of articles with hover notes.
 
@@ -23,7 +23,7 @@ This monorepo hosts the Docusaurus plugin and remark helper used by the example 
 ### 1. Install the packages
 
 ```bash
-pnpm add @linkify-med/docusaurus-plugin remark-linkify-med
+pnpm add docusaurus-plugin-smartlinker remark-linkify-med
 ```
 
 Use your preferred package manager; pnpm is shown because the example site relies on it.
@@ -32,7 +32,7 @@ Use your preferred package manager; pnpm is shown because the example site relie
 
 ```ts
 import remarkLinkifyMed from 'remark-linkify-med';
-import { createFsIndexProvider } from '@linkify-med/docusaurus-plugin';
+import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -59,7 +59,7 @@ const config = {
   ],
   plugins: [
     [
-      '@linkify-med/docusaurus-plugin',
+      'docusaurus-plugin-smartlinker',
       {
         icons: {
           pill: 'emoji:💊',

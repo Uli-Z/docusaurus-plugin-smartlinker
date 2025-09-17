@@ -32,7 +32,10 @@ type Content = {
 const moduleDir = dirname(fileURLToPath(import.meta.url));
 const pluginName = PLUGIN_NAME;
 
-export default function linkifyMedPlugin(_context: LoadContext, optsIn?: PluginOptions): Plugin<Content> {
+export default function smartlinkerPlugin(
+  _context: LoadContext,
+  optsIn?: PluginOptions
+): Plugin<Content> {
   const { options: normOpts } = validateOptions(optsIn);
 
   return {
