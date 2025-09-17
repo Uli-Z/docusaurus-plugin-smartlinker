@@ -1,8 +1,13 @@
 import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { createRequire } from 'node:module';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
+const mdxProcessorEntry = require.resolve(
+  '@docusaurus/mdx-loader/lib/processor.js'
+);
 
 export default defineConfig({
   test: {
@@ -20,6 +25,11 @@ export default defineConfig({
         __dirname,
         'tests/mocks/generatedRegistry.ts'
       ),
+      '@generated/docusaurus-plugin-linkify-med/default/tooltipComponents': resolve(
+        __dirname,
+        'tests/mocks/generatedTooltipComponents.ts'
+      ),
+      '@docusaurus/mdx-loader/lib/processor.js': mdxProcessorEntry,
     },
   },
 });

@@ -5,6 +5,7 @@ describe('options validation', () => {
   it('warns on empty icons map and accepts minimal config', () => {
     const { options, warnings } = validateOptions({});
     expect(options.icons).toBeDefined();
+    expect(options.tooltipComponents).toBeDefined();
     expect(Array.isArray(warnings)).toBe(true);
     expect(warnings.some(w => w.code === 'EMPTY_ICONS_OBJECT')).toBe(true);
   });
@@ -23,6 +24,24 @@ describe('options validation', () => {
       darkModeIcons: { capsule: '/capsule-dark.svg' }
     });
     expect(warnings.some(w => w.code === 'DARK_MODE_ICON_UNKNOWN')).toBe(true);
+  });
+
+  it('normalizes tooltipComponents definitions', () => {
+    const { options, warnings } = validateOptions({
+      icons: { pill: '/pill.svg' },
+      tooltipComponents: {
+        DrugTip: '@site/src/components/DrugTip',
+        Alert: { path: '@site/src/components/Alert', export: 'Alert' },
+      },
+    });
+    expect(warnings.length).toBe(0);
+    expect(options.tooltipComponents.DrugTip).toEqual({
+      importPath: '@site/src/components/DrugTip',
+    });
+    expect(options.tooltipComponents.Alert).toEqual({
+      importPath: '@site/src/components/Alert',
+      exportName: 'Alert',
+    });
   });
 });
 

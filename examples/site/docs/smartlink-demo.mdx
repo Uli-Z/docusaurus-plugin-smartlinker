@@ -4,27 +4,18 @@ title: SmartLink Demo
 sidebar_position: 4
 ---
 
-# SmartLink Demo
+This demo shows how terms like Amoxi and Cdiff automatically link to their reference pages.
 
-This walkthrough illustrates how a single paragraph referencing Amoxi and Cdiff is
-instantly upgraded with contextual links.
+Hover the highlighted terms to see Markdown-formatted tooltips that also render the custom `<DrugTip>` component registered via the plugin options.
 
-## Step-by-step tour
+The tooltip for **Amoxi** is defined in the drug entry front matter and mixes Markdown with the `<DrugTip>` React component:
 
-1. Authors write natural language instructions that mention treatments and pathogens.
-2. The Linkify-Med plugin scans the text, matching terms such as **Amoxicillin** or **Cdiff**.
-3. Matching phrases are wrapped with rich links that surface icons, quick notes, and
-   shortcut navigation to deeper documentation.
+```mdx title="docs/linkify-test.mdx"
+---
+shortNote: |
+  **Aminopenicillin.** Offers good oral bioavailability.
+  <DrugTip note="Take with food" />
+---
+```
 
-:::tip No manual markup required
-The underlying Markdown files remain clean. The plugin injects links and previews
-on the fly based on your vocabulary configuration.
-:::
-
-## Combined example
-
-> Continue Amoxi for 5 days and monitor closely for signs of Clostridioides difficile.
-
-In the published site, the snippet above produces two interactive anchors — one for the
-antibiotic and another for the infection. Readers can then jump into the related
-reference sheets for dosing recommendations or infection-control protocols.
+Hover the Amoxi link above to see the rendered component inside the tooltip.

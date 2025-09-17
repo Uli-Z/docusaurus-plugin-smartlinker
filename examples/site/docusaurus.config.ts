@@ -45,7 +45,10 @@ const config: Config = {
       icons: {
         pill: 'emoji:💊',
         bug: '/img/bug.svg',
-      }
+      },
+      tooltipComponents: {
+        DrugTip: '@site/src/components/DrugTip',
+      },
     }]
   ],
 };
