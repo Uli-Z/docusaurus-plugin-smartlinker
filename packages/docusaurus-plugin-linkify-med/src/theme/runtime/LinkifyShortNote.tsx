@@ -1,4 +1,5 @@
 import React from 'react';
+import { useMDXComponents } from '@mdx-js/react';
 import { LinkifyRegistryContext } from './context.js';
 
 export interface LinkifyShortNoteProps {
@@ -9,6 +10,7 @@ export interface LinkifyShortNoteProps {
 
 export default function LinkifyShortNote({ tipKey, fallback = null, components }: LinkifyShortNoteProps) {
   const registry = React.useContext(LinkifyRegistryContext);
+  const mdxComponents = useMDXComponents();
   if (!tipKey) {
     return fallback ?? null;
   }
@@ -19,5 +21,9 @@ export default function LinkifyShortNote({ tipKey, fallback = null, components }
     return fallback ?? null;
   }
 
-  return <Short components={components} />;
+  const mergedComponents = components
+    ? { ...mdxComponents, ...components }
+    : mdxComponents;
+
+  return <Short components={mergedComponents} />;
 }

@@ -32,6 +32,11 @@ export interface FrontmatterWarning {
   details?: Record<string, unknown>;
 }
 
+export interface FrontmatterParseFileResult {
+  entry?: IndexRawEntry;
+  warnings: FrontmatterWarning[];
+}
+
 export interface FrontmatterParseResult {
   entries: IndexRawEntry[];
   warnings: FrontmatterWarning[];
