@@ -81,45 +81,65 @@ export default function remarkLinkifyMed(opts: RemarkLinkifyMedOptions): Transfo
   const shortNoteTipKeyAttr = opts.shortNoteTipKeyAttr ?? tipKeyAttr;
   const shortNotePlaceholder = opts.shortNotePlaceholder ?? '%%SHORT_NOTICE%%';
 
-  const targets = opts.index.getAllTargets();
+  type IndexSnapshot = {
+    matcher: ReturnType<typeof buildMatcher>;
+    claimMap: Map<string, { id: string; slug: string; icon?: string }[]>;
+    targetByPath: Map<string, TargetInfo>;
+    targetById: Map<string, TargetInfo>;
+    targetBySlug: Map<string, TargetInfo>;
+  };
 
-  const termEntries: AutoLinkEntry[] = [];
-  for (const t of targets) {
-    for (const lit of t.terms) {
-      const literal = String(lit ?? '').trim();
-      if (!literal) continue;
-      termEntries.push({ literal, key: `${t.id}::${t.slug}::${t.icon ?? ''}` });
+  let memoTargets: TargetInfo[] | null = null;
+  let memoSnapshot: IndexSnapshot | null = null;
+
+  function getIndexSnapshot(): IndexSnapshot {
+    const targets = opts.index.getAllTargets();
+    if (memoSnapshot && memoTargets === targets) {
+      return memoSnapshot;
     }
-  }
 
-  termEntries.sort((a, b) => b.literal.length - a.literal.length);
-
-  const claimMap = new Map<string, { id: string; slug: string; icon?: string }[]>();
-  for (const t of targets) {
-    for (const lit of t.terms) {
-      const ll = String(lit).toLocaleLowerCase();
-      const arr = claimMap.get(ll) ?? [];
-      arr.push({ id: t.id, slug: t.slug, icon: t.icon });
-      claimMap.set(ll, arr);
+    const termEntries: AutoLinkEntry[] = [];
+    for (const t of targets) {
+      for (const lit of t.terms) {
+        const literal = String(lit ?? '').trim();
+        if (!literal) continue;
+        termEntries.push({ literal, key: `${t.id}::${t.slug}::${t.icon ?? ''}` });
+      }
     }
-  }
-  for (const [, arr] of claimMap) arr.sort((a, b) => a.id.localeCompare(b.id));
+    termEntries.sort((a, b) => b.literal.length - a.literal.length);
 
-  const matcher = buildMatcher(termEntries);
-
-  const targetByPath = new Map<string, TargetInfo>();
-  const targetById = new Map<string, TargetInfo>();
-  const targetBySlug = new Map<string, TargetInfo>();
-  for (const t of targets) {
-    if (t.sourcePath) {
-      const key = normalizePath(t.sourcePath);
-      if (key) targetByPath.set(key, t);
+    const claimMap = new Map<string, { id: string; slug: string; icon?: string }[]>();
+    for (const t of targets) {
+      for (const lit of t.terms) {
+        const ll = String(lit).toLocaleLowerCase();
+        const arr = claimMap.get(ll) ?? [];
+        arr.push({ id: t.id, slug: t.slug, icon: t.icon });
+        claimMap.set(ll, arr);
+      }
     }
-    if (t.id) targetById.set(t.id, t);
-    if (t.slug) targetBySlug.set(t.slug, t);
+    for (const [, arr] of claimMap) arr.sort((a, b) => a.id.localeCompare(b.id));
+
+    const matcher = buildMatcher(termEntries);
+
+    const targetByPath = new Map<string, TargetInfo>();
+    const targetById = new Map<string, TargetInfo>();
+    const targetBySlug = new Map<string, TargetInfo>();
+    for (const t of targets) {
+      if (t.sourcePath) {
+        const key = normalizePath(t.sourcePath);
+        if (key) targetByPath.set(key, t);
+      }
+      if (t.id) targetById.set(t.id, t);
+      if (t.slug) targetBySlug.set(t.slug, t);
+    }
+
+    memoTargets = targets;
+    memoSnapshot = { matcher, claimMap, targetByPath, targetById, targetBySlug };
+    return memoSnapshot;
   }
 
   return (tree: any, file: any) => {
+    const { matcher, claimMap, targetByPath, targetById, targetBySlug } = getIndexSnapshot();
     const currentTarget = findCurrentTarget({
       file,
       index: opts.index,

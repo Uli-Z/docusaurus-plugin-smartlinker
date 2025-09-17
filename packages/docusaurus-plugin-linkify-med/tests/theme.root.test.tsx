@@ -36,6 +36,7 @@ vi.mock('@generated/docusaurus-plugin-linkify-med/default/registry', () => ({
         const Tip = components?.DrugTip ?? (() => null);
         return (
           <div data-testid="shortnote">
+            Short note!
             <Tip note="From provider" />
           </div>
         );
