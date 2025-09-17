@@ -6,8 +6,9 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const [repoOwner = 'smartlinkmed', repoName = 'docusaurus-plugin-smartlinker'] =
+const [repoOwner = 'smartlinkmed'] =
   process.env.GITHUB_REPOSITORY?.split('/') ?? [];
+const repoName = 'docusaurus-plugin-smartlinker';
 
 const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
 
