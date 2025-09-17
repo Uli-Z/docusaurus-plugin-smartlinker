@@ -1,18 +1,22 @@
 {
   "name": "smartlinker-monorepo",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "examples/site"
+  ],
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18 <25"
   },
   "scripts": {
-    "build": "pnpm -r --filter './packages/**' run build",
-    "test": "pnpm -r --filter './packages/**' run test --",
+    "build": "npm run build --workspace docusaurus-plugin-smartlinker --workspace remark-linkify-med",
+    "test": "npm run test --workspace docusaurus-plugin-smartlinker --workspace remark-linkify-med",
     "lint": "echo \"@(optional) add eslint later\"",
-    "site:dev": "pnpm --filter @examples/site dev",
-    "site:build": "pnpm --filter @examples/site build",
-    "site:serve": "pnpm --filter @examples/site serve",
-    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && pnpm install --prefer-offline && pnpm -r --filter './packages/**' run build && pnpm site:build"
+    "site:dev": "npm run dev --workspace @examples/site",
+    "site:build": "npm run build --workspace @examples/site",
+    "site:serve": "npm run serve --workspace @examples/site",
+    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site"
   },
   "devDependencies": {
     "@docusaurus/types": "^3.8.1",
