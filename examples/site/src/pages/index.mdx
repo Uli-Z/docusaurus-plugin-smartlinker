@@ -4,7 +4,17 @@ title: Home
 
 import {Redirect} from '@docusaurus/router';
 import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
-<Redirect to="/docs/overview" />
+export default function Home() {
+  const overviewUrl = useBaseUrl('/docs/overview');
 
-If you are not redirected automatically, open the <Link to="/docs/overview">example overview</Link> to explore the live demos.
+  return (
+    <>
+      <Redirect to={overviewUrl} />
+      <p>
+        If you are not redirected automatically, open the <Link to={overviewUrl}>example overview</Link> to explore the live demos.
+      </p>
+    </>
+  );
+}
