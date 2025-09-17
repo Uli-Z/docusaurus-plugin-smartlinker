@@ -8,6 +8,40 @@ shortNote: |
   <DrugTip note="Take with food" />
 ---
 
-# Linkify Test
+# Amoxicillin reference
 
-Amoxi is transformed. Amoxicillin is also transformed.
+Amoxicillin is one of the standard examples used by the plugin to demonstrate
+how drug monographs can be cross-linked without manual HTML.
+
+:::note Quick summary
+**Class:** Aminopenicillin  \\
+**Administration routes:** Oral or intravenous  \\
+**Auto-link triggers:** Amoxi, Amoxicillin
+:::
+
+## Typical auto-link triggers
+
+- Clinical shorthand such as **Amoxi** in a discharge note.
+- The full name **Amoxicillin** inside therapeutic guidelines.
+- Mentions embedded in a dosage table or formulary export.
+
+Whenever a match is detected, the text becomes an interactive link that reuses
+this document's metadata and iconography.
+
+## Example scenario
+
+A pediatric rounding note that reads "Continue Amoxi for 5 days" will automatically
+link to this page, giving prescribers fast access to dosage adjustments.
+If the same patient develops symptoms concerning for Cdiff, the note will
+feature two contextual links: one for the antibiotic and one for the pathogen profile.
+
+## Additional metadata
+
+| Property | Value |
+| --- | --- |
+| Spectrum | Gram-positive coverage with limited Gram-negative activity |
+| Adjustment | Required in renal impairment |
+| Related organisms | *Helicobacter pylori*, *Streptococcus pneumoniae* |
+
+These details illustrate how the plugin can surface quick facts directly from the
+knowledge graph while keeping authors focused on the clinical narrative.
