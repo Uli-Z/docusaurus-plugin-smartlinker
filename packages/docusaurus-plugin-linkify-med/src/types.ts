@@ -10,7 +10,7 @@ export interface RawDocFile {
 export interface IndexRawEntry {
   id: string;
   slug: string;
-  synonyms: string[];     // normalized: trimmed, unique, lower-case for matching in later milestones
+  terms: string[];        // normalized: trimmed, unique (original casing preserved for display)
   linkify: boolean;       // default true
   icon?: string;
   shortNote?: string;     // trimmed MDX string (not compiled here)
@@ -25,7 +25,7 @@ export interface FrontmatterWarning {
     | 'LINKIFY_FALSE'
     | 'MISSING_REQUIRED'
     | 'INVALID_TYPE'
-    | 'EMPTY_SYNONYMS'
+    | 'EMPTY_AUTO_LINK'
     | 'EMPTY_ID'
     | 'EMPTY_SLUG';
   message: string;

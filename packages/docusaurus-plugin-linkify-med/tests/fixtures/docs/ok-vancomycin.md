@@ -1,7 +1,7 @@
 ---
 id: vancomycin
 slug: /antibiotics/vancomycin
-synonyms: [Vanco, Vancomycinum]
+auto-link: [Vanco, Vancomycinum]
 ---
 
 Vancomycin doc...

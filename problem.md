@@ -80,7 +80,7 @@ export function createFsIndexProvider(opts: FsIndexProviderOptions): IndexProvid
     slug: e.slug,
     icon: e.icon,
     sourcePath: e.sourcePath,
-    synonyms: e.synonyms,
+    terms: e.terms,
   }));
 
   return {

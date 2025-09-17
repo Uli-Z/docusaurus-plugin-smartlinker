@@ -15,9 +15,9 @@ describe('frontmatter loader (raw)', () => {
       { path: '/docs/ok-vancomycin.md', content: fx('ok-vancomycin.md') },
       { path: '/docs/skip-linkify-false.mdx', content: fx('skip-linkify-false.mdx') },
       { path: '/docs/bad-missing-id.mdx', content: fx('bad-missing-id.mdx') },
-      { path: '/docs/bad-empty-synonyms.mdx', content: fx('bad-empty-synonyms.mdx') },
+      { path: '/docs/bad-empty-auto-link.mdx', content: fx('bad-empty-auto-link.mdx') },
       { path: '/docs/bad-slug.mdx', content: fx('bad-slug.mdx') },
-      { path: '/docs/bad-notarray-synonyms.mdx', content: fx('bad-notarray-synonyms.mdx') },
+      { path: '/docs/bad-notarray-auto-link.mdx', content: fx('bad-notarray-auto-link.mdx') },
     ];
 
     const { entries, warnings } = loadIndexFromFiles(files);
@@ -26,7 +26,7 @@ describe('frontmatter loader (raw)', () => {
     expect(entries.map(e => e.id).sort()).toEqual(['amoxicillin', 'vancomycin']);
     const amox = entries.find(e => e.id === 'amoxicillin')!;
     expect(amox.slug).toBe('/antibiotics/amoxicillin');
-    expect(amox.synonyms).toEqual(['Amoxicillin', 'Amoxi', 'Amox', 'Amoxicillinum']);
+    expect(amox.terms).toEqual(['Amoxi', 'Amox', 'Amoxicillinum']);
     expect(amox.linkify).toBe(true);
     expect(amox.icon).toBe('pill');
     expect(amox.shortNote).toMatch(/Aminopenicillin/);
@@ -34,22 +34,22 @@ describe('frontmatter loader (raw)', () => {
     const vanco = entries.find(e => e.id === 'vancomycin')!;
     expect(vanco.icon).toBeUndefined();
     expect(vanco.shortNote).toBeUndefined();
-    expect(vanco.synonyms).toEqual(['Vancomycin', 'Vanco', 'Vancomycinum']);
+    expect(vanco.terms).toEqual(['Vanco', 'Vancomycinum']);
 
-    // Warnings: linkify:false, missing id, empty synonyms, bad slug, non-array synonyms
+    // Warnings: linkify:false, missing id, empty auto-link list, bad slug, non-array auto-link
     const codes = warnings.map(w => w.code).sort();
     expect(codes).toEqual([
       'EMPTY_ID',
-      'EMPTY_SYNONYMS',
+      'EMPTY_AUTO_LINK',
       'INVALID_TYPE', // slug must start with '/'
-      'INVALID_TYPE', // non-array synonyms
+      'INVALID_TYPE', // non-array auto-link
       'LINKIFY_FALSE'
     ].sort());
   });
 
   it('skips unsupported extensions', () => {
     const files: RawDocFile[] = [
-      { path: '/docs/file.txt', content: '---\nid: x\nslug: /x\nsynonyms: [x]\n---\n' }
+      { path: '/docs/file.txt', content: '---\nid: x\nslug: /x\nauto-link: [x]\n---\n' }
     ];
     const { entries, warnings } = loadIndexFromFiles(files);
     expect(entries.length).toBe(0);
@@ -58,53 +58,55 @@ describe('frontmatter loader (raw)', () => {
 
   it('trims and drops empty shortNote', () => {
     const files: RawDocFile[] = [
-      { path: '/docs/a.mdx', content: '---\nid: a\nslug: /a\nsynonyms: [A]\nshortNote: "    "\n---\n' }
+      { path: '/docs/a.mdx', content: '---\nid: a\nslug: /a\nauto-link: [A]\nauto-link-short-note: "    "\n---\n' }
     ];
     const { entries } = loadIndexFromFiles(files);
     expect(entries.length).toBe(1);
     expect(entries[0].shortNote).toBeUndefined();
   });
 
-  it('includes the page title as a synonym and avoids duplicates', () => {
+  it('skips files without auto-link frontmatter', () => {
     const files: RawDocFile[] = [
       {
-        path: '/docs/title-only.mdx',
-        content: '---\nid: title-only\nslug: /title-only\ntitle: Canonical Name\nsynonyms: [Alias]\n---\n'
-      },
-      {
-        path: '/docs/title-duplicate.mdx',
-        content: '---\nid: title-duplicate\nslug: /title-duplicate\ntitle: Already There\nsynonyms: [Already There]\n---\n'
-      }
-    ];
-
-    const { entries } = loadIndexFromFiles(files);
-    const withTitle = entries.find(e => e.id === 'title-only');
-    const withDuplicate = entries.find(e => e.id === 'title-duplicate');
-
-    expect(withTitle?.synonyms).toEqual(['Canonical Name', 'Alias']);
-    expect(withDuplicate?.synonyms).toEqual(['Already There']);
-  });
-
-  it('derives the title from the first heading and adds slug-based canonical matches', () => {
-    const files: RawDocFile[] = [
-      {
-        path: '/docs/amox-heading.mdx',
+        path: '/docs/no-auto.mdx',
         content: [
           '---',
-          'id: amox-heading',
-          'slug: /antibiotics/amoxicillin',
-          'synonyms: [Amoxi]',
+          'id: no-auto',
+          'slug: /docs/no-auto',
+          'title: Present but ignored',
           '---',
-          '',
-          '# Amoxicillin reference',
           '',
           'Body'
         ].join('\n')
       }
     ];
 
+    const { entries, warnings } = loadIndexFromFiles(files);
+    expect(entries).toHaveLength(0);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it('normalizes auto-link terms by trimming and deduplicating', () => {
+    const files: RawDocFile[] = [
+      {
+        path: '/docs/norm.mdx',
+        content: [
+          '---',
+          'id: norm',
+          'slug: /docs/norm',
+          'auto-link:',
+          '  - " Amoxi "',
+          '  - amoxi',
+          '  - ""',
+          '  - AMOXI',
+          '  - Vanco',
+          '---'
+        ].join('\n')
+      }
+    ];
+
     const { entries } = loadIndexFromFiles(files);
     expect(entries).toHaveLength(1);
-    expect(entries[0]?.synonyms).toEqual(['Amoxicillin reference', 'Amoxicillin', 'Amoxi']);
+    expect(entries[0]?.terms).toEqual(['Amoxi', 'Vanco']);
   });
 });

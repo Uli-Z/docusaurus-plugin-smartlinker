@@ -1,4 +1,4 @@
-export interface SynonymEntry {
+export interface AutoLinkEntry {
   /** Original casing as authored in config/frontmatter */
   literal: string;
   /** Canonical grouping key (e.g., target id) */
@@ -10,7 +10,7 @@ export interface Match {
   end: number;
   text: string;
   key: string;
-  synonym: string;
+  term: string;
 }
 
 interface TrieNode {
@@ -30,7 +30,7 @@ function isWordChar(ch: string): boolean {
   return /\p{L}|\p{N}|_/u.test(ch);
 }
 
-function buildTrie(entries: SynonymEntry[]): TrieNode {
+function buildTrie(entries: AutoLinkEntry[]): TrieNode {
   const root: TrieNode = { children: new Map() };
   for (const e of entries) {
     if (!e?.literal) continue;
@@ -52,10 +52,10 @@ function buildTrie(entries: SynonymEntry[]): TrieNode {
   return root;
 }
 
-export function buildMatcher(entries: SynonymEntry[]): Matcher {
+export function buildMatcher(entries: AutoLinkEntry[]): Matcher {
   // Normalize: remove duplicates by (key,literal lower)
   const seen = new Set<string>();
-  const uniq: SynonymEntry[] = [];
+  const uniq: AutoLinkEntry[] = [];
   for (const e of entries) {
     if (!e || typeof e.literal !== 'string' || typeof e.key !== 'string') continue;
     const lit = e.literal.trim();
@@ -118,7 +118,7 @@ export function buildMatcher(entries: SynonymEntry[]): Matcher {
             end,
             text: textSlice,
             key: bestTerminal.key,
-            synonym: bestTerminal.literal
+            term: bestTerminal.literal
           });
           i = end; // non-overlapping
           continue;

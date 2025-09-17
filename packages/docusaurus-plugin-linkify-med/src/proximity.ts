@@ -22,7 +22,7 @@ function norm(path: string): string {
 }
 
 export interface CollisionWarning {
-  synonym: string;
+  term: string;
   fromPath: string;
   candidates: { id: string; slug: string; sourcePath: string }[];
   chosenId?: string;
@@ -31,7 +31,7 @@ export interface CollisionWarning {
 }
 
 export function resolveCollision(
-  synonym: string,
+  term: string,
   fromPath: string,
   candidates: IndexRawEntry[]
 ): { chosen: IndexRawEntry | null; warnings: CollisionWarning[] } {
@@ -61,12 +61,12 @@ export function resolveCollision(
 
   const warnings: CollisionWarning[] = [
     {
-      synonym,
+      term,
       fromPath,
       candidates: best.map(c => ({ id: c.id, slug: c.slug, sourcePath: c.sourcePath })),
       chosenId: chosen.id,
       code: 'COLLISION_TIE',
-      message: `Collision tie for synonym "${synonym}", multiple candidates at equal distance. Chose lexicographically smallest slug.`
+      message: `Collision tie for term "${term}", multiple candidates at equal distance. Chose lexicographically smallest slug.`
     }
   ];
 

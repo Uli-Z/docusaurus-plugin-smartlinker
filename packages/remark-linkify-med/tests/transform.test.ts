@@ -23,8 +23,8 @@ function run(input: string, targets: TargetInfo[]) {
 
 describe('remark-linkify-med transform', () => {
   const targets: TargetInfo[] = [
-    { id: 'amoxicillin', slug: '/antibiotics/amoxicillin', icon: 'pill', sourcePath: '/a/amox.mdx', synonyms: ['Amoxi', 'Amoxicillin'] },
-    { id: 'vancomycin', slug: '/antibiotics/vancomycin', sourcePath: '/a/vanco.mdx', synonyms: ['Vanco'] },
+    { id: 'amoxicillin', slug: '/antibiotics/amoxicillin', icon: 'pill', sourcePath: '/a/amox.mdx', terms: ['Amoxi', 'Amoxicillin'] },
+    { id: 'vancomycin', slug: '/antibiotics/vancomycin', sourcePath: '/a/vanco.mdx', terms: ['Vanco'] },
   ];
 
   it('replaces all occurrences in paragraphs with <SmartLink>', () => {
@@ -75,27 +75,27 @@ Some text with Amoxi.
 
   it('is Unicode-aware (umlauts, ß) with boundaries', () => {
     const t2: TargetInfo[] = [
-      { id: 'beta-lactam', slug: '/abx/beta', sourcePath: '/b.mdx', synonyms: ['ß-Laktam'] }
+      { id: 'beta-lactam', slug: '/abx/beta', sourcePath: '/b.mdx', terms: ['ß-Laktam'] }
     ];
     const out = run('kein ß-Laktamase, aber ß-Laktam.', t2);
     expect(out).toContain('<SmartLink to="/abx/beta" tipKey="beta-lactam" match="ß-Laktam">ß-Laktam</SmartLink>');
     expect(out).toMatch(/kein ß-Laktamase, aber <SmartLink/);
   });
 
-  it('deterministically picks smallest id when synonym is shared (Milestone 8 tie rule)', () => {
+  it('deterministically picks smallest id when a term is shared (Milestone 8 tie rule)', () => {
     const t3: TargetInfo[] = [
-      { id: 'a-amox', slug: '/a', sourcePath: '/a.mdx', synonyms: ['Amoxi'] },
-      { id: 'z-amox', slug: '/z', sourcePath: '/z.mdx', synonyms: ['Amoxi'] },
+      { id: 'a-amox', slug: '/a', sourcePath: '/a.mdx', terms: ['Amoxi'] },
+      { id: 'z-amox', slug: '/z', sourcePath: '/z.mdx', terms: ['Amoxi'] },
     ];
     const out = run('Amoxi here.', t3);
     expect(out).toContain('to="/a"');
     expect(out).toContain('tipKey="a-amox"');
   });
 
-  it('skips linking synonyms on their own page', () => {
+  it('skips linking terms on their own page', () => {
     const tSelf: TargetInfo[] = [
-      { id: 'self', slug: '/docs/self', sourcePath: '/docs/current.mdx', synonyms: ['Self'] },
-      { id: 'other', slug: '/docs/other', sourcePath: '/docs/other.mdx', synonyms: ['Other'] },
+      { id: 'self', slug: '/docs/self', sourcePath: '/docs/current.mdx', terms: ['Self'] },
+      { id: 'other', slug: '/docs/other', sourcePath: '/docs/other.mdx', terms: ['Other'] },
     ];
     const out = run('Self meets Other.', tSelf);
     expect(out).toContain('Self meets <SmartLink to="/docs/other" tipKey="other" match="Other">Other</SmartLink>.');
@@ -104,7 +104,7 @@ Some text with Amoxi.
 
   it('replaces short note placeholder with LinkifyShortNote', () => {
     const tSelf: TargetInfo[] = [
-      { id: 'self', slug: '/docs/self', sourcePath: '/docs/current.mdx', synonyms: ['Self'] },
+      { id: 'self', slug: '/docs/self', sourcePath: '/docs/current.mdx', terms: ['Self'] },
     ];
     const out = run('Intro %%SHORT_NOTICE%% outro.', tSelf);
     expect(out).toContain('Intro <LinkifyShortNote tipKey="self" /> outro.');
