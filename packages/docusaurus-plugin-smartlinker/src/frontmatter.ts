@@ -13,10 +13,10 @@ const FM = z.object({
   id: z.string().optional(),
   slug: z.string().optional(),
   title: z.string().optional(),
-  'auto-link': z.array(z.string()).optional(),
+  'smartlink-terms': z.array(z.string()).optional(),
   linkify: z.boolean().optional(),
-  'auto-link-icon': z.string().optional(),
-  'auto-link-short-note': z.string().optional()
+  'smartlink-icon': z.string().optional(),
+  'smartlink-short-note': z.string().optional()
 });
 
 function isSupportedExt(path: string, extOverride?: string): boolean {
@@ -24,7 +24,7 @@ function isSupportedExt(path: string, extOverride?: string): boolean {
   return SupportedExt.has(ext as any);
 }
 
-function normalizeAutoLinkTerms(list: unknown[]): string[] {
+function normalizeSmartlinkTerms(list: unknown[]): string[] {
   const seen = new Set<string>();
   const terms: string[] = [];
   for (const value of list) {
@@ -78,28 +78,28 @@ export function parseFrontmatter(files: RawDocFile[]): FrontmatterParseResult {
         continue;
       }
 
-      const hasAutoLinkField = Object.prototype.hasOwnProperty.call(fm, 'auto-link');
-      const autoLinkRaw = (fm as any)['auto-link'];
+      const hasSmartlinkTermsField = Object.prototype.hasOwnProperty.call(fm, 'smartlink-terms');
+      const smartlinkTermsRaw = (fm as any)['smartlink-terms'];
 
-      if (!hasAutoLinkField || typeof autoLinkRaw === 'undefined') {
+      if (!hasSmartlinkTermsField || typeof smartlinkTermsRaw === 'undefined') {
         continue;
       }
 
-      if (!Array.isArray(autoLinkRaw)) {
+      if (!Array.isArray(smartlinkTermsRaw)) {
         warnings.push({
           path: file.path,
           code: 'INVALID_TYPE',
-          message: '`auto-link` must be an array of strings.'
+          message: '`smartlink-terms` must be an array of strings.'
         });
         continue;
       }
 
-      const terms = normalizeAutoLinkTerms(autoLinkRaw);
+      const terms = normalizeSmartlinkTerms(smartlinkTermsRaw);
       if (terms.length === 0) {
         warnings.push({
           path: file.path,
-          code: 'EMPTY_AUTO_LINK',
-          message: '`auto-link` must include at least one non-empty string.'
+          code: 'EMPTY_SMARTLINK_TERMS',
+          message: '`smartlink-terms` must include at least one non-empty string.'
         });
         continue;
       }
@@ -133,13 +133,13 @@ export function parseFrontmatter(files: RawDocFile[]): FrontmatterParseResult {
         continue;
       }
 
-      const shortRaw = typeof (fm as any)['auto-link-short-note'] === 'string'
-        ? (fm as any)['auto-link-short-note'].trim()
+      const shortRaw = typeof (fm as any)['smartlink-short-note'] === 'string'
+        ? (fm as any)['smartlink-short-note'].trim()
         : '';
       const shortNote = shortRaw ? shortRaw : undefined;
 
-      const iconRaw = typeof (fm as any)['auto-link-icon'] === 'string'
-        ? (fm as any)['auto-link-icon'].trim()
+      const iconRaw = typeof (fm as any)['smartlink-icon'] === 'string'
+        ? (fm as any)['smartlink-icon'].trim()
         : '';
       const icon = iconRaw ? iconRaw : undefined;
 

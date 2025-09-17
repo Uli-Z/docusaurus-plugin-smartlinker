@@ -1,15 +1,15 @@
-# Linkify-Med (Docusaurus v3) — Agent Plan
+# Smartlinker (Docusaurus v3) — Agent Plan
 
-> Goal: A Docusaurus plugin + Remark plugin that automatically turns explicitly-listed auto-link terms into links with tooltips (MDX from frontmatter). Rendered at build-time, SEO-friendly, with minimal coupling.
+> Goal: A Docusaurus plugin + Remark plugin that automatically turns explicitly-listed smartlink terms into links with tooltips (MDX from frontmatter). Rendered at build-time, SEO-friendly, with minimal coupling.
 
 ## Architecture (high-level)
 - **remark-linkify-med**: Replaces text nodes during the Remark phase with `<SmartLink …>`.
-- **docusaurus-plugin-linkify-med**: Builds the tooltip registry and theme components via `createData`, compiling `shortNote` (MDX in frontmatter) into SSR-ready TSX.
+- **docusaurus-plugin-smartlinker**: Builds the tooltip registry and theme components via `createData`, compiling `shortNote` (MDX in frontmatter) into SSR-ready TSX.
 - **Theme**: `SmartLink`, `Tooltip`, `IconResolver`.
 
 ## Invariants
 - Per-page frontmatter:
-  `id`, `slug`, `auto-link[]`, `linkify?: true`, `auto-link-icon?: string`, `auto-link-short-note?: MDX string`.
+  `id`, `slug`, `smartlink-terms[]`, `linkify?: true`, `smartlink-icon?: string`, `smartlink-short-note?: MDX string`.
 - Matching: case-insensitive, Unicode-aware, word boundaries, **all occurrences**, longest-match, left-to-right, non-overlapping.
 - Skip contexts: code blocks, inline code, already-linked text, image alt text, headings H1–H3.
 - Collisions: **folder proximity** wins; equal distance → warning; tie-breaker: lexicographic slug.
@@ -22,7 +22,7 @@
 
 ### Milestone 0 — Skeleton & Tests ✅
 - Set up pnpm monorepo:  
-  - `packages/docusaurus-plugin-linkify-med`  
+  - `packages/docusaurus-plugin-smartlinker`  
   - `packages/remark-linkify-med`  
   - `examples/site`
 - Smoke tests for both packages.
@@ -32,7 +32,7 @@
 
 ### Milestone 1 — Frontmatter Loader ✅
 - Parse frontmatter from MD/MDX with `gray-matter` + `zod`.
-- Validate fields: `id`, `slug`, `auto-link[]`, `auto-link-short-note?`, `linkify?`, `auto-link-icon?`.
+- Validate fields: `id`, `slug`, `smartlink-terms[]`, `smartlink-short-note?`, `linkify?`, `smartlink-icon?`.
 - Unit tests with fixtures.
 
 ---
@@ -119,7 +119,7 @@
   - Ensure navigation via sidebar/Inhaltsverzeichnis works.
   - Provide one or two example pages where tooltips + icons are active.
 - Manual smoke checklist: build site, click through docs, verify SmartLink tooltips/icons.
-- Goal: Allow users to click through a structured docs site and see linkify in action.
+- Goal: Allow users to click through a structured docs site and see Smartlinker in action.
 - Smoke test: build + manually verify sidebar navigation + SmartLink working.
 
 ---

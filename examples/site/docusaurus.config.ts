@@ -1,6 +1,6 @@
 import type { Config } from '@docusaurus/types';
 import remarkLinkifyMed from '../../packages/remark-linkify-med/dist/index.js';
-import { createFsIndexProvider } from '@linkify-med/docusaurus-plugin';
+import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,11 +12,11 @@ const linkifyIndex = createFsIndexProvider({
 });
 
 const config: Config = {
-  title: 'Linkify-Med Example',
+  title: 'Smartlinker Example',
   favicon: 'img/favicon.ico',
   url: 'https://example.com',
   baseUrl: '/',
-  organizationName: 'linkify-med',
+  organizationName: 'smartlinker',
   projectName: 'example',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -41,7 +41,7 @@ const config: Config = {
     ],
   ],
   plugins: [
-    ['@linkify-med/docusaurus-plugin', {
+    ['docusaurus-plugin-smartlinker', {
       icons: {
         pill: 'emoji:💊',
         bug: '/img/bug.svg',

@@ -25,7 +25,7 @@ export interface FrontmatterWarning {
     | 'LINKIFY_FALSE'
     | 'MISSING_REQUIRED'
     | 'INVALID_TYPE'
-    | 'EMPTY_AUTO_LINK'
+    | 'EMPTY_SMARTLINK_TERMS'
     | 'EMPTY_ID'
     | 'EMPTY_SLUG';
   message: string;

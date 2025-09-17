@@ -1,5 +1,5 @@
 {
-  "name": "@linkify-med/docusaurus-plugin",
+  "name": "docusaurus-plugin-smartlinker",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",

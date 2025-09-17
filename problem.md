@@ -54,7 +54,7 @@ const config: Config = {
       },
     ],
   ],
-  plugins: ['@linkify-med/docusaurus-plugin'],
+  plugins: ['docusaurus-plugin-smartlinker'],
 };
 ```
 

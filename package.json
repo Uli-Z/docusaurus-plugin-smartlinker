@@ -1,5 +1,5 @@
 {
-  "name": "linkify-med-monorepo",
+  "name": "smartlinker-monorepo",
   "private": true,
   "packageManager": "pnpm@9.0.0",
   "engines": {
