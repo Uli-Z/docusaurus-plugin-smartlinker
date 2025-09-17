@@ -1,7 +1,6 @@
 .lm-smartlink {
   display: inline-flex;
   align-items: center;
-  text-decoration: underline;
   gap: var(
     --lm-smartlink-gap,
     calc(var(--ifm-spacing-horizontal, 1.5rem) / 6)
