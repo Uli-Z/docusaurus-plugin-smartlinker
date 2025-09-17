@@ -101,7 +101,7 @@ Implemented a pure frontmatter loader for `@linkify-med/docusaurus-plugin` that 
   - `packages/docusaurus-plugin-linkify-med/src/frontmatterAdapter.ts`
 - Added test fixtures under `packages/docusaurus-plugin-linkify-med/tests/fixtures/docs/`:
   - `ok-amoxicillin.mdx`, `ok-vancomycin.md`, `skip-linkify-false.mdx`,
-    `bad-missing-id.mdx`, `bad-empty-auto-link.mdx`, `bad-slug.mdx`, `bad-notarray-auto-link.mdx`
+    `bad-missing-id.mdx`, `bad-empty-smartlink-terms.mdx`, `bad-slug.mdx`, `bad-notarray-smartlink-terms.mdx`
 - Added unit tests: `packages/docusaurus-plugin-linkify-med/tests/frontmatter.test.ts`.
 
 ## Test Results
@@ -229,7 +229,7 @@ Added `@mdx-js/mdx` as a dependency. Implemented the `emitShortNoteModule` funct
 ## Notes
 
 - Uses Milestone 7 matcher for all-occurrence, longest, non-overlapping matching.
-- Deterministic tie-breaking for shared auto-link literals by smallest `id` (temporary rule for M8).
+- Deterministic tie-breaking for shared smartlink terms by smallest `id` (temporary rule for M8).
 - Skips transformation within MDX JSX and headings depth 1–3 using visit SKIP to avoid recursing.
 - Tests assert replacement, skip contexts, Unicode handling, and deterministic behavior.
 
@@ -353,7 +353,7 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 ## Files changed
 
 - examples/site/docusaurus.config.ts: switched to `import remarkLinkifyMed from 'remark-linkify-med'`; added FS-based `createFsIndexProvider()` using `fs`, `path`, and `gray-matter`; removed all `@generated/.../registry` usage; applied remark plugin to `pages` (docs disabled in preset, but FS scan still includes `docs/`).
-- examples/site/src/pages/linkify-test.mdx: added frontmatter (id/slug/auto-link/auto-link-icon/auto-link-short-note) and sample text.
+- examples/site/src/pages/linkify-test.mdx: added frontmatter (id/slug/smartlink-terms/smartlink-icon/smartlink-short-note) and sample text.
 - examples/site/package.json: added dependency `gray-matter@^4.0.3`.
 
 ## Build result
@@ -386,7 +386,7 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 
 ## Rationale
 
-- Decouples remark transform from Docusaurus plugin runtime data. The transform now builds its own lightweight auto-link index from frontmatter at config time.
+- Decouples remark transform from Docusaurus plugin runtime data. The transform now builds its own lightweight smartlink index from frontmatter at config time.
 - Ensures ESM import path is used for the remark plugin, avoiding prior CJS wrapper issues.
   - Adjusted internal ESM imports in `remark-linkify-med` to include `.js` extensions for Node ESM compatibility (src/index.ts and src/transform.ts).
 

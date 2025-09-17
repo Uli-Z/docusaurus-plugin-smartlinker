@@ -9,8 +9,8 @@ describe('buildArtifacts (pure pipeline)', async () => {
         content: `---
 id: amoxicillin
 slug: /antibiotics/amoxicillin
-auto-link: [Amoxi]
-auto-link-short-note: "**Note**"
+smartlink-terms: [Amoxi]
+smartlink-short-note: "**Note**"
 ---
 Body`
       },
@@ -19,7 +19,7 @@ Body`
         content: `---
 id: vancomycin
 slug: /antibiotics/vancomycin
-auto-link: [Vanco]
+smartlink-terms: [Vanco]
 ---
 Body`
       }

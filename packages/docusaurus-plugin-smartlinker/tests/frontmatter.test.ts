@@ -15,9 +15,9 @@ describe('frontmatter loader (raw)', () => {
       { path: '/docs/ok-vancomycin.md', content: fx('ok-vancomycin.md') },
       { path: '/docs/skip-linkify-false.mdx', content: fx('skip-linkify-false.mdx') },
       { path: '/docs/bad-missing-id.mdx', content: fx('bad-missing-id.mdx') },
-      { path: '/docs/bad-empty-auto-link.mdx', content: fx('bad-empty-auto-link.mdx') },
+      { path: '/docs/bad-empty-smartlink-terms.mdx', content: fx('bad-empty-smartlink-terms.mdx') },
       { path: '/docs/bad-slug.mdx', content: fx('bad-slug.mdx') },
-      { path: '/docs/bad-notarray-auto-link.mdx', content: fx('bad-notarray-auto-link.mdx') },
+      { path: '/docs/bad-notarray-smartlink-terms.mdx', content: fx('bad-notarray-smartlink-terms.mdx') },
     ];
 
     const { entries, warnings } = loadIndexFromFiles(files);
@@ -36,20 +36,20 @@ describe('frontmatter loader (raw)', () => {
     expect(vanco.shortNote).toBeUndefined();
     expect(vanco.terms).toEqual(['Vanco', 'Vancomycinum']);
 
-    // Warnings: linkify:false, missing id, empty auto-link list, bad slug, non-array auto-link
+    // Warnings: linkify:false, missing id, empty smartlink-terms list, bad slug, non-array smartlink-terms
     const codes = warnings.map(w => w.code).sort();
     expect(codes).toEqual([
       'EMPTY_ID',
-      'EMPTY_AUTO_LINK',
+      'EMPTY_SMARTLINK_TERMS',
       'INVALID_TYPE', // slug must start with '/'
-      'INVALID_TYPE', // non-array auto-link
+      'INVALID_TYPE', // non-array smartlink-terms
       'LINKIFY_FALSE'
     ].sort());
   });
 
   it('skips unsupported extensions', () => {
     const files: RawDocFile[] = [
-      { path: '/docs/file.txt', content: '---\nid: x\nslug: /x\nauto-link: [x]\n---\n' }
+      { path: '/docs/file.txt', content: '---\nid: x\nslug: /x\nsmartlink-terms: [x]\n---\n' }
     ];
     const { entries, warnings } = loadIndexFromFiles(files);
     expect(entries.length).toBe(0);
@@ -58,14 +58,14 @@ describe('frontmatter loader (raw)', () => {
 
   it('trims and drops empty shortNote', () => {
     const files: RawDocFile[] = [
-      { path: '/docs/a.mdx', content: '---\nid: a\nslug: /a\nauto-link: [A]\nauto-link-short-note: "    "\n---\n' }
+      { path: '/docs/a.mdx', content: '---\nid: a\nslug: /a\nsmartlink-terms: [A]\nsmartlink-short-note: "    "\n---\n' }
     ];
     const { entries } = loadIndexFromFiles(files);
     expect(entries.length).toBe(1);
     expect(entries[0].shortNote).toBeUndefined();
   });
 
-  it('skips files without auto-link frontmatter', () => {
+  it('skips files without smartlink frontmatter', () => {
     const files: RawDocFile[] = [
       {
         path: '/docs/no-auto.mdx',
@@ -86,7 +86,7 @@ describe('frontmatter loader (raw)', () => {
     expect(warnings).toHaveLength(0);
   });
 
-  it('normalizes auto-link terms by trimming and deduplicating', () => {
+  it('normalizes smartlink terms by trimming and deduplicating', () => {
     const files: RawDocFile[] = [
       {
         path: '/docs/norm.mdx',
@@ -94,7 +94,7 @@ describe('frontmatter loader (raw)', () => {
           '---',
           'id: norm',
           'slug: /docs/norm',
-          'auto-link:',
+          'smartlink-terms:',
           '  - " Amoxi "',
           '  - amoxi',
           '  - ""',
