@@ -1,0 +1,96 @@
+---
+id: demo
+title: Smartlinker — Live Demo
+sidebar_position: 1
+description: See how terms auto-link to docs with hover tooltips in seconds.
+---
+
+## At a glance
+
+> Continue Amoxi for five days. Reassess if signs of Clostridioides difficile appear. If symptoms persist, consider switching from Amoxicillin.
+
+- Amoxi, Clostridioides difficile, and Amoxicillin are automatically linked.
+- Hover to see a short note; an icon appears to the right of the text.
+- Mentions on the target page itself do not self-link.
+
+## How it works
+
+- You annotate documents with front matter (id, slug, smartlink-terms).
+- A remark plugin transforms matching text into `<SmartLink>` elements.
+- A theme component renders the link with an optional MDX tooltip and icon.
+
+## Minimal setup (snippet)
+
+```ts title="docusaurus.config.ts"
+import remarkLinkifyMed from 'remark-linkify-med';
+import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
+import { join } from 'node:path';
+
+const linkifyIndex = createFsIndexProvider({
+  roots: [join(__dirname, 'docs')],
+  slugPrefix: '/docs',
+});
+
+export default {
+  presets: [['classic', {
+    docs: { remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]] },
+    pages: { remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]] },
+  }]],
+  plugins: [['docusaurus-plugin-smartlinker', {
+    icons: { pill: 'emoji:💊', bug: '/img/bug.svg' },
+    tooltipComponents: {
+      DrugTip: '@site/src/components/DrugTip',
+    },
+  }]],
+};
+```
+
+## Annotate documents
+
+```mdx title="docs/antibiotics/amoxicillin.mdx"
+---
+id: amoxicillin
+slug: /antibiotics/amoxicillin
+smartlink-terms: [Amoxi, Amoxicillin]
+smartlink-icon: pill
+smartlink-short-note: |
+  Aminopenicillin with good oral bioavailability.
+  <DrugTip note="Take with food" />
+---
+```
+
+## Render the short note inside a page
+
+Place the placeholder anywhere in the body of a target document to render its own short note inline:
+
+```md
+%%SHORT_NOTICE%%
+```
+
+- Works only on the target page (the page whose `id` matches the current doc).
+- If no short note is defined for the page, nothing is rendered.
+
+```mdx title="docs/bacteria/cdiff.mdx"
+---
+id: cdiff
+slug: /bacteria/cdiff
+smartlink-terms: [Cdiff, Clostridioides difficile]
+smartlink-icon: bug
+smartlink-short-note: |
+  Anaerobic, spore-forming Gram-positive rod.
+---
+```
+
+## What gets linked
+
+- Case-insensitive, Unicode-aware, word boundaries.
+- Longest match wins; non-overlapping, left-to-right; all occurrences.
+- Skips code blocks, inline code, links, images, and H1–H3.
+
+## Opt out
+
+```mdx
+---
+linkify: false
+---
+```

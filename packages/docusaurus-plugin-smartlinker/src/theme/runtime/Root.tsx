@@ -28,6 +28,7 @@ function Providers({ children }: { children: React.ReactNode }) {
       ...existingComponents,
       ...tooltipComponents,
       SmartLink,
+      LinkifyShortNote,
     }),
     [existingComponents],
   );
@@ -65,4 +66,3 @@ export default function LinkifyRoot({ children }: { children: React.ReactNode })
     </Root>
   );
 }
-
