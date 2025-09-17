@@ -1,109 +1,111 @@
 # docusaurus-plugin-auto-link-abx
 
-This monorepo provides the Linkify-Med Docusaurus plugin and an accompanying remark plugin used by the example site.
+*Working draft for the Linkify-Med auto-linking tooling.*
 
-## Publishing from `dist`
+This monorepo hosts the Docusaurus plugin and remark helper used by the example site in `examples/site`. The intent is to turn guideline-style documentation into a modestly connected set of articles with hover notes.
 
-The Docusaurus theme now ships from the compiled `dist/theme` directory.  All runtime imports have explicit `.js` extensions so no postbuild rewrites are required.  Consumers point to the published package and Docusaurus resolves the compiled theme automatically.
+## Status
 
-## SmartLink availability
+- Early experiment. Interfaces and package names may still change.
+- Lightly smoke-tested against the bundled example site only.
+- Documentation and automated tests are incomplete.
 
-`@linkify-med/docusaurus-plugin` wires its providers in `@theme/Root`.  The plugin injects `<SmartLink>` into the global `MDXProvider`, so MDX content can use `<SmartLink>` without local imports or swizzle overrides.
+## Current capabilities
 
-## Tooltip content
+- Build an index from Markdown/MDX front matter (`id`, `slug`, `auto-link` terms) and resolve matching text to the referenced document.
+- Inject a shared `<SmartLink>` component through the MDX provider so matches render consistently across pages, admonitions, and tables.
+- Show optional icons per entry, including a default icon and dark-mode overrides.
+- Render hover notes as MDX, allowing Markdown and registered React components inside the tooltip.
+- Ship a remark plugin so Markdown strings processed by Docusaurus receive the same auto-linking as MDX content.
 
-Short notes defined in frontmatter are compiled as MDX. This enables Markdown formatting inside the tooltip (for example `**bold**`, lists, and links) and supports custom React components. Register tooltip components in the plugin options so they are available while rendering MDX:
+## Getting started
 
-```ts
-plugins: [
-  [
-    '@linkify-med/docusaurus-plugin',
-    {
-      icons: { pill: 'emoji:💊' },
-      tooltipComponents: {
-        DrugTip: '@site/src/components/DrugTip',
-      },
-    },
-  ],
-];
-```
-
-With this configuration a short note can use `<DrugTip note="Take with food" />` alongside Markdown syntax and the tooltip will render the component.
-
-## CSS loading
-
-The plugin exposes its CSS via `getClientModules()`.  When the plugin is enabled Docusaurus automatically loads `dist/theme/styles.css`, no manual stylesheet import is required.
-
-## Styling
-
-The runtime styles expose CSS custom properties that inherit from Docusaurus' Infima tokens, so they automatically adapt to the active theme.  Override any variable in your site's stylesheet to tweak spacing or tooltip appearance without swizzling components.
-
-### SmartLink variables
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `--lm-smartlink-gap` | ``calc(var(--ifm-spacing-horizontal, 1.5rem) / 6)`` | Gap between the link text and the trailing icon. |
-| `--lm-smartlink-icon-gap` | ``calc(var(--ifm-spacing-horizontal, 1.5rem) / 10)`` | Left margin applied to the icon wrapper to create breathing room. |
-
-### Tooltip variables
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `--lm-tooltip-transition-duration` | ``var(--ifm-transition-fast, 150ms)`` | Duration for the fade/slide transition. |
-| `--lm-tooltip-z-index` | ``var(--ifm-z-index-overlay, 400)`` | Stacking context used for the tooltip portal. |
-| `--lm-tooltip-offset-rest` | ``calc(var(--ifm-spacing-vertical, 1rem) / 4)`` | Downward translation applied while the tooltip is hidden. |
-| `--lm-tooltip-offset-active` | ``calc(var(--ifm-spacing-vertical, 1rem) * -0.1)`` | Upward translation applied when the tooltip is visible. |
-| `--lm-tooltip-bg` | ``var(--ifm-tooltip-background-color, var(--ifm-color-emphasis-800))`` | Tooltip background color. |
-| `--lm-tooltip-color` | ``var(--ifm-tooltip-color, var(--ifm-color-emphasis-0))`` | Foreground/text color. |
-| `--lm-tooltip-padding` | ``calc(var(--ifm-spacing-vertical, 1rem) / 2) calc(var(--ifm-spacing-horizontal, 1.5rem) / 2)`` | Inner padding around the short note content. |
-| `--lm-tooltip-radius` | ``var(--ifm-global-radius, 0.4rem)`` | Corner radius for the tooltip surface. |
-| `--lm-tooltip-shadow` | ``var(--ifm-global-shadow-md)`` | Drop shadow that frames the tooltip. |
-| `--lm-tooltip-font-size` | ``var(--ifm-font-size-sm, 0.875rem)`` | Font size for tooltip content. |
-| `--lm-tooltip-arrow-color` | ``var(--lm-tooltip-bg)`` | Fill color for the Radix arrow element. |
-
-For example, a site can round the surface and brighten the tooltip background by adding the following snippet to `src/css/custom.css`:
-
-```css
-:root {
-  --lm-tooltip-bg: var(--ifm-color-primary);
-  --lm-tooltip-radius: 0.75rem;
-  --lm-tooltip-padding: 0.75rem 1rem;
-}
-
-## Styling & Swizzle
-
-Override the default look and feel by targeting the SmartLink and tooltip hooks from a site-level stylesheet such as `src/css/custom.css`.
-
-```css
-/* src/css/custom.css */
-:root {
-  --lm-tooltip-bg: #1d1f4f;
-}
-
-.lm-tooltip-content {
-  background: var(--lm-tooltip-bg);
-  color: var(--ifm-color-white);
-  border-radius: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-
-.lm-tooltip-arrow {
-  fill: var(--lm-tooltip-bg);
-}
-
-.lm-smartlink__iconwrap {
-  display: none;
-}
-```
-
-For deeper React customisations swizzle the runtime components and wire in your own versions.  The SmartLink and Tooltip entry points are exposed by the plugin:
+### 1. Install the packages
 
 ```bash
-npx docusaurus swizzle docusaurus-plugin-linkify-med Tooltip
-npx docusaurus swizzle docusaurus-plugin-linkify-med SmartLink
+pnpm add @linkify-med/docusaurus-plugin remark-linkify-med
 ```
 
-## Swizzle notes
+Use your preferred package manager; pnpm is shown because the example site relies on it.
 
-Consumers can still swizzle `@theme/SmartLink` or `@theme/Tooltip` for custom behaviour.  The plugin’s context providers live in `@theme/Root`; swizzled components should read from `IconConfigContext` and `LinkifyRegistryContext` to stay aligned with the generated registry.
+### 2. Configure Docusaurus
+
+```ts
+import remarkLinkifyMed from 'remark-linkify-med';
+import { createFsIndexProvider } from '@linkify-med/docusaurus-plugin';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const linkifyIndex = createFsIndexProvider({
+  roots: [join(__dirname, 'docs')],
+  slugPrefix: '/docs',
+});
+
+const config = {
+  presets: [
+    [
+      'classic',
+      {
+        docs: {
+          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+        },
+        pages: {
+          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+        },
+      },
+    ],
+  ],
+  plugins: [
+    [
+      '@linkify-med/docusaurus-plugin',
+      {
+        icons: {
+          pill: 'emoji:💊',
+          bug: '/img/bug.svg',
+        },
+        defaultIcon: 'pill',
+        tooltipComponents: {
+          DrugTip: '@site/src/components/DrugTip',
+        },
+      },
+    ],
+  ],
+};
+```
+
+The plugin loads its CSS bundle through `getClientModules()`, so no manual stylesheet imports are required.
+
+### 3. Annotate your documents
+
+Add front matter to each Markdown/MDX file you want to index:
+
+```mdx
+---
+id: amoxicillin
+slug: /antibiotics/amoxicillin
+auto-link:
+  - Amoxi
+  - Amoxicillin
+auto-link-icon: pill
+auto-link-short-note: |
+  **Aminopenicillin.** Offers good oral bioavailability.
+  <DrugTip note="Take with food" />
+---
+```
+
+Key fields:
+
+| Field | Purpose |
+| --- | --- |
+| `auto-link` | Array of terms and abbreviations that should resolve to the document. |
+| `auto-link-icon` | Optional icon id defined in the plugin options. |
+| `auto-link-short-note` | Optional MDX snippet displayed inside the tooltip. |
+| `linkify` | Set to `false` on a document to skip indexing it. |
+
+Tooltip content is rendered as MDX, so inline Markdown and any components registered under `tooltipComponents` are allowed.
+
+## Example site
+
+The `examples/site` directory contains a small Docusaurus project that exercises the current feature set. It also serves as the primary regression test, so expect rough edges until we broaden coverage.
