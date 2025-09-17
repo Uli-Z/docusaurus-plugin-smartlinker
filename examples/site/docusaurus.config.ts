@@ -71,6 +71,9 @@ const config: Config = {
         pill: 'emoji:💊',
         bug: '/img/bug.svg',
       },
+      darkModeIcons: {
+        bug: '/img/bug-dark.svg',
+      },
       tooltipComponents: {
         DrugTip: '@site/src/components/DrugTip',
       },
