@@ -6,3 +6,15 @@ title: SmartLink Demo
 This demo shows how terms like Amoxi and Cdiff automatically link to their reference pages.
 
 Hover the highlighted terms to see Markdown-formatted tooltips that also render the custom `<DrugTip>` component registered via the plugin options.
+
+The tooltip for **Amoxi** is defined in the drug entry front matter and mixes Markdown with the `<DrugTip>` React component:
+
+```mdx title="docs/linkify-test.mdx"
+---
+shortNote: |
+  **Aminopenicillin.** Offers good oral bioavailability.
+  <DrugTip note="Take with food" />
+---
+```
+
+Hover the Amoxi link above to see the rendered component inside the tooltip.

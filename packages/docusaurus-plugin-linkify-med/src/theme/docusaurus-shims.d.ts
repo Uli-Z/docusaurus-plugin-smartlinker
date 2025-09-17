@@ -41,3 +41,35 @@ declare module '@theme/ThemedImage' {
   export default ThemedImage;
 }
 
+declare module '@docusaurus/mdx-loader' {
+  export interface Options {
+    siteDir: string;
+    staticDirs?: readonly string[];
+    markdownConfig?: unknown;
+    remarkPlugins?: readonly unknown[];
+    rehypePlugins?: readonly unknown[];
+    recmaPlugins?: readonly unknown[];
+    beforeDefaultRemarkPlugins?: readonly unknown[];
+    beforeDefaultRehypePlugins?: readonly unknown[];
+    admonitions?: boolean;
+  }
+}
+
+declare module '@docusaurus/mdx-loader/lib/processor.js' {
+  import type { Options } from '@docusaurus/mdx-loader';
+
+  interface Processor {
+    process(input: {
+      content: string;
+      filePath: string;
+      frontMatter: Record<string, unknown>;
+      compilerName: string;
+    }): Promise<{ content: string }>;
+  }
+
+  export function createProcessorUncached(args: {
+    options: Options;
+    format: string;
+  }): Promise<Processor>;
+}
+
