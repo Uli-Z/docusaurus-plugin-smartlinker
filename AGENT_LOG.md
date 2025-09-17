@@ -659,14 +659,52 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm -r --filter './packages/**' run test`
 - `pnpm site:build`
 
-# Status Sync — Plan aktualisiert
+# Status Sync — Plan updated
 
 ## Summary
 
-- `AGENT_PLAN.md` angepasst: Milestone 11 als abgeschlossen markiert und festgehalten, dass der Remark-Einsatz jetzt über einen FS-basierten IndexProvider ohne Registry-Kopplung läuft.
-- Milestone 12 konkretisiert: Fokus auf vollwertige Docs-Struktur im Beispielprojekt, inklusive Sidebar, mehreren Demo-Dokumenten und manueller SmartLink-Prüfung nach dem Build.
+- Updated `AGENT_PLAN.md`: marked Milestone 11 as complete and documented that the Remark integration now runs through an FS-based IndexProvider without registry coupling.
+- Refined Milestone 12 to focus on a full documentation structure in the example project, including a sidebar, multiple demo documents, and manual SmartLink verification after each build.
 
-## Nächste Schritte
+## Next Steps
 
-- Aufbau der Docs-Inhalte und Navigationsstruktur für Milestone 12 umsetzen.
-- Nach jedem größeren Schritt `pnpm site:build` ausführen und SmartLinks (Tooltip, Icons, Navigation) manuell prüfen.
+- Build out the documentation content and navigation structure for Milestone 12.
+- After each major milestone, run `pnpm site:build` and manually verify SmartLinks (tooltips, icons, navigation).
+
+# Status Sync — Public release readiness plan (2025-09-17)
+
+## Current Status
+
+- Both `@linkify-med/docusaurus-plugin` and `remark-linkify-med` are still at version `0.0.0` and lack `license`, `repository`, and `homepage` metadata in their respective `package.json` files.
+- The repository does not yet include a `LICENSE` file and the root README is missing installation instructions as well as deployment guidance for the example site.
+- The example Docusaurus site (`examples/site`) has its built `build/` directory checked into git, and its `docusaurus.config.ts` still contains placeholder values such as `example.com` and `projectName: 'example'`.
+- There is no automated build/deploy workflow (e.g., GitHub Actions), and the generated site build is not ignored.
+- The example site imports the Remark plugin build directly from `../../packages/.../dist/index.js`, which only works after a local build; consumers installing from a Git URL would expect proper package exports.
+
+## Task List
+
+### 1. Prepare the repository for a public release
+- [ ] Remove `examples/site/build` from git and add it to `.gitignore` (potentially via `examples/site/.gitignore`).
+- [ ] Add public-facing metadata: create a `LICENSE`, update the README with project description, features, limitations, and deployment guidance.
+- [ ] Update the root and package-level `package.json` files with `description`, `repository`, `bugs`, `homepage`, `author`/`contributors`, and `license`, and bump versions to a meaningful starting point (e.g., `0.1.0`).
+- [ ] Review package-specific `README`/`CHANGELOG` content and align it with the intended release state.
+- [ ] Optional: evaluate whether internal documents such as `AGENT_LOG.md`/`AGENT_PLAN.md` should remain in the public repository or move to an archive/wiki.
+
+### 2. Enable installation directly from the Git URL
+- [ ] Add `prepare` scripts to both packages that run `npm run build` so `dist/` assets are generated automatically when installing from git (without assuming pnpm).
+- [ ] Ensure build artifacts are published via the `files` field or `.npmignore`, and double-check that no required runtime dependencies are missing.
+- [ ] Update the example site and documentation to import packages via public entry points (e.g., `import remarkLinkifyMed from 'remark-linkify-med';`) so consumers see the same API.
+- [ ] Add an “Install from Git” section to the README with tested commands (`npm install github:<org>/<repo>#path:packages/...`) and peer dependency notes.
+- [ ] Automate a smoke test (script or CI job) that clones the repository, installs via Git URL, and performs a minimal Docusaurus build.
+
+### 3. Deploy the example site to GitHub Pages
+- [ ] Update `examples/site/docusaurus.config.ts` with the real GitHub Pages domain and `baseUrl` (`/docusaurus-plugin-auto-link-abx/`), using environment variables (`process.env`) to keep local development flexible.
+- [ ] Create a deploy workflow (e.g., GitHub Actions with `actions/upload-pages-artifact` + `actions/deploy-pages` or `peaceiris/actions-gh-pages`) that runs `pnpm install`, `pnpm -r run build`, and `pnpm site:build`, then publishes the output to `gh-pages`.
+- [ ] Add root-level scripts (`site:deploy` or `pages:deploy`) that trigger the same process locally.
+- [ ] Optional: configure a `CNAME` or other metadata if a custom domain is planned.
+- [ ] Document the deployment process in the README, including GitHub Pages settings, required permissions, and branch protection considerations.
+
+### 4. Quality assurance and maintenance
+- [ ] Introduce a CI pipeline (GitHub Actions) that runs tests (`pnpm -r run test`) and builds (`pnpm -r run build`, `pnpm site:build`).
+- [ ] Add automated release checks (e.g., `pnpm pack` for both packages) and consider enabling Dependabot or Renovate.
+- [ ] Decide whether additional safety checks (ESLint, strict TypeScript settings, etc.) are required before the public release.
