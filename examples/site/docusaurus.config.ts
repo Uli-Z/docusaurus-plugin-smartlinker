@@ -61,7 +61,9 @@ const config: Config = {
         pages: {
           remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
         },
-        theme: {},
+        theme: {
+          customCss: join(__dirname, 'src/css/custom.css'),
+        },
       },
     ],
   ],
