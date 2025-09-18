@@ -53,17 +53,20 @@ describe('SmartLink (theme)', () => {
       <SmartLink to="/antibiotics/amoxicillin" icon="pill" tipKey="amoxicillin">Amoxi</SmartLink>,
       { registry: { amoxicillin: { id: 'amoxicillin', slug: '/antibiotics/amoxicillin', icon: 'pill' } } }
     );
-    const a = screen.getByRole('link', { name: /Amoxi/ });
-    expect(a).toHaveAttribute('href', '/antibiotics/amoxicillin');
-    expect(a).toHaveAttribute('data-tipkey', 'amoxicillin');
+    const textLink = screen.getByRole('link', { name: /^Amoxi$/ });
+    expect(textLink).toHaveAttribute('href', '/antibiotics/amoxicillin');
+    expect(textLink).toHaveAttribute('data-tipkey', 'amoxicillin');
 
-    // The icon img should be present and logically after text in DOM order
-    const text = screen.getByText('Amoxi');
-    const imgs = a.querySelectorAll('img');
-    expect(imgs.length).toBe(1);
-    // ensure the icon node comes after the text in the anchor's children
-    const order = Array.from(a.childNodes);
-    expect(order.indexOf(text.parentElement!)).toBeLessThan(order.indexOf(imgs[0].parentElement!.parentElement!));
+    const wrapper = textLink.closest('.lm-smartlink') as HTMLElement;
+    expect(wrapper).toBeTruthy();
+
+    const iconLink = wrapper.querySelector('.lm-smartlink__iconlink') as HTMLAnchorElement;
+    expect(iconLink).toBeTruthy();
+    expect(iconLink).toHaveAttribute('href', '/antibiotics/amoxicillin');
+
+    const order = Array.from(wrapper.children);
+    expect(order.indexOf(textLink)).toBe(0);
+    expect(order.indexOf(iconLink)).toBeGreaterThan(order.indexOf(textLink));
   });
 
   it('desktop hover shows tooltip content when ShortNote exists', async () => {
@@ -71,10 +74,11 @@ describe('SmartLink (theme)', () => {
       <SmartLink to="/x" icon="pill" tipKey="amoxicillin">Amoxi</SmartLink>,
       { registry: { amoxicillin: { id: 'amoxicillin', slug: '/x', icon: 'pill', ShortNote: Note } } }
     );
-    const link = screen.getByRole('link', { name: /Amoxi/ });
+    const link = screen.getByRole('link', { name: /^Amoxi$/ });
     expect(link).toHaveAttribute('data-tipkey', 'amoxicillin');
+    const wrapper = link.closest('.lm-smartlink') as HTMLElement;
     // hover
-    await userEvent.hover(link);
+    await userEvent.hover(wrapper);
     // content should appear (Radix may render multiple nodes)
     const tips = await screen.findAllByTestId('tooltip-note');
     expect(tips.length).toBeGreaterThan(0);
@@ -94,11 +98,12 @@ describe('SmartLink (theme)', () => {
       { registry: { amoxicillin: { id: 'amoxicillin', slug: '/x', icon: 'pill', ShortNote: Note } } }
     );
 
-    const link = screen.getByRole('link', { name: /Amoxi/ });
-    const icon = link.querySelector('.lm-smartlink__icon') as HTMLElement;
+    const link = screen.getByRole('link', { name: /^Amoxi$/ });
+    const wrapper = link.closest('.lm-smartlink') as HTMLElement;
+    const iconLink = wrapper.querySelector('.lm-smartlink__iconlink') as HTMLAnchorElement;
 
     // Tap icon: tooltip shows
-    await userEvent.click(icon);
+    await userEvent.click(iconLink);
     const tips = await screen.findAllByTestId('tooltip-note');
     expect(tips.length).toBeGreaterThan(0);
 
@@ -112,8 +117,9 @@ describe('SmartLink (theme)', () => {
     setup(<SmartLink to="/x" icon="pill" tipKey="amoxicillin">Amoxi</SmartLink>, {
       registry: { amoxicillin: { id: 'amoxicillin', slug: '/x', icon: 'pill' } }
     });
-    const link = screen.getByRole('link', { name: /Amoxi/ });
-    await userEvent.hover(link);
+    const link = screen.getByRole('link', { name: /^Amoxi$/ });
+    const wrapper = link.closest('.lm-smartlink') as HTMLElement;
+    await userEvent.hover(wrapper);
     // there should be no tooltip content rendered
     const tip = screen.queryByTestId('tooltip-note');
     expect(tip).toBeNull();
@@ -143,8 +149,9 @@ describe('SmartLink (theme)', () => {
       }
     );
 
-    const link = screen.getByRole('link', { name: /Amoxi/ });
-    await userEvent.hover(link);
+    const link = screen.getByRole('link', { name: /^Amoxi$/ });
+    const wrapper = link.closest('.lm-smartlink') as HTMLElement;
+    await userEvent.hover(wrapper);
 
     const bold = await screen.findAllByText('Aminopenicillin.', { selector: 'strong' });
     expect(bold.length).toBeGreaterThan(0);

@@ -89,7 +89,7 @@ smartlink-short-note: |
 
 ## Style SmartLinks with CSS
 
-SmartLinks expose dedicated class names (`.lm-smartlink`, `.lm-smartlink__icon`, `.lm-tooltip`, …) and CSS custom properties, so you can restyle links and tooltips just like any other element.
+SmartLinks expose dedicated class names (`.lm-smartlink`, `.lm-smartlink__anchor`, `.lm-smartlink__iconlink`, `.lm-smartlink__icon`, `.lm-tooltip`, …) and CSS custom properties, so you can restyle links and tooltips just like any other element. The text and trailing icon are now separate elements, so emphasis (for example `_Amoxi_`) can style the label without affecting the emoji or SVG.
 
 1. Load your stylesheet through the classic preset:
 
@@ -122,6 +122,15 @@ SmartLinks expose dedicated class names (`.lm-smartlink`, `.lm-smartlink__icon`,
      border-radius: 0.25rem;
      padding-inline: 0.15rem;
      transition: background 150ms ease, color 150ms ease;
+   }
+
+   .markdown .lm-smartlink__anchor {
+     text-decoration: underline;
+   }
+
+   .markdown .lm-smartlink__iconlink {
+     font-style: normal;
+     text-decoration: none;
    }
 
    .markdown .lm-smartlink:hover {
