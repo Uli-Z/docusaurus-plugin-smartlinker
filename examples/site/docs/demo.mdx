@@ -103,28 +103,32 @@ SmartLinks expose dedicated class names (`.lm-smartlink`, `.lm-smartlink__anchor
 
    ```css title="src/css/custom.css"
    :root {
-    --lm-tooltip-bg: rgba(34, 197, 94, 0.9);
-    --lm-tooltip-color: #022c22;
+    --lm-tooltip-bg: rgba(107, 114, 128, 0.9);
+    --lm-tooltip-color: #111827;
     --lm-tooltip-radius: 0.75rem;
-    --lm-tooltip-shadow: 0 18px 38px rgba(34, 197, 94, 0.45);
+    --lm-tooltip-shadow: 0 18px 38px rgba(107, 114, 128, 0.45);
     --lm-tooltip-padding: 0.85rem 1rem;
    }
 
    html[data-theme='dark'] {
-    --lm-tooltip-bg: rgba(22, 163, 74, 0.9);
-    --lm-tooltip-color: #ecfdf5;
-    --lm-tooltip-shadow: 0 18px 38px rgba(22, 163, 74, 0.55);
+    --lm-tooltip-bg: rgba(148, 163, 184, 0.9);
+    --lm-tooltip-color: #f9fafb;
+    --lm-tooltip-shadow: 0 18px 38px rgba(148, 163, 184, 0.55);
    }
 
    .markdown .lm-smartlink {
      --lm-smartlink-gap: 0.35rem;
-     border-bottom: 1px dashed var(--ifm-color-primary);
-     border-radius: 0.25rem;
-     padding-inline: 0.15rem;
+     border-radius: 0.35rem;
+     padding: 0.1rem 0.3rem;
+     background: rgba(107, 114, 128, 0.08);
      transition: background 150ms ease, color 150ms ease;
    }
 
    .markdown .lm-smartlink__anchor {
+     text-decoration: none;
+   }
+
+   .markdown .lm-smartlink:hover .lm-smartlink__anchor {
      text-decoration: underline;
    }
 
@@ -134,11 +138,15 @@ SmartLinks expose dedicated class names (`.lm-smartlink`, `.lm-smartlink__anchor
    }
 
    .markdown .lm-smartlink:hover {
-     background: rgba(59, 130, 246, 0.12);
+     background: rgba(107, 114, 128, 0.14);
+   }
+
+   html[data-theme='dark'] .markdown .lm-smartlink {
+     background: rgba(148, 163, 184, 0.12);
    }
 
    html[data-theme='dark'] .markdown .lm-smartlink:hover {
-     background: rgba(96, 165, 250, 0.25);
+     background: rgba(148, 163, 184, 0.18);
    }
 
    .markdown .lm-smartlink__iconwrap {
@@ -146,7 +154,7 @@ SmartLinks expose dedicated class names (`.lm-smartlink`, `.lm-smartlink__anchor
    }
 
    .markdown .lm-smartlink__icon {
-     filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.35));
+     filter: drop-shadow(0 2px 4px rgba(107, 114, 128, 0.25));
    }
 
    .markdown .lm-tooltip-content {
@@ -154,7 +162,7 @@ SmartLinks expose dedicated class names (`.lm-smartlink`, `.lm-smartlink__anchor
    }
    ```
 
-The dashed underline and tooltip colors you see on this page come from these overrides. Setting `--lm-tooltip-bg` to a `rgba(..., 0.9)` value, for example, gives the tooltip a softly transparent, greenish glow while preserving text readability. Pair it with `--lm-tooltip-color` to balance contrast for your tinted background.
+The muted background, neutral tooltip, and hover underline you see on this page come from these overrides. Setting `--lm-tooltip-bg` to a `rgba(..., 0.9)` value keeps the gentle transparency while shifting to a balanced gray. Pair it with `--lm-tooltip-color` to maintain contrast for your tinted background. Only the text label is underlined on hover so the trailing icon stays neutral.
 
 ## Opt out
 
