@@ -15,6 +15,43 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      '@docusaurus/core':
+        specifier: ^3.0.0
+        version: 3.8.1(@mdx-js/react@3.1.1(@types/react@19.1.13)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2)
+      '@docusaurus/mdx-loader':
+        specifier: ^3.0.0
+        version: 3.8.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@mdx-js/mdx':
+        specifier: ^3.1.1
+        version: 3.1.1
+      '@mdx-js/react':
+        specifier: ^3.1.1
+        version: 3.1.1(@types/react@19.1.13)(react@18.3.1)
+      '@radix-ui/react-tooltip':
+        specifier: ^1.2.8
+        version: 1.2.8(@types/react-dom@19.1.9(@types/react@19.1.13))(@types/react@19.1.13)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      gray-matter:
+        specifier: ^4.0.3
+        version: 4.0.3
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
+      react-markdown:
+        specifier: ^9.0.3
+        version: 9.1.0(@types/react@19.1.13)(react@18.3.1)
+      unified:
+        specifier: ^11.0.0
+        version: 11.0.5
+      unist-util-visit:
+        specifier: ^5.0.0
+        version: 5.0.0
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
     devDependencies:
       '@docusaurus/types':
         specifier: ^3.8.1
@@ -38,8 +75,8 @@ importers:
         specifier: ^3.0.0
         version: 3.8.1(@algolia/client-search@5.37.0)(@mdx-js/react@3.1.1(@types/react@19.1.13)(react@18.3.1))(@types/react@19.1.13)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.3)(typescript@5.9.2)
       docusaurus-plugin-smartlinker:
-        specifier: file:../../packages/docusaurus-plugin-smartlinker
-        version: link:../../packages/docusaurus-plugin-smartlinker
+        specifier: link:../..
+        version: link:../..
       react:
         specifier: ^18.2.0
         version: 18.3.1

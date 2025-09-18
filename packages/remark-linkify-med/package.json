@@ -1,5 +1,6 @@
 {
-  "name": "remark-linkify-med",
+  "name": "@internal/remark-linkify-med",
+  "private": true,
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.cjs",

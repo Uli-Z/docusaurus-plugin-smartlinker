@@ -1,6 +1,8 @@
 {
-  "name": "smartlinker-monorepo",
-  "private": true,
+  "name": "docusaurus-plugin-smartlinker",
+  "version": "0.0.0",
+  "description": "Smartlinker tooling for Docusaurus (plugin + remark helper).",
+  "type": "module",
   "workspaces": [
     "packages/*",
     "examples/site"
@@ -9,14 +11,53 @@
   "engines": {
     "node": ">=18 <25"
   },
+  "main": "./packages/docusaurus-plugin-smartlinker/dist/index.js",
+  "types": "./packages/docusaurus-plugin-smartlinker/dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./packages/docusaurus-plugin-smartlinker/dist/index.d.ts",
+      "import": "./packages/docusaurus-plugin-smartlinker/dist/index.js",
+      "default": "./packages/docusaurus-plugin-smartlinker/dist/index.js"
+    },
+    "./theme": "./packages/docusaurus-plugin-smartlinker/dist/theme/index.js",
+    "./theme/styles.css": "./packages/docusaurus-plugin-smartlinker/dist/theme/styles.css",
+    "./theme/*": "./packages/docusaurus-plugin-smartlinker/dist/theme/runtime/*",
+    "./remark": {
+      "types": "./packages/remark-linkify-med/dist/index.d.ts",
+      "import": "./packages/remark-linkify-med/dist/index.js",
+      "default": "./packages/remark-linkify-med/dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "packages/docusaurus-plugin-smartlinker/dist",
+    "packages/remark-linkify-med/dist"
+  ],
   "scripts": {
-    "build": "npm run build --workspace docusaurus-plugin-smartlinker --workspace remark-linkify-med",
-    "test": "npm run test --workspace docusaurus-plugin-smartlinker --workspace remark-linkify-med",
+    "build": "npm run build --workspace=@internal/docusaurus-plugin-smartlinker --workspace=@internal/remark-linkify-med",
+    "test": "npm run test --workspace=@internal/docusaurus-plugin-smartlinker --workspace=@internal/remark-linkify-med",
     "lint": "echo \"@(optional) add eslint later\"",
     "site:dev": "npm run dev --workspace @examples/site",
     "site:build": "npm run build --workspace @examples/site",
     "site:serve": "npm run serve --workspace @examples/site",
-    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site"
+    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site",
+    "prepare": "npm run build"
+  },
+  "peerDependencies": {
+    "@docusaurus/core": "^3.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "unified": "^11.0.0"
+  },
+  "dependencies": {
+    "@docusaurus/mdx-loader": "^3.0.0",
+    "@mdx-js/mdx": "^3.1.1",
+    "@mdx-js/react": "^3.1.1",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "gray-matter": "^4.0.3",
+    "react-markdown": "^9.0.3",
+    "unist-util-visit": "^5.0.0",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@docusaurus/types": "^3.8.1",
