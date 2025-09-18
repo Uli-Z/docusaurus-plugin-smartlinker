@@ -8,6 +8,7 @@ const packageDir = join(__dirname, '..');
 const distDir = join(packageDir, 'dist');
 const themeDistDir = join(distDir, 'theme');
 const runtimeDistDir = join(themeDistDir, 'runtime');
+const remarkDistDir = join(distDir, 'remark');
 const themeSrcDir = join(packageDir, 'src', 'theme');
 
 function assert(condition, message) {
@@ -27,6 +28,12 @@ const requiredFiles = [
   join(runtimeDistDir, 'Tooltip.js'),
   join(runtimeDistDir, 'IconResolver.js'),
   join(runtimeDistDir, 'context.js'),
+  join(remarkDistDir, 'index.js'),
+  join(remarkDistDir, 'index.d.ts'),
+  join(remarkDistDir, 'index.cjs'),
+  join(remarkDistDir, 'matcher.js'),
+  join(remarkDistDir, 'matcher.d.ts'),
+  join(remarkDistDir, 'matcher.cjs'),
 ];
 
 for (const file of requiredFiles) {
@@ -53,7 +60,8 @@ function* walk(dir) {
 
 const relImportPattern = /from\s+['"](\.{1,2}\/[^'\"]+)['"]/g;
 const relExportPattern = /export[^;]+from\s+['"](\.{1,2}\/[^'\"]+)['"]/g;
-const allowedExtensions = new Set(['.js', '.json', '.css']);
+const cjsRequirePattern = /require\(['"](\.{1,2}\/[^'\"]+)['"]\)/g;
+const allowedExtensions = new Set(['.js', '.json', '.css', '.cjs']);
 
 function validateSpecifier(specifier, filePath) {
   if (specifier.includes('${')) {
@@ -67,7 +75,7 @@ function validateSpecifier(specifier, filePath) {
 }
 
 for (const file of walk(distDir)) {
-  if (!file.endsWith('.js')) continue;
+  if (!file.endsWith('.js') && !file.endsWith('.cjs')) continue;
   const content = readFileSync(file, 'utf8');
   let match;
   while ((match = relImportPattern.exec(content))) {
@@ -75,6 +83,11 @@ for (const file of walk(distDir)) {
   }
   while ((match = relExportPattern.exec(content))) {
     validateSpecifier(match[1], file);
+  }
+  if (file.endsWith('.cjs')) {
+    while ((match = cjsRequirePattern.exec(content))) {
+      validateSpecifier(match[1], file);
+    }
   }
 }
 

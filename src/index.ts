@@ -20,6 +20,22 @@ export type {
 export { createFsIndexProvider } from './fsIndexProvider.js';
 export { PLUGIN_NAME } from './pluginName.js';
 
+export {
+  default as remarkSmartlinker,
+} from './remark/index.js';
+export type {
+  TargetInfo as RemarkTargetInfo,
+  IndexProvider as RemarkIndexProvider,
+  RemarkLinkifyMedOptions as RemarkPluginOptions,
+} from './remark/transform.js';
+export {
+  buildMatcher as buildRemarkMatcher,
+} from './remark/matcher.js';
+export type {
+  AutoLinkEntry as RemarkAutoLinkEntry,
+  Match as RemarkMatch,
+} from './remark/matcher.js';
+
 export type { PluginOptions } from './options.js';
 
 type Content = {

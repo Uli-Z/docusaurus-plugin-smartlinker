@@ -23,15 +23,16 @@ This monorepo hosts the Docusaurus plugin and remark helper used by the example 
 ### 1. Install the packages
 
 ```bash
-pnpm add docusaurus-plugin-smartlinker remark-linkify-med
+pnpm add smartlinkmed/docusaurus-plugin-smartlinker
 ```
 
-Use your preferred package manager; pnpm is shown because the example site relies on it.
+Use your preferred package manager; pnpm is shown because the example site relies on it. Installing from the GitHub repository
+builds both the Docusaurus plugin and the accompanying remark plugin in one step.
 
 ### 2. Configure Docusaurus
 
 ```ts
-import remarkLinkifyMed from 'remark-linkify-med';
+import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
 import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,10 +50,10 @@ const config = {
       'classic',
       {
         docs: {
-          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+          remarkPlugins: [[remarkSmartlinker, { index: linkifyIndex }]],
         },
         pages: {
-          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+          remarkPlugins: [[remarkSmartlinker, { index: linkifyIndex }]],
         },
       },
     ],

@@ -24,7 +24,7 @@ export interface IndexProvider {
 }
 
 /**
- * Create a remark-linkify-med IndexProvider by scanning the file system
+ * Create a docusaurus-plugin-smartlinker remark IndexProvider by scanning the file system
  * for MD/MDX files and parsing their frontmatter.
  */
 export function createFsIndexProvider(opts: FsIndexProviderOptions): IndexProvider {

@@ -1,28 +1,78 @@
 {
-  "name": "smartlinker-monorepo",
-  "private": true,
-  "workspaces": [
-    "packages/*",
-    "examples/site"
-  ],
+  "name": "docusaurus-plugin-smartlinker",
+  "version": "0.0.0",
+  "type": "module",
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18 <25"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./theme": "./dist/theme/index.js",
+    "./theme/styles.css": "./dist/theme/styles.css",
+    "./theme/*": "./dist/theme/runtime/*",
+    "./remark": {
+      "types": "./dist/remark/index.d.ts",
+      "import": "./dist/remark/index.js",
+      "require": "./dist/remark/index.cjs"
+    },
+    "./remark/matcher": {
+      "types": "./dist/remark/matcher.d.ts",
+      "import": "./dist/remark/matcher.js",
+      "require": "./dist/remark/matcher.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "workspaces": [
+    "examples/site"
+  ],
   "scripts": {
-    "build": "npm run build --workspace docusaurus-plugin-smartlinker --workspace remark-linkify-med",
-    "test": "npm run test --workspace docusaurus-plugin-smartlinker --workspace remark-linkify-med",
+    "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true });\" && tsc -p tsconfig.json && node ./scripts/build-remark-cjs.mjs && node ./scripts/postbuild-verify.mjs",
+    "prepare": "npm run build",
+    "test": "vitest run",
     "lint": "echo \"@(optional) add eslint later\"",
     "site:dev": "npm run dev --workspace @examples/site",
     "site:build": "npm run build --workspace @examples/site",
     "site:serve": "npm run serve --workspace @examples/site",
-    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site"
+    "reset": "rm -rf node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site"
+  },
+  "peerDependencies": {
+    "@docusaurus/core": "^3.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "unified": "^11.0.0"
+  },
+  "dependencies": {
+    "@docusaurus/mdx-loader": "^3.0.0",
+    "@mdx-js/mdx": "^3.1.1",
+    "@mdx-js/react": "^3.1.1",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "gray-matter": "^4.0.3",
+    "react-markdown": "^9.0.3",
+    "unist-util-visit": "^5.0.0",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@docusaurus/types": "^3.8.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/mdast": "^4.0.4",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
-    "typescript": "^5.5.4"
+    "@types/unist": "^3.0.2",
+    "jsdom": "^24.1.0",
+    "remark-mdx": "^3.1.1",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "typescript": "^5.5.4",
+    "unified": "^11.0.5",
+    "vfile": "^6.0.3",
+    "vitest": "^2.0.5"
   },
   "pnpm": {
     "overrides": {

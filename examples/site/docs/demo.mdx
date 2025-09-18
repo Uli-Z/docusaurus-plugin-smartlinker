@@ -22,7 +22,7 @@ description: See how terms auto-link to docs with hover tooltips in seconds.
 ## Minimal setup (snippet)
 
 ```ts title="docusaurus.config.ts"
-import remarkLinkifyMed from 'remark-linkify-med';
+import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
 import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { join } from 'node:path';
 
@@ -33,8 +33,8 @@ const linkifyIndex = createFsIndexProvider({
 
 export default {
   presets: [['classic', {
-    docs: { remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]] },
-    pages: { remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]] },
+    docs: { remarkPlugins: [[remarkSmartlinker, { index: linkifyIndex }]] },
+    pages: { remarkPlugins: [[remarkSmartlinker, { index: linkifyIndex }]] },
   }]],
   plugins: [['docusaurus-plugin-smartlinker', {
     icons: { pill: 'emoji:💊', bug: '/img/bug.svg' },
