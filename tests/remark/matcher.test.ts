@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildMatcher, type AutoLinkEntry } from '../src/matcher.js';
+import { buildMatcher, type AutoLinkEntry } from '../../src/remark/matcher.js';
 
 describe('matcher basics', () => {
   it('finds all occurrences, non-overlapping, left-to-right', () => {

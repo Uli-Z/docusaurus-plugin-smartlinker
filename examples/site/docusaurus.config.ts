@@ -1,5 +1,5 @@
 import type { Config } from '@docusaurus/types';
-import remarkLinkifyMed from '../../packages/remark-linkify-med/dist/index.js';
+import remarkLinkifyMed from 'docusaurus-plugin-smartlinker/remark';
 import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

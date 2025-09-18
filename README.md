@@ -2,7 +2,7 @@
 
 *Working draft for the Smartlinker auto-linking tooling.*
 
-This monorepo hosts the Docusaurus plugin and remark helper used by the example site in `examples/site`. The intent is to turn guideline-style documentation into a modestly connected set of articles with hover notes.
+This repo hosts the Docusaurus plugin and remark helper used by the example site in `examples/site`. The intent is to turn guideline-style documentation into a modestly connected set of articles with hover notes.
 
 ## Status
 
@@ -23,15 +23,15 @@ This monorepo hosts the Docusaurus plugin and remark helper used by the example 
 ### 1. Install the packages
 
 ```bash
-pnpm add docusaurus-plugin-smartlinker remark-linkify-med
+pnpm add smartlinkmed/docusaurus-plugin-smartlinker
 ```
 
-Use your preferred package manager; pnpm is shown because the example site relies on it.
+Use your preferred package manager; pnpm is shown because the example site relies on it. The remark plugin ships as the `docusaurus-plugin-smartlinker/remark` subpath, so a single GitHub install delivers both modules.
 
 ### 2. Configure Docusaurus
 
 ```ts
-import remarkLinkifyMed from 'remark-linkify-med';
+import remarkLinkifyMed from 'docusaurus-plugin-smartlinker/remark';
 import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
