@@ -23,7 +23,7 @@ This monorepo hosts the Docusaurus plugin and remark helper used by the example 
 ### 1. Install the packages
 
 ```bash
-pnpm add github:smartlinkmed/docusaurus-plugin-smartlinker
+pnpm add github:Uli-Z/docusaurus-plugin-smartlinker
 ```
 
 Use your preferred package manager; pnpm is shown because the example site relies on it. Installing straight from GitHub pulls
