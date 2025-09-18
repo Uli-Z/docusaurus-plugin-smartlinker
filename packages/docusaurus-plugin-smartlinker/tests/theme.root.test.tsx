@@ -65,7 +65,7 @@ describe('theme Root provider', () => {
 
     expect(usePluginDataMock).toHaveBeenCalledWith(PLUGIN_NAME);
 
-    const link = screen.getByRole('link', { name: /Amoxi/ });
+    const link = screen.getByRole('link', { name: /^Amoxi$/ });
     expect(link).toHaveAttribute('href', '/docs/amoxicillin');
     expect(link).toHaveAttribute('data-tipkey', 'amoxicillin');
 

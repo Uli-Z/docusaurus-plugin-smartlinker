@@ -7,12 +7,28 @@
   );
 }
 
+.lm-smartlink__anchor,
+.lm-smartlink__iconlink {
+  display: inline-flex;
+  align-items: center;
+}
+
+.lm-smartlink__anchor {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+.lm-smartlink__iconlink {
+  text-decoration: none;
+}
+
 .lm-smartlink__iconwrap {
   display: inline-flex;
   margin-left: var(
     --lm-smartlink-icon-gap,
     calc(var(--ifm-spacing-horizontal, 1.5rem) / 10)
   );
+  font-style: normal;
 }
 
 .lm-smartlink__icon {

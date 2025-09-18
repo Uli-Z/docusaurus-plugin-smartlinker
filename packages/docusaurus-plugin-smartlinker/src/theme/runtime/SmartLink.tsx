@@ -22,6 +22,7 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   const Entry = tipKey && registry ? registry[tipKey] : undefined;
   const Short = Entry?.ShortNote;
   const mdxComponents = useMDXComponents();
+  const childText = typeof children === 'string' ? children : undefined;
 
   // Mobile detection (rough): browsers that don't support hover
   const [isHoverCapable, setIsHoverCapable] = React.useState(true);
@@ -49,39 +50,56 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   };
 
   // Icon button for mobile toggle (but clickable to navigate as well on desktop)
-  const iconNode = icon ? (
-    <span className="lm-smartlink__iconwrap" aria-hidden="true">
-      {/* Desktop: icon also navigates (inside <a>) */}
-      {/* Mobile: we need a separate toggle; we keep both: click on icon toggles only if no-hover env */}
-      <span
-        className="lm-smartlink__icon"
-        onClick={(e) => {
-          if (!isHoverCapable && content) {
-            // stop navigation; toggle tooltip
-            e.preventDefault();
-            e.stopPropagation();
-            toggleOpen();
-          }
-          // else: let anchor handle navigation
-        }}
-      >
-        <IconResolver iconId={icon} />
-      </span>
-    </span>
-  ) : null;
-
-  // We wrap trigger as the anchor itself for desktop hover/focus
-  const trigger = (
+  const textNode = (
     <a
       href={to}
-      className="lm-smartlink"
+      className="lm-smartlink__anchor"
       data-tipkey={tipKey ?? undefined}
       onClick={onAnchorClick}
-      onBlur={close}
     >
       <span className="lm-smartlink__text">{children}</span>
-      {iconNode}
     </a>
+  );
+
+  const baseLabel = match ?? childText;
+  const iconLabel = !isHoverCapable
+    ? baseLabel
+      ? `Open tooltip for ${baseLabel}`
+      : 'Open tooltip'
+    : undefined;
+
+  const iconNode = icon ? (
+    <a
+      href={to}
+      className="lm-smartlink__iconlink"
+      onClick={(e) => {
+        if (!isHoverCapable && content) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleOpen();
+          return;
+        }
+        onAnchorClick(e);
+      }}
+      onFocus={!isHoverCapable ? undefined : close}
+      tabIndex={isHoverCapable ? -1 : 0}
+      aria-hidden={isHoverCapable ? true : undefined}
+      aria-label={iconLabel}
+    >
+      <span className="lm-smartlink__iconwrap">
+        <span className="lm-smartlink__icon">
+          <IconResolver iconId={icon} />
+        </span>
+      </span>
+    </a>
+  ) : null;
+
+  // Tooltip trigger groups text + icon so they can be styled separately
+  const trigger = (
+    <span className="lm-smartlink" data-tipkey={tipKey ?? undefined} role="group" onBlur={close}>
+      {textNode}
+      {iconNode}
+    </span>
   );
 
   return (
