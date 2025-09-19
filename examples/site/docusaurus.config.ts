@@ -1,12 +1,12 @@
 import type { Config } from '@docusaurus/types';
-import remarkLinkifyMed from '../../packages/remark-linkify-med/dist/index.js';
+import remarkLinkifyMed from 'docusaurus-plugin-smartlinker/remark';
 import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const [repoOwner = 'smartlinkmed'] =
+const [repoOwner = 'Uli-Z'] =
   process.env.GITHUB_REPOSITORY?.split('/') ?? [];
 const repoName = 'docusaurus-plugin-smartlinker';
 

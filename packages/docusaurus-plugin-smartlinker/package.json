@@ -1,5 +1,6 @@
 {
-  "name": "docusaurus-plugin-smartlinker",
+  "name": "@internal/docusaurus-plugin-smartlinker",
+  "private": true,
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -8,7 +9,12 @@
     ".": "./dist/index.js",
     "./theme": "./dist/theme/index.js",
     "./theme/styles.css": "./dist/theme/styles.css",
-    "./theme/*": "./dist/theme/runtime/*"
+    "./theme/*": "./dist/theme/runtime/*",
+    "./remark": {
+      "types": "../remark-linkify-med/dist/index.d.ts",
+      "import": "../remark-linkify-med/dist/index.js",
+      "default": "../remark-linkify-med/dist/index.js"
+    }
   },
   "files": [
     "dist"
