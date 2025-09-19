@@ -1,7 +1,7 @@
 {
   "name": "@internal/docusaurus-plugin-smartlinker",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -47,5 +47,16 @@
     "gray-matter": "^4.0.3",
     "react-markdown": "^9.0.3",
     "zod": "^3.23.0"
-  }
+  },
+  "license": "MIT",
+  "author": "Uli Z",
+  "description": "Docusaurus plugin that builds SmartLink tooltips and registry data.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker/issues"
+  },
+  "homepage": "https://uli-z.github.io/docusaurus-plugin-smartlinker/"
 }

@@ -1,7 +1,7 @@
 {
   "name": "docusaurus-plugin-smartlinker",
-  "version": "0.0.0",
-  "description": "Smartlinker tooling for Docusaurus (plugin + remark helper).",
+  "version": "0.1.0",
+  "description": "Docusaurus plugin + remark helper for SmartLink tooltips.",
   "type": "module",
   "workspaces": [
     "packages/*",
@@ -41,7 +41,8 @@
     "site:build": "npm run build --workspace @examples/site",
     "site:serve": "npm run serve --workspace @examples/site",
     "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "smoke:git-install": "node ./scripts/git-install-smoke.mjs"
   },
   "peerDependencies": {
     "@docusaurus/core": "^3.0.0",
@@ -74,5 +75,15 @@
       "recma-build-jsx": "^1.0.0",
       "@mdx-js/mdx": "^3.1.1"
     }
-  }
+  },
+  "license": "MIT",
+  "author": "Uli Z",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker/issues"
+  },
+  "homepage": "https://uli-z.github.io/docusaurus-plugin-smartlinker/"
 }

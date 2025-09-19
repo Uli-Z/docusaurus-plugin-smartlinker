@@ -708,3 +708,20 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - [ ] Introduce a CI pipeline (GitHub Actions) that runs tests (`pnpm -r run test`) and builds (`pnpm -r run build`, `pnpm site:build`).
 - [ ] Add automated release checks (e.g., `pnpm pack` for both packages) and consider enabling Dependabot or Renovate.
 - [ ] Decide whether additional safety checks (ESLint, strict TypeScript settings, etc.) are required before the public release.
+
+# Milestone 13: Git Install & Package Hardening
+
+## Summary
+
+- Removed the checked-in `examples/site/build` output and added a site-level `.gitignore` to keep future builds out of version control.
+- Added an MIT `LICENSE`, bumped all packages to `0.1.0`, and populated `description`, `repository`, `bugs`, `homepage`, `author`, and `license` metadata for the root package plus the internal workspaces.
+- Rewrote the root README with installation/setup guidance and created changelog entries for both workspaces to document the 0.1.0 release.
+- Added a `scripts/git-install-smoke.mjs` helper and `npm run smoke:git-install` to pack the repo, install it into a temporary copy of the example site, and run `docusaurus build` as a Git install smoke test.
+
+## Verification
+
+- `pnpm install`
+- `pnpm -r --filter './packages/**' run build`
+- `pnpm -r --filter './packages/**' run test`
+- `pnpm site:build`
+- `npm run smoke:git-install`

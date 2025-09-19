@@ -1,7 +1,7 @@
 # Build Failure: `ERR_PACKAGE_PATH_NOT_EXPORTED` for `estree-walker`
 
 ## Overview
-This monorepo integrates a custom remark plugin (`remark-linkify-med`) with a Docusaurus v3 example site. The plugin scans Markdown/MDX files for medical terms and wraps matches in a `SmartLink` React component that displays tooltips. The example site fails to build due to a missing ESM export in the `estree-walker` dependency chain.
+This monorepo integrates a custom remark plugin (`remarkSmartlinker`) with a Docusaurus v3 example site. The plugin scans Markdown/MDX files for medical terms and wraps matches in a `SmartLink` React component that displays tooltips. The example site fails to build due to a missing ESM export in the `estree-walker` dependency chain.
 
 ## Environment
 - Node.js version: v20.19.4
@@ -36,7 +36,7 @@ ERR_PACKAGE_PATH_NOT_EXPORTED: No "exports" main defined in /workspace/docusauru
 
 ### Example Site `docusaurus.config.ts`
 ```ts
-const linkifyIndex = createFsIndexProvider({
+const SmartlinkerIndex = createFsIndexProvider({
   roots: [join(__dirname, 'docs'), join(__dirname, 'src/pages')],
 });
 
@@ -46,10 +46,10 @@ const config: Config = {
       'classic',
       {
         docs: {
-          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+          remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
         },
         pages: {
-          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+          remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
         },
       },
     ],

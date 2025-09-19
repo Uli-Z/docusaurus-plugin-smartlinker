@@ -1,7 +1,7 @@
 {
   "name": "@internal/remark-linkify-med",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -35,5 +35,16 @@
   },
   "peerDependencies": {
     "unified": "^11.0.0"
-  }
+  },
+  "license": "MIT",
+  "author": "Uli Z",
+  "description": "Remark plugin that transforms SmartLink terms into tooltip components.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker/issues"
+  },
+  "homepage": "https://uli-z.github.io/docusaurus-plugin-smartlinker/"
 }

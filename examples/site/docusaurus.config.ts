@@ -1,5 +1,5 @@
 import type { Config } from '@docusaurus/types';
-import remarkLinkifyMed from 'docusaurus-plugin-smartlinker/remark';
+import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
 import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,7 +31,7 @@ const normalizedBaseUrl = (() => {
   return '/';
 })();
 
-const linkifyIndex = createFsIndexProvider({
+const SmartlinkerIndex = createFsIndexProvider({
   roots: [join(__dirname, 'docs')],
   slugPrefix: '/docs',
 });
@@ -55,11 +55,11 @@ const config: Config = {
       {
         docs: {
           sidebarPath: require.resolve('./sidebars.ts'),
-          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+          remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
         },
         blog: false,
         pages: {
-          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+          remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
         },
         theme: {
           customCss: join(__dirname, 'src/css/custom.css'),
