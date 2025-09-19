@@ -75,8 +75,8 @@ importers:
         specifier: ^3.0.0
         version: 3.8.1(@algolia/client-search@5.37.0)(@mdx-js/react@3.1.1(@types/react@19.1.13)(react@18.3.1))(@types/react@19.1.13)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.3)(typescript@5.9.2)
       docusaurus-plugin-smartlinker:
-        specifier: link:../..
-        version: link:../..
+        specifier: file:../..
+        version: file:(@docusaurus/core@3.8.1(@mdx-js/react@3.1.1(@types/react@19.1.13)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(@types/react-dom@19.1.9(@types/react@19.1.13))(@types/react@19.1.13)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(unified@11.0.5)
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -2932,6 +2932,15 @@ packages:
   dns-packet@5.6.1:
     resolution: {integrity: sha512-l4gcSouhcgIKRvyy99RNVOgxXiicE+2jZoNmaNmZ6JXiGajBOJAesk1OBlJuM5k2c+eudGdLxDqXuPCKIj6kpw==}
     engines: {node: '>=6'}
+
+  'docusaurus-plugin-smartlinker@file:':
+    resolution: {directory: '', type: directory}
+    engines: {node: '>=18 <25'}
+    peerDependencies:
+      '@docusaurus/core': ^3.0.0
+      react: ^18.2.0
+      react-dom: ^18.2.0
+      unified: ^11.0.0
 
   dom-accessibility-api@0.5.16:
     resolution: {integrity: sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg==}
@@ -9364,6 +9373,29 @@ snapshots:
   dns-packet@5.6.1:
     dependencies:
       '@leichtgewicht/ip-codec': 2.0.5
+
+  docusaurus-plugin-smartlinker@file:(@docusaurus/core@3.8.1(@mdx-js/react@3.1.1(@types/react@19.1.13)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(@types/react-dom@19.1.9(@types/react@19.1.13))(@types/react@19.1.13)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(unified@11.0.5):
+    dependencies:
+      '@docusaurus/core': 3.8.1(@mdx-js/react@3.1.1(@types/react@19.1.13)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2)
+      '@docusaurus/mdx-loader': 3.8.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@mdx-js/mdx': 3.1.1
+      '@mdx-js/react': 3.1.1(@types/react@19.1.13)(react@18.3.1)
+      '@radix-ui/react-tooltip': 1.2.8(@types/react-dom@19.1.9(@types/react@19.1.13))(@types/react@19.1.13)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      gray-matter: 4.0.3
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      react-markdown: 9.1.0(@types/react@19.1.13)(react@18.3.1)
+      unified: 11.0.5
+      unist-util-visit: 5.0.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@swc/core'
+      - '@types/react'
+      - '@types/react-dom'
+      - esbuild
+      - supports-color
+      - uglify-js
+      - webpack-cli
 
   dom-accessibility-api@0.5.16: {}
 
