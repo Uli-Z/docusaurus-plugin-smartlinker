@@ -1,45 +1,46 @@
 # docusaurus-plugin-smartlinker
 
-*Working draft for the Smartlinker auto-linking tooling.*
+Smartlinker brings tooltip-powered cross-linking to Docusaurus v3. The root package bundles both the Docusaurus plugin and the accompanying remark plugin so projects can install a single dependency and get consistent SmartLink rendering across Markdown and MDX content.
 
-This monorepo hosts the Docusaurus plugin and remark helper used by the example site in `examples/site`. The intent is to turn guideline-style documentation into a modestly connected set of articles with hover notes.
+## Packages
 
-## Status
+This repository publishes a single installable package:
 
-- Early experiment. Interfaces and package names may still change.
-- Lightly smoke-tested against the bundled example site only.
-- Documentation and automated tests are incomplete.
+- `docusaurus-plugin-smartlinker` – the Docusaurus plugin itself, including the SmartLink theme components, filesystem-based index provider utilities, and a remark helper exposed from `docusaurus-plugin-smartlinker/remark`.
 
-## Current capabilities
+The workspaces in `packages/` house the source code for the plugin and the remark transform. They build into `dist/` and are included in the published tarball via the root `prepare` script.
 
-- Build an index from Markdown/MDX front matter (`id`, `slug`, `smartlink-terms`) and resolve matching text to the referenced document.
-- Inject a shared `<SmartLink>` component through the MDX provider so matches render consistently across pages, admonitions, and tables.
-- Show optional icons per entry, including a default icon and dark-mode overrides.
-- Render hover notes as MDX, allowing Markdown and registered React components inside the tooltip.
-- Ship a remark plugin so Markdown strings processed by Docusaurus receive the same smartlinking as MDX content.
+## Features
 
-## Getting started
+- Scan Markdown and MDX front matter (`id`, `slug`, `smartlink-terms`, optional `smartlink-icon`, optional `smartlink-short-note`).
+- Compile optional `smartlink-short-note` strings from inline MDX to ready-to-render React components.
+- Generate a tooltip registry with proximity-aware collision handling and icon metadata.
+- Inject a shared `<SmartLink/>` component so linked terms render consistently in docs, pages, admonitions, and tables.
+- Display optional icons (including emoji) and MDX tooltips with dark-mode aware styling.
+- Provide a remark plugin so Markdown content processed by Docusaurus receives the same SmartLink treatment.
 
-### 1. Install the packages
+## Installation
+
+The package can be consumed directly from GitHub; the `prepare` script builds the bundled workspaces so the `dist/` artifacts ship with the install:
 
 ```bash
-pnpm add github:Uli-Z/docusaurus-plugin-smartlinker
+npm install github:Uli-Z/docusaurus-plugin-smartlinker
 ```
 
-Use your preferred package manager; pnpm is shown because the example site relies on it. Installing straight from GitHub pulls
-in both the Docusaurus plugin and the remark helper from this monorepo.
-
-### 2. Configure Docusaurus
+### Docusaurus configuration
 
 ```ts
-import remarkLinkifyMed from 'docusaurus-plugin-smartlinker/remark';
-import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
+import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
+import {
+  createFsIndexProvider,
+  type SmartlinkerPluginOptions,
+} from 'docusaurus-plugin-smartlinker';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const linkifyIndex = createFsIndexProvider({
+const SmartlinkerIndex = createFsIndexProvider({
   roots: [join(__dirname, 'docs')],
   slugPrefix: '/docs',
 });
@@ -50,10 +51,10 @@ const config = {
       'classic',
       {
         docs: {
-          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+          remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
         },
         pages: {
-          remarkPlugins: [[remarkLinkifyMed, { index: linkifyIndex }]],
+          remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
         },
       },
     ],
@@ -70,17 +71,13 @@ const config = {
         tooltipComponents: {
           DrugTip: '@site/src/components/DrugTip',
         },
-      },
+      } satisfies SmartlinkerPluginOptions,
     ],
   ],
 };
 ```
 
-The plugin loads its CSS bundle through `getClientModules()`, so no manual stylesheet imports are required.
-
-### 3. Annotate your documents
-
-Add front matter to each Markdown/MDX file you want to index:
+Annotate each Markdown or MDX document you want to index with SmartLink metadata:
 
 ```mdx
 ---
@@ -96,17 +93,23 @@ smartlink-short-note: |
 ---
 ```
 
-Key fields:
+Smartlinker builds a registry from these front matter fields, injects `<SmartLink/>` nodes during the remark phase, and renders hover/tap tooltips at runtime.
 
-| Field | Purpose |
-| --- | --- |
-| `smartlink-terms` | Array of terms and abbreviations that should resolve to the document. |
-| `smartlink-icon` | Optional icon id defined in the plugin options. |
-| `smartlink-short-note` | Optional MDX snippet displayed inside the tooltip. |
-| `linkify` | Set to `false` on a document to skip indexing it. |
+## Verification scripts
 
-Tooltip content is rendered as MDX, so inline Markdown and any components registered under `tooltipComponents` are allowed.
+- `npm run smoke:git-install` packs the repository, installs it into a temporary copy of the example site using `npm install <tarball>`, and runs `npm run build` to verify the Git install path succeeds end to end.
+- `npm run site:build` (from the repo root) builds the included example site in `examples/site`.
 
 ## Example site
 
-The `examples/site` directory contains a small Docusaurus project that exercises the current feature set. It also serves as the primary regression test, so expect rough edges until we broaden coverage.
+The `examples/site` workspace is a small Docusaurus project that exercises the SmartLink pipeline. It can be used for manual QA:
+
+```bash
+npm install
+npm run build --workspace @examples/site
+npm run serve --workspace @examples/site
+```
+
+## License
+
+Released under the [MIT License](./LICENSE).

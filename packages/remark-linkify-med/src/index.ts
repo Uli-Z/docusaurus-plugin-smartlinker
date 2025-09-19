@@ -1,3 +1,3 @@
-import plugin from './transform.js';
-export default plugin;
+import remarkSmartlinker from './transform.js';
+export default remarkSmartlinker;
 export * from './matcher.js';

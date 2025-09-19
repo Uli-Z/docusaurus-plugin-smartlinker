@@ -122,18 +122,18 @@
 
 ---
 
-### Milestone 13 — Git Install & Package Hardening 🚧
+### Milestone 13 — Git Install & Package Hardening ✅
 - **Current status**: Root `docusaurus-plugin-smartlinker` package now bundles the plugin and remark helper, exposes the `remark` export, updates the README/install snippets, and adds a root `prepare` script so `npm install github:Uli-Z/docusaurus-plugin-smartlinker` builds the internal workspaces.
 - **Done**:
   - [x] Combine the plugin and remark helper under the root package with explicit `files` exports.
   - [x] Update the example site and documentation to import via public entry points (`docusaurus-plugin-smartlinker`, `./remark`).
   - [x] Document Git installs in the README and ensure the root `prepare` script builds both workspaces when installed from Git.
 - **Todo**:
-  - [ ] Remove `examples/site/build` from git and ignore it (`examples/site/.gitignore`).
-  - [ ] Add a `LICENSE` and fill out `description`, `repository`, `bugs`, `homepage`, `author`, and `license` metadata (root + internal package.json files). Bump versions to a public starting point (e.g., `0.1.0`).
-  - [ ] Review package-level READMEs/CHANGELOGs so release notes match the packaged entry points.
-  - [ ] Decide whether to keep `AGENT_LOG.md` / `AGENT_PLAN.md` in the public repository or move them elsewhere.
-  - [ ] Automate a smoke test that installs from the Git URL and performs a minimal Docusaurus build (script or CI).
+  - [x] Remove `examples/site/build` from git and ignore it (`examples/site/.gitignore`).
+  - [x] Add a `LICENSE` and fill out `description`, `repository`, `bugs`, `homepage`, `author`, and `license` metadata (root + internal package.json files). Bump versions to a public starting point (e.g., `0.1.0`).
+  - [x] Review package-level READMEs/CHANGELOGs so release notes match the packaged entry points.
+  - [x] Decide whether to keep `AGENT_LOG.md` / `AGENT_PLAN.md` in the public repository or move them elsewhere (keeping them checked in for now).
+  - [x] Automate a smoke test that installs from the Git URL and performs a minimal Docusaurus build (script or CI).
 
 ---
 

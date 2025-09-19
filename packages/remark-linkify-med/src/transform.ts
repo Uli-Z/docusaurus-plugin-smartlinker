@@ -18,7 +18,7 @@ export interface IndexProvider {
   getCurrentFilePath(file: import('vfile').VFile): string;
 }
 
-export interface RemarkLinkifyMedOptions {
+export interface RemarkSmartlinkerOptions {
   index: IndexProvider;
   componentName?: string;
   toAttr?: string;
@@ -71,7 +71,7 @@ function toMdxJsxTextElement(
   };
 }
 
-export default function remarkLinkifyMed(opts: RemarkLinkifyMedOptions): Transformer {
+export default function remarkSmartlinker(opts: RemarkSmartlinkerOptions): Transformer {
   const componentName = opts.componentName ?? 'SmartLink';
   const toAttr = opts.toAttr ?? 'to';
   const iconAttr = opts.iconAttr ?? 'icon';
