@@ -57,3 +57,122 @@ html[data-theme='dark'] .markdown .lm-smartlink:hover {
 .markdown .lm-tooltip-content {
   line-height: 1.5;
 }
+
+/* Navbar action icons */
+.navbar__item.navbar__item--icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sl-navbarIconButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.sl-navbarIconButton:hover,
+.sl-navbarIconButton:focus-visible {
+  background: var(--ifm-menu-color-background-hover, rgba(107, 114, 128, 0.15));
+  outline: none;
+}
+
+.sl-navbarIconButton svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.sl-navbarIconButton__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Modal styles */
+body.sl-navbarModal--open {
+  overflow: hidden;
+}
+
+.sl-navbarModal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: var(--ifm-z-index-overlay, 400);
+}
+
+.sl-navbarModal {
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-font-color-base);
+  border-radius: var(--ifm-global-radius, 0.5rem);
+  box-shadow: var(--ifm-shadow-md, 0 20px 45px rgba(15, 23, 42, 0.25));
+  max-width: 28rem;
+  width: 100%;
+  padding: 1.5rem;
+}
+
+html[data-theme='dark'] .sl-navbarModal {
+  box-shadow: var(--ifm-shadow-lg, 0 20px 45px rgba(15, 23, 42, 0.5));
+}
+
+.sl-navbarModal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.sl-navbarModal__title {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.sl-navbarModal__close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.sl-navbarModal__close:hover,
+.sl-navbarModal__close:focus-visible {
+  background: var(--ifm-menu-color-background-hover, rgba(107, 114, 128, 0.2));
+  outline: none;
+}
+
+.sl-navbarModal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.sl-navbarModal__license {
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .sl-navbarModal {
+    padding: 1.25rem;
+  }
+}
