@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- No unreleased changes.
+- Allow React 19 as a peer dependency so installing the plugin in Docusaurus projects using React 19 no longer fails.
 
 ## 0.1.0
 
