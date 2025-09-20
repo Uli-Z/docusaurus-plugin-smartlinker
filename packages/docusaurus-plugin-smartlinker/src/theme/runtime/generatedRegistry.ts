@@ -1,7 +1,5 @@
-import {
-  registry as generatedRegistry,
-  type GeneratedRegistryEntry,
-} from '@generated/docusaurus-plugin-smartlinker/default/registry';
+import * as generated from '@generated/docusaurus-plugin-smartlinker/default/registry';
+import type { GeneratedRegistryEntry } from '@generated/docusaurus-plugin-smartlinker/default/registry';
 
 /**
  * The generated registry lives under the plugin name + plugin id.
@@ -12,4 +10,14 @@ import {
 export const GENERATED_REGISTRY_IMPORT_PATH =
   '@generated/docusaurus-plugin-smartlinker/default/registry';
 
-export { generatedRegistry, type GeneratedRegistryEntry };
+type RegistryModule = {
+  registry?: Record<string, GeneratedRegistryEntry>;
+  default?: Record<string, GeneratedRegistryEntry>;
+};
+
+const moduleApi = generated as RegistryModule;
+
+export const generatedRegistry: Record<string, GeneratedRegistryEntry> =
+  moduleApi.registry ?? moduleApi.default ?? {};
+
+export { type GeneratedRegistryEntry };
