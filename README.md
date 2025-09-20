@@ -18,14 +18,11 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
    npm install github:Uli-Z/docusaurus-plugin-smartlinker
    ```
 
-2. **Register the plugins** in your `docusaurus.config.ts` and create an index provider that points to the content folders you want to scan:
+2. **Register the plugins** in your `docusaurus.config.js` and create an index provider that points to the content folders you want to scan:
 
-   ```ts
+   ```js
    import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
-   import {
-     createFsIndexProvider,
-     type PluginOptions,
-   } from 'docusaurus-plugin-smartlinker';
+   import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
    import { dirname, join } from 'node:path';
    import { fileURLToPath } from 'node:url';
 
@@ -36,7 +33,7 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
      slugPrefix: '/docs',
    });
 
-   const config = {
+   export default {
      presets: [
        [
          'classic',
@@ -62,7 +59,7 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
            tooltipComponents: {
              DrugTip: '@site/src/components/DrugTip',
            },
-         } satisfies PluginOptions,
+         },
        ],
      ],
    };
