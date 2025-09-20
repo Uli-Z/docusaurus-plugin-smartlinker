@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PLUGIN_NAME } from './pluginName.js';
 
 const TrimmedString = z
   .string()
@@ -149,6 +150,20 @@ export type IconResolution = {
  * Pure & stateless: call per need. You can also call resolve* directly with `opts`.
  */
 export function createIconResolver(opts: NormalizedOptions) {
+  const warnedMissingIds = new Set<string>();
+
+  const warnMissingIcon = (id: string) => {
+    if (warnedMissingIds.has(id)) {
+      return;
+    }
+    warnedMissingIds.add(id);
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn(
+        `[${PLUGIN_NAME}] Requested icon "${id}" is not configured. The link will render without that icon unless a default applies.`,
+      );
+    }
+  };
+
   function resolveIconId(requestedId?: string, mode: 'light' | 'dark' = 'light'): IconResolution {
     // Helper to compute path if we have a final id
     const toSrc = (id: string, modeIn: 'light' | 'dark'): string | null => {
@@ -158,9 +173,12 @@ export function createIconResolver(opts: NormalizedOptions) {
     };
 
     // 1) Requested id present?
-    if (requestedId && opts.icons[requestedId]) {
-      const src = toSrc(requestedId, mode);
-      return { iconId: requestedId, src };
+    if (requestedId) {
+      if (opts.icons[requestedId]) {
+        const src = toSrc(requestedId, mode);
+        return { iconId: requestedId, src };
+      }
+      warnMissingIcon(requestedId);
     }
 
     // 2) Fallback to defaultIcon if valid
@@ -176,6 +194,9 @@ export function createIconResolver(opts: NormalizedOptions) {
   function resolveIconSrc(iconId: string, mode: 'light' | 'dark' = 'light'): string | null {
     const override = mode === 'dark' ? opts.darkModeIcons?.[iconId] : undefined;
     const path = override ?? opts.icons[iconId];
+    if (!opts.icons[iconId]) {
+      warnMissingIcon(iconId);
+    }
     return typeof path === 'string' ? path : null;
   }
 

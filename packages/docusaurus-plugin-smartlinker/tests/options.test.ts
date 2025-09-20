@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { validateOptions, createIconResolver } from '../src/options.js';
 
 describe('options validation', () => {
@@ -73,12 +73,32 @@ describe('icon resolver', () => {
     expect(res.src).toBe('/img/pill-dark.svg');
   });
 
-  it('falls back to defaultIcon when requested is unknown', () => {
+  it('falls back to defaultIcon when requested is unknown and warns once', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { options } = validateOptions(base);
     const { resolveIconId } = createIconResolver(options);
     const res = resolveIconId('unknown', 'light');
     expect(res.iconId).toBe('abx');
     expect(res.src).toBe('/img/abx.png');
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0]?.[0]).toContain('unknown');
+
+    const second = resolveIconId('unknown', 'dark');
+    expect(second.iconId).toBe('abx');
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+
+    warnSpy.mockRestore();
+  });
+
+  it('warns when resolving icon src for an unknown id', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { options } = validateOptions(base);
+    const { resolveIconSrc } = createIconResolver(options);
+    const src = resolveIconSrc('does-not-exist', 'light');
+    expect(src).toBeNull();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0]?.[0]).toContain('does-not-exist');
+    warnSpy.mockRestore();
   });
 
   it('returns null when neither requested nor default are applicable', () => {
