@@ -33,7 +33,7 @@ npm install github:Uli-Z/docusaurus-plugin-smartlinker
 import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
 import {
   createFsIndexProvider,
-  type SmartlinkerPluginOptions,
+  type PluginOptions,
 } from 'docusaurus-plugin-smartlinker';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -71,7 +71,7 @@ const config = {
         tooltipComponents: {
           DrugTip: '@site/src/components/DrugTip',
         },
-      } satisfies SmartlinkerPluginOptions,
+      } satisfies PluginOptions,
     ],
   ],
 };

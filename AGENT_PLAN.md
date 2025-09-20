@@ -28,10 +28,10 @@
 - Root package bundles both workspaces, exposes public entry points, and includes smoke tests for Git-based installs.
 - GitHub Pages deployment workflow for the example site lives in the repo (`.github/workflows/deploy-example-site.yml`).
 
-### Milestone B — Publishable 0.1.0 🚧
-- [ ] Run the release sanity suite in a clean clone (`npm run build`, `npm test`, `npm run site:build`, `npm run smoke:git-install`) and confirm `dist/` artifacts are up to date.
-- [ ] Double-check README usage docs and exported API names against the built outputs; adjust wording or examples if anything drifted.
-- [ ] Draft final release notes and prep the `v0.1.0` GitHub release (tag + changelog) — no npm publish.
+### Milestone B — Publishable 0.1.0 ✅
+- [x] Run the release sanity suite in a clean clone (`npm run build`, `npm test`, `npm run site:build`, `npm run smoke:git-install`) and confirm `dist/` artifacts are up to date.
+- [x] Double-check README usage docs and exported API names against the built outputs; adjust wording or examples if anything drifted.
+- [x] Draft final release notes and prep the `v0.1.0` GitHub release (tag + changelog) — no npm publish.
 
 ---
 
