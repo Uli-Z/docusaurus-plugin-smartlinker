@@ -725,3 +725,18 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm -r --filter './packages/**' run test`
 - `pnpm site:build`
 - `npm run smoke:git-install`
+
+# Milestone B: Publishable 0.1.0
+
+## Summary
+
+- Ran the release sanity suite (`npm run build`, `npm test`, `npm run site:build`, `npm run smoke:git-install`) to ensure freshly generated `dist/` artifacts and verify the Git install workflow.
+- Updated the README usage example to import the exported `PluginOptions` type so docs match the published API.
+- Authored `RELEASE_NOTES.md` with highlights, installation guidance, and a release checklist, and marked Milestone B as complete in `AGENT_PLAN.md`.
+
+## Verification
+
+- `npm run build`
+- `npm test`
+- `npm run site:build`
+- `npm run smoke:git-install`
