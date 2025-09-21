@@ -6,7 +6,7 @@ Smartlinker 0.1.0 packages the end-to-end tooltip linking pipeline so projects c
 
 - **Docusaurus plugin.** Builds a SmartLink registry from annotated front matter, compiles optional MDX tooltip notes at build time, and wires the theme runtime so links render with icons and accessible hover/tap tooltips out of the box.
 - **Remark integration.** Bundles a remark transform that replaces matching text nodes with `<SmartLink>` elements, skipping code, existing links, and top-level headings to avoid unwanted replacements.
-- **Filesystem index helpers.** Exposes `createFsIndexProvider` so consumers can drive remark from scanned Markdown/MDX files, with optional slug prefixing for docs served from a sub-route.
+- **Filesystem index helpers.** The plugin now registers its index for the bundled remark transformer automatically; `createFsIndexProvider` remains available for standalone Markdown flows (with optional slug prefixing for docs served from a sub-route).
 - **Example site.** Includes an example Docusaurus workspace demonstrating SmartLinks in practice and serving as a manual QA surface.
 
 ## Installation
@@ -21,19 +21,7 @@ Update `docusaurus.config.ts` to register both the plugin and remark helper. A t
 
 ```ts
 import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
-import {
-  createFsIndexProvider,
-  type PluginOptions,
-} from 'docusaurus-plugin-smartlinker';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-const SmartlinkerIndex = createFsIndexProvider({
-  roots: [join(__dirname, 'docs')],
-  slugPrefix: '/docs',
-});
+import { type PluginOptions } from 'docusaurus-plugin-smartlinker';
 
 const config = {
   presets: [
@@ -41,10 +29,10 @@ const config = {
       'classic',
       {
         docs: {
-          remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
+          remarkPlugins: [remarkSmartlinker],
         },
         pages: {
-          remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
+          remarkPlugins: [remarkSmartlinker],
         },
       },
     ],
@@ -53,6 +41,7 @@ const config = {
     [
       'docusaurus-plugin-smartlinker',
       {
+        slugPrefix: '/docs',
         icons: {
           pill: 'emoji:💊',
           bug: '/img/bug.svg',

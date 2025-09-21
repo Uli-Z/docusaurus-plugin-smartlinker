@@ -726,6 +726,20 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `pnpm site:build`
 - `npm run smoke:git-install`
 
+# Status Sync — Plugin-managed remark index (2025-02-XX)
+
+## Summary
+
+- Added a shared index provider store that the Docusaurus plugin primes and persists to `.docusaurus`, so the bundled remark transformer no longer needs manual FS scans.
+- Updated the remark transformer to resolve providers from the plugin store or the persisted snapshot and added tests for both plugin-managed and manual modes.
+- Simplified the example configuration and README snippets to drop manual index wiring and rely on the plugin-supplied provider (including the optional `slugPrefix`).
+
+## Verification
+
+- `npm run build`
+- `npm test`
+- `npm run site:build`
+
 # Milestone B: Publishable 0.1.0
 
 ## Summary
@@ -740,6 +754,32 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `npm test`
 - `npm run site:build`
 - `npm run smoke:git-install`
+
+# Status Sync — Global index store without filesystem fallback (2025-02-XX)
+
+## Summary
+
+- Simplified the shared index provider store to keep the provider in-memory and mirror it on `globalThis`, so the remark transformer can pick it up without rebuilding a filesystem index or hydrating from snapshots.
+- Updated the remark transformer to lazily derive its matcher/maps whenever the provider changes and tightened the tests to cover plugin-managed indices and the no-provider error case.
+- Ensured the plugin continues to prime the provider during initialization so only the Docusaurus plugin and remark transformer registrations remain in user config.
+
+## Verification
+
+- `npm run build`
+- `npm test`
+- `npm run site:build`
+
+# Status Sync — slugPrefix documentation (2025-02-XX)
+
+## Summary
+
+- Expanded the README to explain how `slugPrefix` rewrites frontmatter slugs for Markdown processed outside Docusaurus and clarified that it does not filter which documents are indexed.
+- Reconfirmed the build so Vitest can resolve the package exports before rerunning the workspace test suite.
+
+## Verification
+
+- `npm run build`
+- `npm test`
 
 # Bugfix: MDX SmartLink traversal and documentation sync (2025-03-17)
 

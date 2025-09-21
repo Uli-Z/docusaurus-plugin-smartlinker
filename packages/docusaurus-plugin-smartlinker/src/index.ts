@@ -5,12 +5,14 @@ import type { LoadContext, PluginContentLoadedActions } from '@docusaurus/types'
 import { validateOptions, type PluginOptions, type NormalizedOptions } from './options.js';
 import { scanMdFiles } from './node/fsScan.js';
 import { buildArtifacts } from './node/buildPipeline.js';
-import type { IndexRawEntry } from './types.js';
+import type { IndexRawEntry, RawDocFile } from './types.js';
 import type { NoteModule } from './codegen/notesEmitter.js';
 import type { RegistryModule } from './codegen/registryEmitter.js';
 import { emitTooltipComponentsModule } from './codegen/tooltipComponentsEmitter.js';
 import { PLUGIN_NAME } from './pluginName.js';
 import { createTooltipMdxCompiler } from './node/tooltipMdxCompiler.js';
+import { setIndexEntries } from './indexProviderStore.js';
+import { loadIndexFromFiles } from './frontmatterAdapter.js';
 
 export type {
   FsIndexProviderOptions,
@@ -19,6 +21,7 @@ export type {
 } from './fsIndexProvider.js';
 export { createFsIndexProvider } from './fsIndexProvider.js';
 export { PLUGIN_NAME } from './pluginName.js';
+export { getIndexProvider } from './indexProviderStore.js';
 
 export type { PluginOptions } from './options.js';
 
@@ -38,16 +41,29 @@ export default function smartlinkerPlugin(
 ): Plugin<Content> {
   const { options: normOpts } = validateOptions(optsIn);
 
+  const roots = [_context.siteDir];
+  let primedFiles: RawDocFile[] | null = null;
+
+  const primeIndexProvider = () => {
+    primedFiles = scanMdFiles({ roots });
+    const { entries } = loadIndexFromFiles(primedFiles);
+    setIndexEntries(entries, normOpts.slugPrefix);
+  };
+
+  primeIndexProvider();
+
   return {
     name: pluginName,
 
     async loadContent() {
-      const roots = [_context.siteDir];
-      const files = scanMdFiles({ roots });
+      const files = primedFiles ?? scanMdFiles({ roots });
+      primedFiles = null;
       const compileMdx = await createTooltipMdxCompiler(_context);
       const { entries, notes, registry } = await buildArtifacts(files, {
         compileMdx,
       });
+
+      setIndexEntries(entries, normOpts.slugPrefix);
 
       return {
         entries,

@@ -3,6 +3,7 @@ import { visit, SKIP } from 'unist-util-visit';
 import { normalize } from 'node:path';
 import type { Parent } from 'unist';
 import type { Content, Root, Text, PhrasingContent } from 'mdast';
+import { getIndexProvider as getRegisteredIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { buildMatcher, type AutoLinkEntry } from './matcher.js';
 
 export interface TargetInfo {
@@ -19,7 +20,7 @@ export interface IndexProvider {
 }
 
 export interface RemarkSmartlinkerOptions {
-  index: IndexProvider;
+  index?: IndexProvider;
   componentName?: string;
   toAttr?: string;
   iconAttr?: string;
@@ -75,63 +76,93 @@ function toMdxJsxTextElement(
   };
 }
 
-export default function remarkSmartlinker(opts: RemarkSmartlinkerOptions): Transformer {
-  const componentName = opts.componentName ?? 'SmartLink';
-  const toAttr = opts.toAttr ?? 'to';
-  const iconAttr = opts.iconAttr ?? 'icon';
-  const tipKeyAttr = opts.tipKeyAttr ?? 'tipKey';
-  const matchAttr = opts.matchAttr ?? 'match';
-  const shortNoteComponentName = opts.shortNoteComponentName ?? 'LinkifyShortNote';
-  const shortNoteTipKeyAttr = opts.shortNoteTipKeyAttr ?? tipKeyAttr;
-  const shortNotePlaceholder = opts.shortNotePlaceholder ?? '%%SHORT_NOTICE%%';
+export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Transformer {
+  const options = opts ?? {};
 
-  const targets = opts.index.getAllTargets();
+  const componentName = options.componentName ?? 'SmartLink';
+  const toAttr = options.toAttr ?? 'to';
+  const iconAttr = options.iconAttr ?? 'icon';
+  const tipKeyAttr = options.tipKeyAttr ?? 'tipKey';
+  const matchAttr = options.matchAttr ?? 'match';
+  const shortNoteComponentName = options.shortNoteComponentName ?? 'LinkifyShortNote';
+  const shortNoteTipKeyAttr = options.shortNoteTipKeyAttr ?? tipKeyAttr;
+  const shortNotePlaceholder = options.shortNotePlaceholder ?? '%%SHORT_NOTICE%%';
+  type PreparedIndex = {
+    targets: TargetInfo[];
+    matcher: ReturnType<typeof buildMatcher>;
+    claimMap: Map<string, { id: string; slug: string; icon?: string }[]>;
+    targetByPath: Map<string, TargetInfo>;
+    targetById: Map<string, TargetInfo>;
+    targetBySlug: Map<string, TargetInfo>;
+  };
 
   const mdxComponentNamesToSkip = new Set<string>([
     componentName,
     shortNoteComponentName,
   ]);
 
-  const termEntries: AutoLinkEntry[] = [];
-  for (const t of targets) {
-    for (const lit of t.terms) {
-      const literal = String(lit ?? '').trim();
-      if (!literal) continue;
-      termEntries.push({ literal, key: `${t.id}::${t.slug}::${t.icon ?? ''}` });
+  let cachedProvider: IndexProvider | undefined;
+  let prepared: PreparedIndex | undefined;
+
+  function ensurePreparedIndex(): { index: IndexProvider } & PreparedIndex {
+    const provider = options.index ?? getRegisteredIndexProvider();
+
+    if (!provider) {
+      throw new Error(
+        '[docusaurus-plugin-smartlinker] No index provider configured. Pass `{ index }` explicitly or make sure the Docusaurus plugin runs before this remark transformer.'
+      );
     }
-  }
 
-  termEntries.sort((a, b) => b.literal.length - a.literal.length);
+    if (provider !== cachedProvider) {
+      const targets = provider.getAllTargets();
 
-  const claimMap = new Map<string, { id: string; slug: string; icon?: string }[]>();
-  for (const t of targets) {
-    for (const lit of t.terms) {
-      const ll = String(lit).toLocaleLowerCase();
-      const arr = claimMap.get(ll) ?? [];
-      arr.push({ id: t.id, slug: t.slug, icon: t.icon });
-      claimMap.set(ll, arr);
+      const termEntries: AutoLinkEntry[] = [];
+      const claimMap = new Map<string, { id: string; slug: string; icon?: string }[]>();
+
+      for (const t of targets) {
+        for (const lit of t.terms) {
+          const literal = String(lit ?? '').trim();
+          if (!literal) continue;
+          termEntries.push({ literal, key: `${t.id}::${t.slug}::${t.icon ?? ''}` });
+
+          const ll = literal.toLocaleLowerCase();
+          const arr = claimMap.get(ll) ?? [];
+          arr.push({ id: t.id, slug: t.slug, icon: t.icon });
+          claimMap.set(ll, arr);
+        }
+      }
+
+      termEntries.sort((a, b) => b.literal.length - a.literal.length);
+      for (const [, arr] of claimMap) arr.sort((a, b) => a.id.localeCompare(b.id));
+
+      const matcher = buildMatcher(termEntries);
+
+      const targetByPath = new Map<string, TargetInfo>();
+      const targetById = new Map<string, TargetInfo>();
+      const targetBySlug = new Map<string, TargetInfo>();
+
+      for (const t of targets) {
+        if (t.sourcePath) {
+          const key = normalizePath(t.sourcePath);
+          if (key) targetByPath.set(key, t);
+        }
+        if (t.id) targetById.set(t.id, t);
+        if (t.slug) targetBySlug.set(t.slug, t);
+      }
+
+      prepared = { targets, matcher, claimMap, targetByPath, targetById, targetBySlug };
+      cachedProvider = provider;
     }
-  }
-  for (const [, arr] of claimMap) arr.sort((a, b) => a.id.localeCompare(b.id));
 
-  const matcher = buildMatcher(termEntries);
-
-  const targetByPath = new Map<string, TargetInfo>();
-  const targetById = new Map<string, TargetInfo>();
-  const targetBySlug = new Map<string, TargetInfo>();
-  for (const t of targets) {
-    if (t.sourcePath) {
-      const key = normalizePath(t.sourcePath);
-      if (key) targetByPath.set(key, t);
-    }
-    if (t.id) targetById.set(t.id, t);
-    if (t.slug) targetBySlug.set(t.slug, t);
+    return { index: provider, ...(prepared as PreparedIndex) };
   }
 
   return (tree: any, file: any) => {
+    const { index, matcher, claimMap, targetByPath, targetById, targetBySlug } = ensurePreparedIndex();
+
     const currentTarget = findCurrentTarget({
       file,
-      index: opts.index,
+      index,
       targetByPath,
       targetById,
       targetBySlug,
