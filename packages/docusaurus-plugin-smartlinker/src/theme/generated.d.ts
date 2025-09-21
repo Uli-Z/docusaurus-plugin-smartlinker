@@ -3,6 +3,7 @@ declare module '@generated/docusaurus-plugin-smartlinker/default/registry' {
   export interface GeneratedRegistryEntry {
     id: string;
     slug: string;
+    permalink?: string;
     icon?: string;
     ShortNote?: ComponentType<{ components?: Record<string, unknown> }>;
   }

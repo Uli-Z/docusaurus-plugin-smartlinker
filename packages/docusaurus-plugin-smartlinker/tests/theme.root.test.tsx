@@ -12,6 +12,11 @@ vi.mock('@theme-init/Root', () => ({
   default: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
 
+vi.mock('@docusaurus/useBaseUrl', () => ({
+  __esModule: true,
+  default: (value: string) => value,
+}));
+
 const usePluginDataMock = vi.fn();
 vi.mock('@docusaurus/useGlobalData', () => ({
   __esModule: true,
@@ -54,7 +59,7 @@ describe('theme Root provider', () => {
         tooltipComponents: {},
         folders: [{ path: 'docs', tooltipComponents: {} }],
       },
-      entries: [{ id: 'amoxicillin', slug: '/docs/amoxicillin', icon: 'pill' }],
+      entries: [{ id: 'amoxicillin', slug: '/docs/amoxicillin', docId: 'antibiotics/amoxicillin', permalink: '/docs/docs/amoxicillin', icon: 'pill' }],
     });
   });
 
@@ -70,7 +75,7 @@ describe('theme Root provider', () => {
     expect(usePluginDataMock).toHaveBeenCalledWith(PLUGIN_NAME);
 
     const link = screen.getByRole('link', { name: /^Amoxi$/ });
-    expect(link).toHaveAttribute('href', '/docs/amoxicillin');
+    expect(link).toHaveAttribute('href', '/docs/docs/amoxicillin');
     expect(link).toHaveAttribute('data-tipkey', 'amoxicillin');
 
     const emoji = screen.getByText('💊');

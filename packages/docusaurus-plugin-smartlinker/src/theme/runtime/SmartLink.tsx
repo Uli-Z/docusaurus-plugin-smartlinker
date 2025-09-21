@@ -3,6 +3,7 @@ import { useMDXComponents } from '@mdx-js/react';
 import Tooltip from './Tooltip.js';
 import IconResolver from './IconResolver.js';
 import { LinkifyRegistryContext } from './context.js';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 export interface SmartLinkProps extends React.PropsWithChildren {
   to: string;          // slug
@@ -23,6 +24,16 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   const Short = Entry?.ShortNote;
   const mdxComponents = useMDXComponents();
   const childText = typeof children === 'string' ? children : undefined;
+
+  const candidateSlug = Entry?.permalink ? null : Entry?.slug ?? to;
+  const isCandidateExternal = !!candidateSlug && (/^[a-z]+:/i.test(candidateSlug) || candidateSlug.startsWith('#'));
+  const baseHref = useBaseUrl(
+    !Entry?.permalink && candidateSlug && !isCandidateExternal ? candidateSlug : '/',
+  );
+  const resolvedHref = Entry?.permalink
+    ?? (candidateSlug
+      ? (isCandidateExternal ? candidateSlug : baseHref)
+      : to);
 
   // Mobile detection (rough): browsers that don't support hover
   const [isHoverCapable, setIsHoverCapable] = React.useState(true);
@@ -52,7 +63,7 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   // Icon button for mobile toggle (but clickable to navigate as well on desktop)
   const textNode = (
     <a
-      href={to}
+      href={resolvedHref}
       className="lm-smartlink__anchor"
       data-tipkey={tipKey ?? undefined}
       onClick={onAnchorClick}
@@ -70,7 +81,7 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
 
   const iconNode = icon ? (
     <a
-      href={to}
+      href={resolvedHref}
       className="lm-smartlink__iconlink"
       onClick={(e) => {
         if (!isHoverCapable && content) {

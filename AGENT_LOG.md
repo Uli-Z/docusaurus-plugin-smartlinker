@@ -793,3 +793,18 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 
 - `npm run build --workspace @internal/remark-linkify-med`
 - `npm test`
+
+# Status Sync — SmartLink permalink resolution (2025-03-XX)
+
+## Summary
+
+- Resolved SmartLink href generation to consume the docs plugin's computed permalinks (respecting `baseUrl`, `routeBasePath`, custom slugs/permalinks) via a build-time resolver that reads generated metadata.
+- Propagated resolved permalinks and doc IDs through plugin global data and runtime contexts so the SmartLink component renders anchors that match Docusaurus routing.
+- Expanded the example docs and demo content to cover both filesystem slugs and custom permalink front matter, ensuring SmartLinks render for each case.
+- Added unit coverage for the permalink resolver plus an e2e build assertion that inspects the generated HTML for correct hrefs.
+
+## Verification
+
+- `npm run build`
+- `npm test`
+- `npm run site:build`

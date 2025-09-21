@@ -3,6 +3,7 @@ import type { NoteModule } from './notesEmitter.js';
 export interface TooltipEntry {
     id: string;
     slug: string;
+    permalink?: string;
     icon?: string;
     ShortNote?: React.FC<{
         components?: Record<string, any>;

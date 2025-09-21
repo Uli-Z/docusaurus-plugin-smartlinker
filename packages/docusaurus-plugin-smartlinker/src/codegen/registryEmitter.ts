@@ -4,6 +4,7 @@ import type { NoteModule } from './notesEmitter.js';
 export interface TooltipEntry {
   id: string;
   slug: string;
+  permalink?: string;
   icon?: string;
   ShortNote?: React.FC<{ components?: Record<string, any> }>;
 }
@@ -46,12 +47,13 @@ export function emitRegistry(
     }
 
     const iconField = e.icon ? `    icon: "${e.icon}",\n` : '';
+    const permalinkField = `    permalink: "${e.slug}",\n`;
     const shortField = shortNoteField ? `    ${shortNoteField}\n` : '';
 
     records.push(`  "${e.id}": {
     id: "${e.id}",
     slug: "${e.slug}",
-${iconField}${shortField}  }`);
+${permalinkField}${iconField}${shortField}  }`);
   }
 
   const mod = `
