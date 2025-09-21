@@ -37,24 +37,31 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
          },
        ],
      ],
-     plugins: [
-       [
-         'docusaurus-plugin-smartlinker',
-         {
-           slugPrefix: '/docs',
-           icons: {
-             pill: 'emoji:💊',
-             bug: '/img/bug.svg',
-           },
-           defaultIcon: 'pill',
-           tooltipComponents: {
-             DrugTip: '@site/src/components/DrugTip',
-           },
-         },
-       ],
-     ],
-    };
-    ```
+    plugins: [
+      [
+        'docusaurus-plugin-smartlinker',
+        {
+          icons: {
+            pill: 'emoji:💊',
+            bug: '/img/bug.svg',
+          },
+          darkModeIcons: {
+            bug: '/img/bug-dark.svg',
+          },
+          folders: [
+            {
+              path: 'docs',
+              defaultIcon: 'pill',
+              tooltipComponents: {
+                DrugTip: '@site/src/components/DrugTip',
+              },
+            },
+          ],
+        },
+      ],
+    ],
+   };
+   ```
 
    ### Using the remark helper from CommonJS
 
@@ -66,23 +73,17 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
    
    ESM projects can continue using `import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';` as shown above.
 
-   The optional `slugPrefix` controls the base route that Smartlinker
-   prepends to every frontmatter `slug` when it publishes the index for the
-   remark transformer. Keep it aligned with the path where your docs mount
-   (e.g., `routeBasePath: '/docs'`) so an entry with
-   ``slug: /antibiotics/amoxicillin`` resolves to
-   `/docs/antibiotics/amoxicillin` when Markdown is processed outside of
-   Docusaurus. Omitting the option leaves the slugs untouched. The prefix
-   does **not** filter which pages land in the index – any file with
-   `linkify !== false`, a non-empty `smartlink-terms` array, and valid
-   `id`/`slug` metadata is included regardless of this setting.
+   Each entry under `folders` is scanned relative to your site directory.
+   You can set a `defaultIcon` and `tooltipComponents` map for each folder
+   independently. Slugs are never rewritten — define the final permalink in
+   your frontmatter and Smartlinker will preserve it.
 
 3. **Annotate your docs** with SmartLink metadata so the index provider can pick up synonyms, icons, and tooltip notes:
 
    ```mdx
    ---
    id: amoxicillin
-   slug: /antibiotics/amoxicillin
+   slug: /docs/antibiotics/amoxicillin
    smartlink-terms:
      - Amoxi
      - Amoxicillin
@@ -93,7 +94,11 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
    ---
    ```
 
-If you're processing Markdown outside of the Docusaurus lifecycle, you can still create and pass a manual index provider via `createFsIndexProvider({ roots, slugPrefix })` when calling the remark transformer.
+If you're processing Markdown outside of the Docusaurus lifecycle, you can still create and pass a manual index provider via `createFsIndexProvider({ roots })` when calling the remark transformer. The helper automatically tags each root so folder-aware features remain available.
+
+When you need the remark transformer to focus on a subset of SmartLink targets,
+pass `restrictToFolders: ['docs']` (or any configured folder id) so it limits
+itself to those entries.
 
 Smartlinker builds a registry from these front matter fields, injects `<SmartLink/>` nodes during the remark phase, and renders hover/tap tooltips at runtime.
 

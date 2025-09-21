@@ -23,19 +23,19 @@ function writeGlobalProvider(provider: IndexProvider | undefined): void {
   }
 }
 
-function toTargets(entries: IndexRawEntry[], slugPrefix: string): TargetInfo[] {
+function toTargets(entries: IndexRawEntry[]): TargetInfo[] {
   return entries.map((entry) => ({
     id: entry.id,
-    slug: `${slugPrefix}${entry.slug}`,
+    slug: entry.slug,
     icon: entry.icon,
     sourcePath: entry.sourcePath,
     terms: entry.terms,
+    folderId: entry.folderId ?? null,
   }));
 }
 
-export function setIndexEntries(entries: IndexRawEntry[], slugPrefix?: string): void {
-  const prefix = slugPrefix ?? '';
-  const targets = toTargets(entries, prefix);
+export function setIndexEntries(entries: IndexRawEntry[]): void {
+  const targets = toTargets(entries);
 
   currentProvider = {
     getAllTargets() {

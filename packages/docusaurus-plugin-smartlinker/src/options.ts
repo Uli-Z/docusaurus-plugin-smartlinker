@@ -21,41 +21,63 @@ export type TooltipComponentConfig = {
   exportName?: string;
 };
 
-export const OptionsSchema = z.object({
-  icons: z.record(TrimmedString).default({}),
-  darkModeIcons: z.record(TrimmedString).optional(),
-  defaultIcon: TrimmedString.optional(),
-  iconProps: z.record(z.unknown()).optional(),
-  tooltipComponents: z
-    .record(TooltipComponentSchema)
-    .default({})
-    .transform((value) => {
-      const out: Record<string, TooltipComponentConfig> = {};
-      for (const [alias, spec] of Object.entries(value)) {
-        if (typeof spec === 'string') {
-          out[alias] = { importPath: spec };
-        } else {
-          out[alias] = {
-            importPath: spec.path,
-            exportName: spec.export ?? undefined,
-          };
-        }
+const TooltipComponentsRecord = z
+  .record(TooltipComponentSchema)
+  .default({})
+  .transform((value) => {
+    const out: Record<string, TooltipComponentConfig> = {};
+    for (const [alias, spec] of Object.entries(value)) {
+      const key = alias.trim();
+      if (!key) continue;
+      if (typeof spec === 'string') {
+        out[key] = { importPath: spec };
+      } else {
+        out[key] = {
+          importPath: spec.path,
+          exportName: spec.export ?? undefined,
+        };
       }
-      return out;
-    }),
-  slugPrefix: TrimmedString.optional(),
+    }
+    return out;
+  });
+
+const FolderSchema = z.object({
+  path: TrimmedString,
+  defaultIcon: TrimmedString.optional(),
+  tooltipComponents: TooltipComponentsRecord,
 });
 
+export const OptionsSchema = z
+  .object({
+    icons: z.record(TrimmedString).default({}),
+    darkModeIcons: z.record(TrimmedString).optional(),
+    iconProps: z.record(z.unknown()).optional(),
+    folders: z.array(FolderSchema).default([]),
+  })
+  .transform((value) => {
+    const aggregated: Record<string, TooltipComponentConfig> = {};
+    for (const folder of value.folders) {
+      for (const [alias, spec] of Object.entries(folder.tooltipComponents)) {
+        if (aggregated[alias]) continue;
+        aggregated[alias] = spec;
+      }
+    }
+    return { ...value, tooltipComponents: aggregated };
+  });
+
 export type PluginOptions = z.input<typeof OptionsSchema>;
+export type NormalizedFolderOption = z.output<typeof FolderSchema>;
 export type NormalizedOptions = z.output<typeof OptionsSchema>;
 
 export type OptionsWarning = {
   code:
-    | 'DEFAULT_ICON_UNKNOWN'
+    | 'FOLDERS_REQUIRED'
+    | 'FOLDER_PATH_DUPLICATE'
+    | 'FOLDER_DEFAULT_ICON_UNKNOWN'
+    | 'FOLDER_TOOLTIP_COMPONENT_ALIAS_EMPTY'
     | 'DARK_MODE_ICON_UNKNOWN'
     | 'ICON_ID_EMPTY'
     | 'EMPTY_ICONS_OBJECT'
-    | 'TOOLTIP_COMPONENT_ALIAS_EMPTY';
   message: string;
   details?: Record<string, unknown>;
 };
@@ -75,7 +97,7 @@ export function validateOptions(input: PluginOptions | undefined): ValidationRes
   if (!parsed.success) {
     // Should be rare; Zod already guards shapes.
     return {
-      options: { icons: {}, tooltipComponents: {} },
+      options: { icons: {}, tooltipComponents: {}, folders: [] },
       warnings: [{
         code: 'EMPTY_ICONS_OBJECT',
         message: 'Invalid options; falling back to empty configuration.',
@@ -85,6 +107,9 @@ export function validateOptions(input: PluginOptions | undefined): ValidationRes
   }
 
   const options = parsed.data;
+  const rawFoldersInput: unknown[] = Array.isArray((input as any)?.folders)
+    ? (input as any).folders
+    : [];
   const warnings: OptionsWarning[] = [];
 
   // Warn if icons is totally empty (harmless but often unintended)
@@ -92,15 +117,6 @@ export function validateOptions(input: PluginOptions | undefined): ValidationRes
     warnings.push({
       code: 'EMPTY_ICONS_OBJECT',
       message: '`icons` is empty; links will render without icons unless pages specify one later and a default is set.',
-    });
-  }
-
-  // Default icon must exist in icons map
-  if (options.defaultIcon && !options.icons[options.defaultIcon]) {
-    warnings.push({
-      code: 'DEFAULT_ICON_UNKNOWN',
-      message: '`defaultIcon` refers to an unknown icon id.',
-      details: { defaultIcon: options.defaultIcon }
     });
   }
 
@@ -127,14 +143,51 @@ export function validateOptions(input: PluginOptions | undefined): ValidationRes
     }
   }
 
-  for (const alias of Object.keys(options.tooltipComponents)) {
-    if (!alias.trim()) {
+  if (options.folders.length === 0) {
+    warnings.push({
+      code: 'FOLDERS_REQUIRED',
+      message: '`folders` must list at least one directory to scan.',
+    });
+  }
+
+  const seenFolderPaths = new Map<string, number>();
+  options.folders.forEach((folder, index) => {
+    const normalizedPathRaw = folder.path.replace(/\\/g, '/').replace(/\/+$/, '');
+    const normalizedPath = normalizedPathRaw || '.';
+    const seenCount = seenFolderPaths.get(normalizedPath) ?? 0;
+    if (seenCount > 0) {
       warnings.push({
-        code: 'TOOLTIP_COMPONENT_ALIAS_EMPTY',
-        message: '`tooltipComponents` contains a component key that is empty.',
+        code: 'FOLDER_PATH_DUPLICATE',
+        message: 'Duplicate folder configuration detected.',
+        details: { path: normalizedPath },
       });
     }
-  }
+    seenFolderPaths.set(normalizedPath, seenCount + 1);
+
+    if (folder.defaultIcon && !options.icons[folder.defaultIcon]) {
+      warnings.push({
+        code: 'FOLDER_DEFAULT_ICON_UNKNOWN',
+        message: '`defaultIcon` refers to an unknown icon id.',
+        details: { path: normalizedPath, defaultIcon: folder.defaultIcon },
+      });
+    }
+
+    const rawFolder = rawFoldersInput[index];
+    const rawTooltip = rawFolder && typeof rawFolder === 'object'
+      ? (rawFolder as any).tooltipComponents
+      : undefined;
+    if (rawTooltip && typeof rawTooltip === 'object') {
+      for (const alias of Object.keys(rawTooltip)) {
+        if (!String(alias).trim()) {
+          warnings.push({
+            code: 'FOLDER_TOOLTIP_COMPONENT_ALIAS_EMPTY',
+            message: '`tooltipComponents` contains a component key that is empty.',
+            details: { path: normalizedPath },
+          });
+        }
+      }
+    }
+  });
 
   return { options, warnings };
 }
@@ -160,7 +213,7 @@ export function createIconResolver(opts: NormalizedOptions) {
     warnedMissingIds.add(id);
     if (typeof console !== 'undefined' && typeof console.warn === 'function') {
       console.warn(
-        `[${PLUGIN_NAME}] Requested icon "${id}" is not configured. The link will render without that icon unless a default applies.`,
+        `[${PLUGIN_NAME}] Requested icon "${id}" is not configured. The link will render without that icon.`,
       );
     }
   };
@@ -173,7 +226,6 @@ export function createIconResolver(opts: NormalizedOptions) {
       return typeof path === 'string' ? path : null;
     };
 
-    // 1) Requested id present?
     if (requestedId) {
       if (opts.icons[requestedId]) {
         const src = toSrc(requestedId, mode);
@@ -182,13 +234,6 @@ export function createIconResolver(opts: NormalizedOptions) {
       warnMissingIcon(requestedId);
     }
 
-    // 2) Fallback to defaultIcon if valid
-    if (opts.defaultIcon && opts.icons[opts.defaultIcon]) {
-      const src = toSrc(opts.defaultIcon, mode);
-      return { iconId: opts.defaultIcon, src };
-    }
-
-    // 3) Nothing applies
     return { iconId: null, src: null };
   }
 

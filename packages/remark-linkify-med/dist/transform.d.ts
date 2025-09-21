@@ -5,13 +5,14 @@ export interface TargetInfo {
     icon?: string;
     sourcePath: string;
     terms: string[];
+    folderId?: string | null;
 }
 export interface IndexProvider {
     getAllTargets(): TargetInfo[];
     getCurrentFilePath(file: import('vfile').VFile): string;
 }
 export interface RemarkSmartlinkerOptions {
-    index: IndexProvider;
+    index?: IndexProvider;
     componentName?: string;
     toAttr?: string;
     iconAttr?: string;
@@ -20,6 +21,7 @@ export interface RemarkSmartlinkerOptions {
     shortNoteComponentName?: string;
     shortNoteTipKeyAttr?: string;
     shortNotePlaceholder?: string;
+    restrictToFolders?: string | string[];
 }
-export default function remarkSmartlinker(opts: RemarkSmartlinkerOptions): Transformer;
+export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Transformer;
 //# sourceMappingURL=transform.d.ts.map

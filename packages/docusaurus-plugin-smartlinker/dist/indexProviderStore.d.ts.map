@@ -1,0 +1,1 @@
+{"version":3,"file":"indexProviderStore.d.ts","sourceRoot":"","sources":["../src/indexProviderStore.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,aAAa,EAAE,MAAM,YAAY,CAAC;AAChD,OAAO,KAAK,EAAE,aAAa,EAAc,MAAM,sBAAsB,CAAC;AAmCtE,wBAAgB,eAAe,CAAC,OAAO,EAAE,aAAa,EAAE,GAAG,IAAI,CAgB9D;AAED,wBAAgB,gBAAgB,IAAI,aAAa,GAAG,SAAS,CAE5D;AAED,wBAAgB,kBAAkB,IAAI,IAAI,CAGzC"}

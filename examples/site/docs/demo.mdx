@@ -30,11 +30,14 @@ export default {
     pages: { remarkPlugins: [remarkSmartlinker] },
   }]],
   plugins: [['docusaurus-plugin-smartlinker', {
-    slugPrefix: '/docs',
     icons: { pill: 'emoji:💊', bug: '/img/bug.svg' },
-    tooltipComponents: {
-      DrugTip: '@site/src/components/DrugTip',
-    },
+    folders: [{
+      path: 'docs',
+      defaultIcon: 'pill',
+      tooltipComponents: {
+        DrugTip: '@site/src/components/DrugTip',
+      },
+    }],
   }]],
 };
 ```
@@ -44,7 +47,7 @@ export default {
 ```mdx title="docs/antibiotics/amoxicillin.mdx"
 ---
 id: amoxicillin
-slug: /antibiotics/amoxicillin
+slug: /docs/antibiotics/amoxicillin
 smartlink-terms: [Amoxi, Amoxicillin]
 smartlink-icon: pill
 smartlink-short-note: |
@@ -67,7 +70,7 @@ Place the placeholder anywhere in the body of a target document to render its ow
 ```mdx title="docs/bacteria/cdiff.mdx"
 ---
 id: cdiff
-slug: /bacteria/cdiff
+slug: /docs/bacteria/cdiff
 smartlink-terms: [Cdiff, Clostridioides difficile]
 smartlink-icon: bug
 smartlink-short-note: |

@@ -5,6 +5,8 @@ export interface RawDocFile {
   content: string;
   /** Optional explicit extension override; otherwise infer from path. */
   ext?: '.md' | '.mdx';
+  /** Identifier of the configured folder that sourced this file. */
+  folderId?: string;
 }
 
 export interface IndexRawEntry {
@@ -16,6 +18,8 @@ export interface IndexRawEntry {
   shortNote?: string;     // trimmed MDX string (not compiled here)
   /** Source file path (for proximity resolution, warnings later) */
   sourcePath: string;
+  /** Identifier of the configured folder that produced this entry. */
+  folderId?: string;
 }
 
 export interface FrontmatterWarning {

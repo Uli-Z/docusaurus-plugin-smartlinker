@@ -49,7 +49,11 @@ describe('theme Root provider', () => {
   beforeEach(() => {
     usePluginDataMock.mockClear();
     usePluginDataMock.mockReturnValue({
-      options: { icons: { pill: 'emoji:💊' } },
+      options: {
+        icons: { pill: 'emoji:💊' },
+        tooltipComponents: {},
+        folders: [{ path: 'docs', tooltipComponents: {} }],
+      },
       entries: [{ id: 'amoxicillin', slug: '/docs/amoxicillin', icon: 'pill' }],
     });
   });

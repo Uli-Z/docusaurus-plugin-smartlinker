@@ -70,10 +70,15 @@ const config: Config = {
       darkModeIcons: {
         bug: '/img/bug-dark.svg',
       },
-      tooltipComponents: {
-        DrugTip: '@site/src/components/DrugTip',
-      },
-      slugPrefix: '/docs',
+      folders: [
+        {
+          path: 'docs',
+          defaultIcon: 'pill',
+          tooltipComponents: {
+            DrugTip: '@site/src/components/DrugTip',
+          },
+        },
+      ],
     }]
   ],
 };

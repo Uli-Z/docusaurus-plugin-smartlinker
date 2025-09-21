@@ -11,7 +11,7 @@ import { generatedRegistry, type GeneratedRegistryEntry } from './generatedRegis
 import { tooltipComponents } from './generatedTooltipComponents.js';
 
 const pluginName = PLUGIN_NAME;
-const EMPTY_OPTIONS: NormalizedOptions = { icons: {}, tooltipComponents: {} };
+const EMPTY_OPTIONS: NormalizedOptions = { icons: {}, tooltipComponents: {}, folders: [] };
 
 type PluginData = {
   options: NormalizedOptions;
