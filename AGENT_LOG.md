@@ -740,6 +740,27 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `npm test`
 - `npm run site:build`
 
+# Bugfix: SmartLink base URL handling in subdirectory deployments (2025-03-XX)
+
+## Summary
+
+- Ensured SmartLink always resolves internal destinations through Docusaurus `useBaseUrl` so anchors inherit the configured `baseUrl` when sites are hosted under a subdirectory.
+- Added a regression test that mimics a `/myapp` deployment to verify SmartLink renders `/myapp/about` instead of `/about`.
+
+## Root Cause
+
+- SmartLink short-circuited to the registry permalink when present, skipping `useBaseUrl`, so the generated `<a>` retained `/about` regardless of the deployment base path.
+
+## Resolution
+
+- Always pass the preferred destination (permalink, slug, or `to`) through `useBaseUrl`, relying on Docusaurus to preserve external URLs while prefixing internal ones with the site base path.
+- Updated the test harness mock for `@docusaurus/useBaseUrl` so individual tests can emulate different base URL behaviors.
+
+## Verification
+
+- `npm test`
+- `npm run build --workspace @internal/docusaurus-plugin-smartlinker`
+
 # Milestone B: Publishable 0.1.0
 
 ## Summary

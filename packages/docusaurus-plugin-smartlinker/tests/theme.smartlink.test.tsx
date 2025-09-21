@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -10,10 +10,17 @@ import SmartLink from '../src/theme/runtime/SmartLink.js';
 import { LinkifyRegistryProvider, IconConfigProvider } from '../src/theme/runtime/context.js';
 import { emitShortNoteModule } from '../src/codegen/notesEmitter.js';
 
+const useBaseUrlMock = vi.fn((value: string) => value);
+
 vi.mock('@docusaurus/useBaseUrl', () => ({
   __esModule: true,
-  default: (value: string) => value,
+  default: (value: string) => useBaseUrlMock(value),
 }));
+
+afterEach(() => {
+  useBaseUrlMock.mockImplementation((value: string) => value);
+  useBaseUrlMock.mockClear();
+});
 
 function setup(
   ui: React.ReactNode,
@@ -72,6 +79,23 @@ describe('SmartLink (theme)', () => {
     const order = Array.from(wrapper.children);
     expect(order.indexOf(textLink)).toBe(0);
     expect(order.indexOf(iconLink)).toBeGreaterThan(order.indexOf(textLink));
+  });
+
+  it('prefixes base url for internal links when site is deployed under a subdirectory', () => {
+    useBaseUrlMock.mockImplementation((value: string) => {
+      if (!value || value.startsWith('#') || /^[a-z]+:/i.test(value) || value.startsWith('//')) {
+        return value;
+      }
+      if (value === '/') {
+        return '/myapp/';
+      }
+      return value.startsWith('/') ? `/myapp${value}` : `/myapp/${value}`;
+    });
+
+    setup(<SmartLink to="/about">About</SmartLink>);
+
+    const link = screen.getByRole('link', { name: /^About$/ });
+    expect(link).toHaveAttribute('href', '/myapp/about');
   });
 
   it('desktop hover shows tooltip content when ShortNote exists', async () => {

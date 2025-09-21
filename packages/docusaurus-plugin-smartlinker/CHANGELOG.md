@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix SmartLink href generation so internal links respect the site's configured `baseUrl`, producing `/myapp/about` instead of `/about` in subdirectory deployments.
 - Allow React 19 as a peer dependency so installing the plugin in Docusaurus projects using React 19 no longer fails.
 
 ## 0.1.0

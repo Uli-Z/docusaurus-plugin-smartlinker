@@ -26,14 +26,8 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   const childText = typeof children === 'string' ? children : undefined;
 
   const candidateSlug = Entry?.permalink ? null : Entry?.slug ?? to;
-  const isCandidateExternal = !!candidateSlug && (/^[a-z]+:/i.test(candidateSlug) || candidateSlug.startsWith('#'));
-  const baseHref = useBaseUrl(
-    !Entry?.permalink && candidateSlug && !isCandidateExternal ? candidateSlug : '/',
-  );
-  const resolvedHref = Entry?.permalink
-    ?? (candidateSlug
-      ? (isCandidateExternal ? candidateSlug : baseHref)
-      : to);
+  const candidateHref = Entry?.permalink ?? (candidateSlug || to);
+  const resolvedHref = useBaseUrl(candidateHref);
 
   // Mobile detection (rough): browsers that don't support hover
   const [isHoverCapable, setIsHoverCapable] = React.useState(true);
