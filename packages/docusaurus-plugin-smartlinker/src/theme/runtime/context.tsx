@@ -5,6 +5,8 @@ export type ShortNoteComponent = React.ComponentType<{ components?: Record<strin
 export interface RegistryEntry {
   id: string;
   slug: string;
+  docId?: string;
+  permalink?: string | null;
   icon?: string;
   ShortNote?: ShortNoteComponent;
 }

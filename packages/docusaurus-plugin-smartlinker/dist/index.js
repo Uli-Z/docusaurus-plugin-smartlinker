@@ -1,4 +1,5 @@
 import { dirname, join, resolve, relative, isAbsolute } from 'node:path';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { validateOptions, } from './options.js';
 import { scanMdFiles } from './node/fsScan.js';
@@ -8,6 +9,7 @@ import { PLUGIN_NAME } from './pluginName.js';
 import { createTooltipMdxCompiler } from './node/tooltipMdxCompiler.js';
 import { setIndexEntries } from './indexProviderStore.js';
 import { loadIndexFromFiles } from './frontmatterAdapter.js';
+import { resolveEntryPermalinks } from './node/permalinkResolver.js';
 export { createFsIndexProvider } from './fsIndexProvider.js';
 export { PLUGIN_NAME } from './pluginName.js';
 export { getIndexProvider } from './indexProviderStore.js';
@@ -22,6 +24,17 @@ function normalizeFolderId(siteDir, absPath) {
 }
 const moduleDir = dirname(fileURLToPath(import.meta.url));
 const pluginName = PLUGIN_NAME;
+function publishGlobalData(actions, opts, entries) {
+    const registryMeta = entries.map(({ id, slug, icon, folderId, docId, permalink }) => ({
+        id,
+        slug,
+        icon: icon ?? null,
+        folderId: folderId ?? null,
+        docId: docId ?? null,
+        permalink: permalink ?? null,
+    }));
+    actions.setGlobalData({ options: opts, entries: registryMeta });
+}
 export default function smartlinkerPlugin(_context, optsIn) {
     const { options: normOpts } = validateOptions(optsIn);
     if (normOpts.folders.length === 0) {
@@ -60,6 +73,12 @@ export default function smartlinkerPlugin(_context, optsIn) {
             }
         }
     };
+    const computeDocIdForEntry = (entry) => {
+        const folder = entry.folderId ? folderById.get(entry.folderId) : undefined;
+        if (!folder)
+            return undefined;
+        return deriveDocId(folder.absPath, entry.sourcePath);
+    };
     const primeIndexProvider = () => {
         primedFiles = collectFiles();
         const { entries } = loadIndexFromFiles(primedFiles);
@@ -95,13 +114,17 @@ export default function smartlinkerPlugin(_context, optsIn) {
             await actions.createData(registry.filename, registry.contents);
             const tooltipComponentsModule = emitTooltipComponentsModule(opts.tooltipComponents ?? {});
             await actions.createData(tooltipComponentsModule.filename, tooltipComponentsModule.contents);
-            const registryMeta = entries.map(({ id, slug, icon, folderId }) => ({
-                id,
-                slug,
-                icon,
-                folderId: folderId ?? null,
+            const enrichedEntries = entries.map((entry) => ({
+                ...entry,
+                docId: entry.docId ?? computeDocIdForEntry(entry),
             }));
-            actions.setGlobalData({ options: opts, entries: registryMeta });
+            const docsContent = loadDocsContentFromGenerated(_context.generatedFilesDir);
+            const resolved = resolveEntryPermalinks({
+                siteDir: _context.siteDir,
+                entries: enrichedEntries,
+                docsContent,
+            });
+            publishGlobalData(actions, opts, resolved);
         },
         getThemePath() {
             return join(moduleDir, 'theme', 'runtime');
@@ -113,5 +136,63 @@ export default function smartlinkerPlugin(_context, optsIn) {
             return [join(moduleDir, 'theme/styles.css')];
         },
     };
+}
+function deriveDocId(folderAbsPath, sourcePath) {
+    if (!sourcePath)
+        return undefined;
+    const rel = relative(folderAbsPath, sourcePath);
+    if (!rel || rel.startsWith('..'))
+        return undefined;
+    const normalized = rel.replace(/\\/g, '/');
+    const withoutExt = normalized.replace(/\.[^./]+$/u, '');
+    return withoutExt || undefined;
+}
+function loadDocsContentFromGenerated(generatedFilesDir) {
+    const root = join(generatedFilesDir, 'docusaurus-plugin-content-docs');
+    const result = {};
+    let pluginIds = [];
+    try {
+        pluginIds = readdirSync(root);
+    }
+    catch {
+        return result;
+    }
+    for (const pluginId of pluginIds) {
+        const pluginDir = join(root, pluginId);
+        let stats;
+        try {
+            stats = statSync(pluginDir);
+        }
+        catch {
+            continue;
+        }
+        if (!stats.isDirectory())
+            continue;
+        const docs = [];
+        for (const file of readdirSync(pluginDir)) {
+            if (!file.endsWith('.json'))
+                continue;
+            if (file.startsWith('__'))
+                continue;
+            const abs = join(pluginDir, file);
+            try {
+                const parsed = JSON.parse(readFileSync(abs, 'utf8'));
+                if (parsed && typeof parsed === 'object' && typeof parsed.permalink === 'string') {
+                    docs.push(parsed);
+                }
+            }
+            catch {
+                continue;
+            }
+        }
+        result[pluginId] = {
+            loadedVersions: [
+                {
+                    docs,
+                },
+            ],
+        };
+    }
+    return result;
 }
 //# sourceMappingURL=index.js.map

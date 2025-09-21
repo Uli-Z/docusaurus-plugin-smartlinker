@@ -1,4 +1,5 @@
 import { dirname, join, resolve, relative, isAbsolute } from 'node:path';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from '@docusaurus/types';
 import type { LoadContext, PluginContentLoadedActions } from '@docusaurus/types';
@@ -18,6 +19,8 @@ import { PLUGIN_NAME } from './pluginName.js';
 import { createTooltipMdxCompiler } from './node/tooltipMdxCompiler.js';
 import { setIndexEntries } from './indexProviderStore.js';
 import { loadIndexFromFiles } from './frontmatterAdapter.js';
+import { resolveEntryPermalinks, type EntryWithResolvedUrl } from './node/permalinkResolver.js';
+import type { LoadedContent as DocsLoadedContent } from '@docusaurus/plugin-content-docs';
 
 export type {
   FsIndexProviderOptions,
@@ -55,6 +58,23 @@ function normalizeFolderId(siteDir: string, absPath: string): string {
 
 const moduleDir = dirname(fileURLToPath(import.meta.url));
 const pluginName = PLUGIN_NAME;
+
+function publishGlobalData(
+  actions: PluginContentLoadedActions,
+  opts: NormalizedOptions,
+  entries: EntryWithResolvedUrl[],
+) {
+  const registryMeta = entries.map(({ id, slug, icon, folderId, docId, permalink }) => ({
+    id,
+    slug,
+    icon: icon ?? null,
+    folderId: folderId ?? null,
+    docId: docId ?? null,
+    permalink: permalink ?? null,
+  }));
+
+  actions.setGlobalData({ options: opts, entries: registryMeta });
+}
 
 export default function smartlinkerPlugin(
   _context: LoadContext,
@@ -105,6 +125,12 @@ export default function smartlinkerPlugin(
     }
   };
 
+  const computeDocIdForEntry = (entry: IndexRawEntry): string | undefined => {
+    const folder = entry.folderId ? folderById.get(entry.folderId) : undefined;
+    if (!folder) return undefined;
+    return deriveDocId(folder.absPath, entry.sourcePath);
+  };
+
   const primeIndexProvider = () => {
     primedFiles = collectFiles();
     const { entries } = loadIndexFromFiles(primedFiles);
@@ -153,13 +179,19 @@ export default function smartlinkerPlugin(
         tooltipComponentsModule.contents
       );
 
-      const registryMeta = entries.map(({ id, slug, icon, folderId }) => ({
-        id,
-        slug,
-        icon,
-        folderId: folderId ?? null,
+      const enrichedEntries = entries.map((entry) => ({
+        ...entry,
+        docId: entry.docId ?? computeDocIdForEntry(entry),
       }));
-      actions.setGlobalData({ options: opts, entries: registryMeta });
+
+      const docsContent = loadDocsContentFromGenerated(_context.generatedFilesDir);
+      const resolved = resolveEntryPermalinks({
+        siteDir: _context.siteDir,
+        entries: enrichedEntries,
+        docsContent,
+      });
+
+      publishGlobalData(actions, opts, resolved);
     },
 
     getThemePath() {
@@ -174,4 +206,63 @@ export default function smartlinkerPlugin(
       return [join(moduleDir, 'theme/styles.css')];
     },
   };
+}
+
+function deriveDocId(folderAbsPath: string, sourcePath: string | undefined): string | undefined {
+  if (!sourcePath) return undefined;
+  const rel = relative(folderAbsPath, sourcePath);
+  if (!rel || rel.startsWith('..')) return undefined;
+  const normalized = rel.replace(/\\/g, '/');
+  const withoutExt = normalized.replace(/\.[^./]+$/u, '');
+  return withoutExt || undefined;
+}
+
+function loadDocsContentFromGenerated(
+  generatedFilesDir: string,
+): Record<string, DocsLoadedContent | undefined> {
+  const root = join(generatedFilesDir, 'docusaurus-plugin-content-docs');
+  const result: Record<string, DocsLoadedContent> = {};
+
+  let pluginIds: string[] = [];
+  try {
+    pluginIds = readdirSync(root);
+  } catch {
+    return result;
+  }
+
+  for (const pluginId of pluginIds) {
+    const pluginDir = join(root, pluginId);
+    let stats;
+    try {
+      stats = statSync(pluginDir);
+    } catch {
+      continue;
+    }
+    if (!stats.isDirectory()) continue;
+
+    const docs: any[] = [];
+    for (const file of readdirSync(pluginDir)) {
+      if (!file.endsWith('.json')) continue;
+      if (file.startsWith('__')) continue;
+      const abs = join(pluginDir, file);
+      try {
+        const parsed = JSON.parse(readFileSync(abs, 'utf8'));
+        if (parsed && typeof parsed === 'object' && typeof parsed.permalink === 'string') {
+          docs.push(parsed);
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    result[pluginId] = {
+      loadedVersions: [
+        {
+          docs,
+        } as any,
+      ],
+    } as DocsLoadedContent;
+  }
+
+  return result;
 }

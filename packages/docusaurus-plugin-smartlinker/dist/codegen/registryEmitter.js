@@ -23,11 +23,12 @@ export function emitRegistry(entries, noteModules) {
             shortNoteField = `ShortNote: ${importName},`;
         }
         const iconField = e.icon ? `    icon: "${e.icon}",\n` : '';
+        const permalinkField = `    permalink: "${e.slug}",\n`;
         const shortField = shortNoteField ? `    ${shortNoteField}\n` : '';
         records.push(`  "${e.id}": {
     id: "${e.id}",
     slug: "${e.slug}",
-${iconField}${shortField}  }`);
+${permalinkField}${iconField}${shortField}  }`);
     }
     const mod = `
 /* AUTO-GENERATED REGISTRY */

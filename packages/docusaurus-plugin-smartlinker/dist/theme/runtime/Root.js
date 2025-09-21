@@ -31,6 +31,8 @@ function Providers({ children }) {
             next[entry.id] = {
                 id: entry.id,
                 slug: entry.slug,
+                docId: entry.docId ?? undefined,
+                permalink: entry.permalink ?? generated?.permalink ?? undefined,
                 icon: entry.icon ?? generated?.icon,
                 ShortNote: generated?.ShortNote,
             };

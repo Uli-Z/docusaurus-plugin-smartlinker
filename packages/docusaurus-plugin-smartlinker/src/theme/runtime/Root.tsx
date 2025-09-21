@@ -15,7 +15,7 @@ const EMPTY_OPTIONS: NormalizedOptions = { icons: {}, tooltipComponents: {}, fol
 
 type PluginData = {
   options: NormalizedOptions;
-  entries: Array<{ id: string; slug: string; icon?: string | null }>;
+  entries: Array<{ id: string; slug: string; docId?: string | null; icon?: string | null; permalink?: string | null }>;
 };
 
 function Providers({ children }: { children: React.ReactNode }) {
@@ -41,6 +41,8 @@ function Providers({ children }: { children: React.ReactNode }) {
       next[entry.id] = {
         id: entry.id,
         slug: entry.slug,
+        docId: entry.docId ?? undefined,
+        permalink: entry.permalink ?? generated?.permalink ?? undefined,
         icon: entry.icon ?? generated?.icon,
         ShortNote: generated?.ShortNote,
       };

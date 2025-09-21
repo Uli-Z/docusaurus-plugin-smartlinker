@@ -10,6 +10,11 @@ import SmartLink from '../src/theme/runtime/SmartLink.js';
 import { LinkifyRegistryProvider, IconConfigProvider } from '../src/theme/runtime/context.js';
 import { emitShortNoteModule } from '../src/codegen/notesEmitter.js';
 
+vi.mock('@docusaurus/useBaseUrl', () => ({
+  __esModule: true,
+  default: (value: string) => value,
+}));
+
 function setup(
   ui: React.ReactNode,
   { registry = {}, iconApi, mdxComponents }: any = {}
@@ -185,5 +190,24 @@ describe('SmartLink (theme)', () => {
     setup(<SmartLink to="/x" icon="pill">Amoxi</SmartLink>, { registry: {}, iconApi });
     const emoji = screen.getByText('💊');
     expect(emoji).toHaveClass('lm-icon-emoji');
+  });
+
+  it('prefers permalink from registry when available', () => {
+    setup(
+      <SmartLink to="/antibiotics/amoxicillin" icon="pill" tipKey="amoxicillin">Amoxi</SmartLink>,
+      {
+        registry: {
+          amoxicillin: {
+            id: 'amoxicillin',
+            slug: '/antibiotics/amoxicillin',
+            permalink: '/docs/docs/antibiotics/amoxicillin',
+            icon: 'pill',
+          },
+        },
+      }
+    );
+
+    const link = screen.getByRole('link', { name: /^Amoxi$/ });
+    expect(link).toHaveAttribute('href', '/docs/docs/antibiotics/amoxicillin');
   });
 });

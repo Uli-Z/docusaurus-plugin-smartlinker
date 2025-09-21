@@ -19,6 +19,8 @@ export interface IndexRawEntry {
     sourcePath: string;
     /** Identifier of the configured folder that produced this entry. */
     folderId?: string;
+    /** Derived docs plugin identifier (relative path without extension). */
+    docId?: string;
 }
 export interface FrontmatterWarning {
     path: string;
