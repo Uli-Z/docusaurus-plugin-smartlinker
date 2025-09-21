@@ -150,7 +150,8 @@ export function parseFrontmatter(files: RawDocFile[]): FrontmatterParseResult {
         linkify: true,
         icon,
         shortNote,
-        sourcePath: file.path
+        sourcePath: file.path,
+        folderId: file.folderId
       });
     } catch (err: any) {
       warnings.push({

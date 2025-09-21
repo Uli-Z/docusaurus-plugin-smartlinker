@@ -6,22 +6,27 @@ describe('options validation', () => {
     const { options, warnings } = validateOptions({});
     expect(options.icons).toBeDefined();
     expect(options.tooltipComponents).toBeDefined();
+    expect(options.folders).toBeDefined();
     expect(Array.isArray(warnings)).toBe(true);
     expect(warnings.some(w => w.code === 'EMPTY_ICONS_OBJECT')).toBe(true);
+    expect(warnings.some(w => w.code === 'FOLDERS_REQUIRED')).toBe(true);
   });
 
-  it('warns if defaultIcon is unknown', () => {
+  it('warns if a folder defaultIcon is unknown', () => {
     const { warnings } = validateOptions({
       icons: { pill: '/pill.svg' },
-      defaultIcon: 'capsule'
+      folders: [
+        { path: 'docs', defaultIcon: 'capsule' }
+      ]
     });
-    expect(warnings.some(w => w.code === 'DEFAULT_ICON_UNKNOWN')).toBe(true);
+    expect(warnings.some(w => w.code === 'FOLDER_DEFAULT_ICON_UNKNOWN')).toBe(true);
   });
 
   it('warns if darkModeIcons reference unknown ids', () => {
     const { warnings } = validateOptions({
       icons: { pill: '/pill.svg' },
-      darkModeIcons: { capsule: '/capsule-dark.svg' }
+      darkModeIcons: { capsule: '/capsule-dark.svg' },
+      folders: [{ path: 'docs' }]
     });
     expect(warnings.some(w => w.code === 'DARK_MODE_ICON_UNKNOWN')).toBe(true);
   });
@@ -29,19 +34,57 @@ describe('options validation', () => {
   it('normalizes tooltipComponents definitions', () => {
     const { options, warnings } = validateOptions({
       icons: { pill: '/pill.svg' },
-      tooltipComponents: {
-        DrugTip: '@site/src/components/DrugTip',
-        Alert: { path: '@site/src/components/Alert', export: 'Alert' },
-      },
+      folders: [
+        {
+          path: 'docs',
+          tooltipComponents: {
+            DrugTip: '@site/src/components/DrugTip',
+          },
+        },
+        {
+          path: 'guides',
+          tooltipComponents: {
+            Alert: { path: '@site/src/components/Alert', export: 'Alert' },
+          },
+        },
+      ],
     });
     expect(warnings.length).toBe(0);
+    expect(options.folders[0].tooltipComponents.DrugTip).toEqual({
+      importPath: '@site/src/components/DrugTip',
+    });
     expect(options.tooltipComponents.DrugTip).toEqual({
       importPath: '@site/src/components/DrugTip',
+    });
+    expect(options.folders[1].tooltipComponents.Alert).toEqual({
+      importPath: '@site/src/components/Alert',
+      exportName: 'Alert',
     });
     expect(options.tooltipComponents.Alert).toEqual({
       importPath: '@site/src/components/Alert',
       exportName: 'Alert',
     });
+  });
+
+  it('warns when folders are duplicated', () => {
+    const { warnings } = validateOptions({
+      icons: { pill: '/pill.svg' },
+      folders: [{ path: 'docs' }, { path: 'docs/' }]
+    });
+    expect(warnings.some(w => w.code === 'FOLDER_PATH_DUPLICATE')).toBe(true);
+  });
+
+  it('warns when a folder tooltip alias is empty', () => {
+    const { warnings } = validateOptions({
+      icons: { pill: '/pill.svg' },
+      folders: [{
+        path: 'docs',
+        tooltipComponents: {
+          ' ': '@site/src/components/DrugTip',
+        },
+      }],
+    });
+    expect(warnings.some(w => w.code === 'FOLDER_TOOLTIP_COMPONENT_ALIAS_EMPTY')).toBe(true);
   });
 });
 
@@ -54,7 +97,7 @@ describe('icon resolver', () => {
     darkModeIcons: {
       pill: '/img/pill-dark.svg'
     },
-    defaultIcon: 'abx'
+    folders: [{ path: 'docs' }]
   };
 
   it('returns requested id when known (light)', () => {
@@ -73,18 +116,18 @@ describe('icon resolver', () => {
     expect(res.src).toBe('/img/pill-dark.svg');
   });
 
-  it('falls back to defaultIcon when requested is unknown and warns once', () => {
+  it('returns null when requested icon is unknown and warns once', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { options } = validateOptions(base);
     const { resolveIconId } = createIconResolver(options);
     const res = resolveIconId('unknown', 'light');
-    expect(res.iconId).toBe('abx');
-    expect(res.src).toBe('/img/abx.png');
+    expect(res.iconId).toBeNull();
+    expect(res.src).toBeNull();
     expect(warnSpy).toHaveBeenCalledTimes(1);
     expect(warnSpy.mock.calls[0]?.[0]).toContain('unknown');
 
     const second = resolveIconId('unknown', 'dark');
-    expect(second.iconId).toBe('abx');
+    expect(second.iconId).toBeNull();
     expect(warnSpy).toHaveBeenCalledTimes(1);
 
     warnSpy.mockRestore();
@@ -102,7 +145,7 @@ describe('icon resolver', () => {
   });
 
   it('returns null when neither requested nor default are applicable', () => {
-    const { options } = validateOptions({ icons: {} });
+    const { options } = validateOptions({ icons: {}, folders: [{ path: 'docs' }] });
     const { resolveIconId } = createIconResolver(options);
     const res = resolveIconId(undefined, 'light');
     expect(res.iconId).toBeNull();

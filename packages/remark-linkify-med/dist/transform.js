@@ -1,5 +1,6 @@
 import { visit, SKIP } from 'unist-util-visit';
 import { normalize } from 'node:path';
+import { getIndexProvider as getRegisteredIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { buildMatcher } from './matcher.js';
 function isSkippable(node, mdxComponentNamesToSkip) {
     const t = node.type;
@@ -41,60 +42,99 @@ function toMdxJsxTextElement(name, attrs, text) {
         children
     };
 }
+function normalizeFolderKey(value) {
+    const trimmed = value.trim();
+    const withoutBackslashes = trimmed.replace(/\\/g, '/');
+    const withoutTrailing = withoutBackslashes.replace(/\/+$/, '');
+    return withoutTrailing || '.';
+}
 export default function remarkSmartlinker(opts) {
-    const componentName = opts.componentName ?? 'SmartLink';
-    const toAttr = opts.toAttr ?? 'to';
-    const iconAttr = opts.iconAttr ?? 'icon';
-    const tipKeyAttr = opts.tipKeyAttr ?? 'tipKey';
-    const matchAttr = opts.matchAttr ?? 'match';
-    const shortNoteComponentName = opts.shortNoteComponentName ?? 'LinkifyShortNote';
-    const shortNoteTipKeyAttr = opts.shortNoteTipKeyAttr ?? tipKeyAttr;
-    const shortNotePlaceholder = opts.shortNotePlaceholder ?? '%%SHORT_NOTICE%%';
-    const targets = opts.index.getAllTargets();
+    const options = opts ?? {};
+    const componentName = options.componentName ?? 'SmartLink';
+    const toAttr = options.toAttr ?? 'to';
+    const iconAttr = options.iconAttr ?? 'icon';
+    const tipKeyAttr = options.tipKeyAttr ?? 'tipKey';
+    const matchAttr = options.matchAttr ?? 'match';
+    const shortNoteComponentName = options.shortNoteComponentName ?? 'LinkifyShortNote';
+    const shortNoteTipKeyAttr = options.shortNoteTipKeyAttr ?? tipKeyAttr;
+    const shortNotePlaceholder = options.shortNotePlaceholder ?? '%%SHORT_NOTICE%%';
+    const restrictInput = options.restrictToFolders;
+    const restrictArray = Array.isArray(restrictInput)
+        ? restrictInput
+        : restrictInput
+            ? [restrictInput]
+            : [];
+    const folderFilter = new Set(restrictArray
+        .map((value) => (typeof value === 'string' ? normalizeFolderKey(value) : null))
+        .filter((value) => !!value));
     const mdxComponentNamesToSkip = new Set([
         componentName,
         shortNoteComponentName,
     ]);
-    const termEntries = [];
-    for (const t of targets) {
-        for (const lit of t.terms) {
-            const literal = String(lit ?? '').trim();
-            if (!literal)
-                continue;
-            termEntries.push({ literal, key: `${t.id}::${t.slug}::${t.icon ?? ''}` });
+    let cachedProvider;
+    let cachedFilterSignature = '';
+    let prepared;
+    function ensurePreparedIndex() {
+        const provider = options.index ?? getRegisteredIndexProvider();
+        if (!provider) {
+            throw new Error('[docusaurus-plugin-smartlinker] No index provider configured. Pass `{ index }` explicitly or make sure the Docusaurus plugin runs before this remark transformer.');
         }
-    }
-    termEntries.sort((a, b) => b.literal.length - a.literal.length);
-    const claimMap = new Map();
-    for (const t of targets) {
-        for (const lit of t.terms) {
-            const ll = String(lit).toLocaleLowerCase();
-            const arr = claimMap.get(ll) ?? [];
-            arr.push({ id: t.id, slug: t.slug, icon: t.icon });
-            claimMap.set(ll, arr);
+        const filterSignature = folderFilter.size
+            ? Array.from(folderFilter).sort().join('|')
+            : 'ALL';
+        if (provider !== cachedProvider || filterSignature !== cachedFilterSignature) {
+            const allTargets = provider.getAllTargets();
+            const targets = folderFilter.size
+                ? allTargets.filter((target) => {
+                    const id = typeof target.folderId === 'string' ? normalizeFolderKey(target.folderId) : null;
+                    if (!id)
+                        return false;
+                    return folderFilter.has(id);
+                })
+                : allTargets;
+            const termEntries = [];
+            const claimMap = new Map();
+            for (const t of targets) {
+                for (const lit of t.terms) {
+                    const literal = String(lit ?? '').trim();
+                    if (!literal)
+                        continue;
+                    termEntries.push({ literal, key: `${t.id}::${t.slug}::${t.icon ?? ''}` });
+                    const ll = literal.toLocaleLowerCase();
+                    const arr = claimMap.get(ll) ?? [];
+                    arr.push({ id: t.id, slug: t.slug, icon: t.icon });
+                    claimMap.set(ll, arr);
+                }
+            }
+            termEntries.sort((a, b) => b.literal.length - a.literal.length);
+            for (const [, arr] of claimMap)
+                arr.sort((a, b) => a.id.localeCompare(b.id));
+            const matcher = buildMatcher(termEntries);
+            const targetByPath = new Map();
+            const targetById = new Map();
+            const targetBySlug = new Map();
+            for (const t of targets) {
+                if (t.sourcePath) {
+                    const key = normalizePath(t.sourcePath);
+                    if (key)
+                        targetByPath.set(key, t);
+                }
+                if (t.id)
+                    targetById.set(t.id, t);
+                if (t.slug)
+                    targetBySlug.set(t.slug, t);
+            }
+            prepared = { targets, matcher, claimMap, targetByPath, targetById, targetBySlug };
+            cachedProvider = provider;
+            cachedFilterSignature = filterSignature;
         }
-    }
-    for (const [, arr] of claimMap)
-        arr.sort((a, b) => a.id.localeCompare(b.id));
-    const matcher = buildMatcher(termEntries);
-    const targetByPath = new Map();
-    const targetById = new Map();
-    const targetBySlug = new Map();
-    for (const t of targets) {
-        if (t.sourcePath) {
-            const key = normalizePath(t.sourcePath);
-            if (key)
-                targetByPath.set(key, t);
-        }
-        if (t.id)
-            targetById.set(t.id, t);
-        if (t.slug)
-            targetBySlug.set(t.slug, t);
+        return { index: provider, ...prepared };
     }
     return (tree, file) => {
+        const { index, matcher, claimMap, targetByPath, targetById, targetBySlug } = ensurePreparedIndex();
         const currentTarget = findCurrentTarget({
             file,
-            index: opts.index,
+            index,
             targetByPath,
             targetById,
             targetBySlug,

@@ -41,15 +41,19 @@ const config = {
     [
       'docusaurus-plugin-smartlinker',
       {
-        slugPrefix: '/docs',
         icons: {
           pill: 'emoji:💊',
           bug: '/img/bug.svg',
         },
-        defaultIcon: 'pill',
-        tooltipComponents: {
-          DrugTip: '@site/src/components/DrugTip',
-        },
+        folders: [
+          {
+            path: 'docs',
+            defaultIcon: 'pill',
+            tooltipComponents: {
+              DrugTip: '@site/src/components/DrugTip',
+            },
+          },
+        ],
       } satisfies PluginOptions,
     ],
   ],

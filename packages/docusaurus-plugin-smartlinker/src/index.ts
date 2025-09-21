@@ -1,8 +1,13 @@
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from '@docusaurus/types';
 import type { LoadContext, PluginContentLoadedActions } from '@docusaurus/types';
-import { validateOptions, type PluginOptions, type NormalizedOptions } from './options.js';
+import {
+  validateOptions,
+  type PluginOptions,
+  type NormalizedOptions,
+  type NormalizedFolderOption,
+} from './options.js';
 import { scanMdFiles } from './node/fsScan.js';
 import { buildArtifacts } from './node/buildPipeline.js';
 import type { IndexRawEntry, RawDocFile } from './types.js';
@@ -32,6 +37,22 @@ type Content = {
   opts: NormalizedOptions;
 };
 
+type ResolvedFolder = NormalizedFolderOption & {
+  absPath: string;
+  id: string;
+};
+
+function normalizeFolderId(siteDir: string, absPath: string): string {
+  const relPath = relative(siteDir, absPath);
+  const useRelative =
+    relPath &&
+    !relPath.startsWith('..') &&
+    !isAbsolute(relPath);
+  const candidate = useRelative ? relPath : absPath;
+  const normalized = candidate.replace(/\\/g, '/').replace(/\/+$/, '');
+  return normalized || '.';
+}
+
 const moduleDir = dirname(fileURLToPath(import.meta.url));
 const pluginName = PLUGIN_NAME;
 
@@ -41,13 +62,54 @@ export default function smartlinkerPlugin(
 ): Plugin<Content> {
   const { options: normOpts } = validateOptions(optsIn);
 
-  const roots = [_context.siteDir];
+  if (normOpts.folders.length === 0) {
+    throw new Error(
+      `[${pluginName}] Configure at least one folder via the \`folders\` option.`
+    );
+  }
+
+  const resolvedFolders: ResolvedFolder[] = normOpts.folders.map((folder) => {
+    const absPath = resolve(_context.siteDir, folder.path);
+    return {
+      ...folder,
+      absPath,
+      id: normalizeFolderId(_context.siteDir, absPath),
+    } satisfies ResolvedFolder;
+  });
+
+  const folderById = new Map<string, ResolvedFolder>();
+  for (const folder of resolvedFolders) {
+    folderById.set(folder.id, folder);
+  }
+
   let primedFiles: RawDocFile[] | null = null;
 
+  const collectFiles = (): RawDocFile[] => {
+    const files: RawDocFile[] = [];
+    for (const folder of resolvedFolders) {
+      const scanned = scanMdFiles({ roots: [folder.absPath] });
+      for (const file of scanned) {
+        files.push({ ...file, folderId: folder.id });
+      }
+    }
+    return files;
+  };
+
+  const applyFolderDefaults = (entries: IndexRawEntry[]) => {
+    for (const entry of entries) {
+      const folder = entry.folderId ? folderById.get(entry.folderId) : undefined;
+      if (!folder) continue;
+      if (!entry.icon && folder.defaultIcon && normOpts.icons[folder.defaultIcon]) {
+        entry.icon = folder.defaultIcon;
+      }
+    }
+  };
+
   const primeIndexProvider = () => {
-    primedFiles = scanMdFiles({ roots });
+    primedFiles = collectFiles();
     const { entries } = loadIndexFromFiles(primedFiles);
-    setIndexEntries(entries, normOpts.slugPrefix);
+    applyFolderDefaults(entries);
+    setIndexEntries(entries);
   };
 
   primeIndexProvider();
@@ -56,14 +118,15 @@ export default function smartlinkerPlugin(
     name: pluginName,
 
     async loadContent() {
-      const files = primedFiles ?? scanMdFiles({ roots });
+      const files = primedFiles ?? collectFiles();
       primedFiles = null;
       const compileMdx = await createTooltipMdxCompiler(_context);
       const { entries, notes, registry } = await buildArtifacts(files, {
         compileMdx,
       });
 
-      setIndexEntries(entries, normOpts.slugPrefix);
+      applyFolderDefaults(entries);
+      setIndexEntries(entries);
 
       return {
         entries,
@@ -90,7 +153,12 @@ export default function smartlinkerPlugin(
         tooltipComponentsModule.contents
       );
 
-      const registryMeta = entries.map(({ id, slug, icon }) => ({ id, slug, icon }));
+      const registryMeta = entries.map(({ id, slug, icon, folderId }) => ({
+        id,
+        slug,
+        icon,
+        folderId: folderId ?? null,
+      }));
       actions.setGlobalData({ options: opts, entries: registryMeta });
     },
 

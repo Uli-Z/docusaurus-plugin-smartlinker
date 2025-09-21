@@ -1,0 +1,108 @@
+.lm-smartlink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(
+    --lm-smartlink-gap,
+    calc(var(--ifm-spacing-horizontal, 1.5rem) / 6)
+  );
+}
+
+.lm-smartlink__anchor,
+.lm-smartlink__iconlink {
+  display: inline-flex;
+  align-items: center;
+}
+
+.lm-smartlink__anchor {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+.lm-smartlink__iconlink {
+  text-decoration: none;
+}
+
+.lm-smartlink__iconwrap {
+  display: inline-flex;
+  margin-left: var(
+    --lm-smartlink-icon-gap,
+    calc(var(--ifm-spacing-horizontal, 1.5rem) / 10)
+  );
+  font-style: normal;
+}
+
+.lm-smartlink__icon {
+  cursor: pointer;
+}
+
+.lm-icon {
+  width: 1em;
+  height: 1em;
+}
+
+.lm-icon-emoji {
+  font-size: 1em;
+  line-height: 1;
+}
+
+.lm-tooltip {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(
+      var(--lm-tooltip-offset-rest, calc(var(--ifm-spacing-vertical, 1rem) / 4))
+    )
+    scale(0.97);
+  transition:
+    opacity var(--lm-tooltip-transition-duration, var(--ifm-transition-fast, 150ms))
+      ease-out,
+    transform var(--lm-tooltip-transition-duration, var(--ifm-transition-fast, 150ms))
+      ease-out;
+  z-index: var(--lm-tooltip-z-index, var(--ifm-z-index-overlay, 400));
+}
+
+.lm-tooltip[data-state='delayed-open'],
+.lm-tooltip[data-state='instant-open'] {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(
+      var(
+        --lm-tooltip-offset-active,
+        calc(var(--ifm-spacing-vertical, 1rem) * -0.1)
+      )
+    )
+    scale(1);
+}
+
+.lm-tooltip[data-state='closed'] {
+  visibility: hidden;
+}
+
+.lm-tooltip-content {
+  background: var(
+    --lm-tooltip-bg,
+    var(--ifm-tooltip-background-color, var(--ifm-color-emphasis-800))
+  );
+  color: var(
+    --lm-tooltip-color,
+    var(--ifm-tooltip-color, var(--ifm-color-emphasis-0))
+  );
+  padding: var(
+    --lm-tooltip-padding,
+    calc(var(--ifm-spacing-vertical, 1rem) / 2)
+      calc(var(--ifm-spacing-horizontal, 1.5rem) / 2)
+  );
+  border-radius: var(--lm-tooltip-radius, var(--ifm-global-radius, 0.4rem));
+  box-shadow: var(--lm-tooltip-shadow, var(--ifm-global-shadow-md));
+  font-size: var(--lm-tooltip-font-size, var(--ifm-font-size-sm, 0.875rem));
+  max-width: min(90vw, 32rem);
+}
+
+.lm-tooltip-arrow {
+  fill: var(
+    --lm-tooltip-arrow-color,
+    var(
+      --lm-tooltip-bg,
+      var(--ifm-tooltip-background-color, var(--ifm-color-emphasis-800))
+    )
+  );
+}

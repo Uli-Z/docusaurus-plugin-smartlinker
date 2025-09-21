@@ -12,6 +12,7 @@ export interface TargetInfo {
   icon?: string;
   sourcePath: string;
   terms: string[];
+  folderId?: string | null;
 }
 
 export interface IndexProvider {
@@ -29,6 +30,7 @@ export interface RemarkSmartlinkerOptions {
   shortNoteComponentName?: string;
   shortNoteTipKeyAttr?: string;
   shortNotePlaceholder?: string;
+  restrictToFolders?: string | string[];
 }
 
 type MdastNode = Content | Root;
@@ -76,6 +78,13 @@ function toMdxJsxTextElement(
   };
 }
 
+function normalizeFolderKey(value: string): string {
+  const trimmed = value.trim();
+  const withoutBackslashes = trimmed.replace(/\\/g, '/');
+  const withoutTrailing = withoutBackslashes.replace(/\/+$/, '');
+  return withoutTrailing || '.';
+}
+
 export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Transformer {
   const options = opts ?? {};
 
@@ -87,6 +96,17 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
   const shortNoteComponentName = options.shortNoteComponentName ?? 'LinkifyShortNote';
   const shortNoteTipKeyAttr = options.shortNoteTipKeyAttr ?? tipKeyAttr;
   const shortNotePlaceholder = options.shortNotePlaceholder ?? '%%SHORT_NOTICE%%';
+  const restrictInput = options.restrictToFolders;
+  const restrictArray = Array.isArray(restrictInput)
+    ? restrictInput
+    : restrictInput
+    ? [restrictInput]
+    : [];
+  const folderFilter = new Set(
+    restrictArray
+      .map((value) => (typeof value === 'string' ? normalizeFolderKey(value) : null))
+      .filter((value): value is string => !!value)
+  );
   type PreparedIndex = {
     targets: TargetInfo[];
     matcher: ReturnType<typeof buildMatcher>;
@@ -102,6 +122,7 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
   ]);
 
   let cachedProvider: IndexProvider | undefined;
+  let cachedFilterSignature = '';
   let prepared: PreparedIndex | undefined;
 
   function ensurePreparedIndex(): { index: IndexProvider } & PreparedIndex {
@@ -113,8 +134,19 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
       );
     }
 
-    if (provider !== cachedProvider) {
-      const targets = provider.getAllTargets();
+    const filterSignature = folderFilter.size
+      ? Array.from(folderFilter).sort().join('|')
+      : 'ALL';
+
+    if (provider !== cachedProvider || filterSignature !== cachedFilterSignature) {
+      const allTargets = provider.getAllTargets();
+      const targets = folderFilter.size
+        ? allTargets.filter((target) => {
+            const id = typeof target.folderId === 'string' ? normalizeFolderKey(target.folderId) : null;
+            if (!id) return false;
+            return folderFilter.has(id);
+          })
+        : allTargets;
 
       const termEntries: AutoLinkEntry[] = [];
       const claimMap = new Map<string, { id: string; slug: string; icon?: string }[]>();
@@ -152,6 +184,7 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
 
       prepared = { targets, matcher, claimMap, targetByPath, targetById, targetBySlug };
       cachedProvider = provider;
+      cachedFilterSignature = filterSignature;
     }
 
     return { index: provider, ...(prepared as PreparedIndex) };
