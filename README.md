@@ -53,8 +53,19 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
          },
        ],
      ],
-    };
-    ```
+   };
+   ```
+
+   The optional `slugPrefix` controls the base route that Smartlinker
+   prepends to every frontmatter `slug` when it publishes the index for the
+   remark transformer. Keep it aligned with the path where your docs mount
+   (e.g., `routeBasePath: '/docs'`) so an entry with
+   ``slug: /antibiotics/amoxicillin`` resolves to
+   `/docs/antibiotics/amoxicillin` when Markdown is processed outside of
+   Docusaurus. Omitting the option leaves the slugs untouched. The prefix
+   does **not** filter which pages land in the index – any file with
+   `linkify !== false`, a non-empty `smartlink-terms` array, and valid
+   `id`/`slug` metadata is included regardless of this setting.
 
 3. **Annotate your docs** with SmartLink metadata so the index provider can pick up synonyms, icons, and tooltip notes:
 

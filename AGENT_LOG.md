@@ -768,3 +768,15 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `npm run build`
 - `npm test`
 - `npm run site:build`
+
+# Status Sync — slugPrefix documentation (2025-02-XX)
+
+## Summary
+
+- Expanded the README to explain how `slugPrefix` rewrites frontmatter slugs for Markdown processed outside Docusaurus and clarified that it does not filter which documents are indexed.
+- Reconfirmed the build so Vitest can resolve the package exports before rerunning the workspace test suite.
+
+## Verification
+
+- `npm run build`
+- `npm test`
