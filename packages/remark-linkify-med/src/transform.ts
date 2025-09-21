@@ -32,13 +32,17 @@ export interface RemarkSmartlinkerOptions {
 
 type MdastNode = Content | Root;
 
-function isSkippable(node: MdastNode): boolean {
+function isSkippable(node: MdastNode, mdxComponentNamesToSkip: Set<string>): boolean {
   const t = (node as any).type;
   if (t === 'code' || t === 'inlineCode') return true;
   if (t === 'link' || t === 'linkReference') return true;
   if (t === 'image' || t === 'imageReference') return true;
   if (t === 'heading' && (node as any).depth <= 3) return true;
-  if (t === 'mdxJsxFlowElement' || t === 'mdxJsxTextElement') return true;
+  if (t === 'mdxJsxFlowElement' || t === 'mdxJsxTextElement') {
+    const name = (node as any).name;
+    if (typeof name === 'string' && mdxComponentNamesToSkip.has(name)) return true;
+    return false;
+  }
   return false;
 }
 
@@ -82,6 +86,11 @@ export default function remarkSmartlinker(opts: RemarkSmartlinkerOptions): Trans
   const shortNotePlaceholder = opts.shortNotePlaceholder ?? '%%SHORT_NOTICE%%';
 
   const targets = opts.index.getAllTargets();
+
+  const mdxComponentNamesToSkip = new Set<string>([
+    componentName,
+    shortNoteComponentName,
+  ]);
 
   const termEntries: AutoLinkEntry[] = [];
   for (const t of targets) {
@@ -129,7 +138,7 @@ export default function remarkSmartlinker(opts: RemarkSmartlinkerOptions): Trans
     });
 
     visit(tree, (node, _index, parent: Parent | undefined) => {
-      if (isSkippable(node as any)) return SKIP as any;
+      if (isSkippable(node as any, mdxComponentNamesToSkip)) return SKIP as any;
       if (!parent) return;
       if ((node as any).type !== 'text') return;
 

@@ -740,3 +740,16 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `npm test`
 - `npm run site:build`
 - `npm run smoke:git-install`
+
+# Bugfix: MDX SmartLink traversal and documentation sync (2025-03-17)
+
+## Summary
+
+- Updated the remark transformer to traverse MDX JSX containers while skipping only SmartLink-generated nodes, so terms nested inside components such as `<details>` now produce SmartLinks.
+- Added a regression test covering bold text inside MDX JSX to ensure formatting is preserved.
+- Documented the CommonJS import pattern for the remark helper and clarified the frontmatter requirements (including the leading `/` slug rule) in the README.
+
+## Verification
+
+- `npm run build --workspace @internal/remark-linkify-med`
+- `npm test`
