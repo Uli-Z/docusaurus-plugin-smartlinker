@@ -43,6 +43,7 @@ export const OptionsSchema = z.object({
       }
       return out;
     }),
+  slugPrefix: TrimmedString.optional(),
 });
 
 export type PluginOptions = z.input<typeof OptionsSchema>;

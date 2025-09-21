@@ -18,20 +18,10 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
    npm install github:Uli-Z/docusaurus-plugin-smartlinker
    ```
 
-2. **Register the plugins** in your `docusaurus.config.js` and create an index provider that points to the content folders you want to scan:
+2. **Register the plugins** in your `docusaurus.config.js`. The Docusaurus plugin now publishes its index automatically, so the remark transformer can be added without extra wiring:
 
    ```js
    import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
-   import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
-   import { dirname, join } from 'node:path';
-   import { fileURLToPath } from 'node:url';
-
-   const __dirname = dirname(fileURLToPath(import.meta.url));
-
-   const SmartlinkerIndex = createFsIndexProvider({
-     roots: [join(__dirname, 'docs')],
-     slugPrefix: '/docs',
-   });
 
    export default {
      presets: [
@@ -39,10 +29,10 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
          'classic',
          {
            docs: {
-             remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
+             remarkPlugins: [remarkSmartlinker],
            },
            pages: {
-             remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
+             remarkPlugins: [remarkSmartlinker],
            },
          },
        ],
@@ -51,6 +41,7 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
        [
          'docusaurus-plugin-smartlinker',
          {
+           slugPrefix: '/docs',
            icons: {
              pill: 'emoji:💊',
              bug: '/img/bug.svg',
@@ -62,8 +53,8 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
          },
        ],
      ],
-   };
-   ```
+    };
+    ```
 
 3. **Annotate your docs** with SmartLink metadata so the index provider can pick up synonyms, icons, and tooltip notes:
 
@@ -80,6 +71,8 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
      <DrugTip note="Take with food" />
    ---
    ```
+
+If you're processing Markdown outside of the Docusaurus lifecycle, you can still create and pass a manual index provider via `createFsIndexProvider({ roots, slugPrefix })` when calling the remark transformer.
 
 Smartlinker builds a registry from these front matter fields, injects `<SmartLink/>` nodes during the remark phase, and renders hover/tap tooltips at runtime.
 

@@ -1,6 +1,5 @@
 import type { Config } from '@docusaurus/types';
 import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
-import { createFsIndexProvider } from 'docusaurus-plugin-smartlinker';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -31,11 +30,6 @@ const normalizedBaseUrl = (() => {
   return '/';
 })();
 
-const SmartlinkerIndex = createFsIndexProvider({
-  roots: [join(__dirname, 'docs')],
-  slugPrefix: '/docs',
-});
-
 const config: Config = {
   title: 'Smartlinker Example',
   favicon: 'img/favicon.ico',
@@ -55,11 +49,11 @@ const config: Config = {
       {
         docs: {
           sidebarPath: require.resolve('./sidebars.ts'),
-          remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
+          remarkPlugins: [remarkSmartlinker],
         },
         blog: false,
         pages: {
-          remarkPlugins: [[remarkSmartlinker, { index: SmartlinkerIndex }]],
+          remarkPlugins: [remarkSmartlinker],
         },
         theme: {
           customCss: join(__dirname, 'src/css/custom.css'),
@@ -79,6 +73,7 @@ const config: Config = {
       tooltipComponents: {
         DrugTip: '@site/src/components/DrugTip',
       },
+      slugPrefix: '/docs',
     }]
   ],
 };

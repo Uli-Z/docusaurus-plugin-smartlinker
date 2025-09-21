@@ -1,9 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import remarkMdx from 'remark-mdx';
 import plugin, { type TargetInfo, type IndexProvider } from '../src/transform.js';
+import { setIndexEntries, clearIndexProvider } from '../../docusaurus-plugin-smartlinker/dist/indexProviderStore.js';
+import type { IndexRawEntry } from '../../docusaurus-plugin-smartlinker/src/types.js';
 
 function makeIndex(targets: TargetInfo[]): IndexProvider {
   return {
@@ -19,6 +21,18 @@ function run(input: string, targets: TargetInfo[]) {
     .use(plugin, { index: makeIndex(targets) })
     .use(remarkStringify, { fences: true, bullet: '-', rule: '-' });
   return String(proc.processSync(input));
+}
+
+function runWithPluginIndex(input: string, entries: IndexRawEntry[], filePath = '/docs/current.mdx') {
+  setIndexEntries(entries, '/docs');
+
+  const proc = unified()
+    .use(remarkParse)
+    .use(remarkMdx)
+    .use(plugin)
+    .use(remarkStringify, { fences: true, bullet: '-', rule: '-' });
+
+  return String(proc.processSync({ value: input, path: filePath }));
 }
 
 describe('remark-linkify-med transform', () => {
@@ -108,5 +122,58 @@ Some text with Amoxi.
     ];
     const out = run('Intro %%SHORT_NOTICE%% outro.', tSelf);
     expect(out).toContain('Intro <LinkifyShortNote tipKey="self" /> outro.');
+  });
+});
+
+describe('remark-linkify-med transform (plugin-managed index)', () => {
+  const pluginEntries: IndexRawEntry[] = [
+    {
+      id: 'amoxicillin',
+      slug: '/antibiotics/amoxicillin',
+      terms: ['Amoxi', 'Amoxicillin'],
+      linkify: true,
+      icon: 'pill',
+      shortNote: undefined,
+      sourcePath: '/docs/antibiotics/amoxicillin.mdx',
+    },
+    {
+      id: 'vancomycin',
+      slug: '/antibiotics/vancomycin',
+      terms: ['Vanco'],
+      linkify: true,
+      icon: undefined,
+      shortNote: undefined,
+      sourcePath: '/docs/antibiotics/vancomycin.mdx',
+    },
+  ];
+
+  it('links terms using the plugin-registered index provider', () => {
+    const out = runWithPluginIndex('Amoxi vs Vanco', pluginEntries);
+    expect(out).toContain('<SmartLink to="/docs/antibiotics/amoxicillin"');
+    expect(out).toContain('<SmartLink to="/docs/antibiotics/vancomycin"');
+  });
+
+  it('skips linking terms on their own page via plugin-managed index', () => {
+    const out = runWithPluginIndex('Amoxi and Vanco', pluginEntries, '/docs/antibiotics/amoxicillin.mdx');
+    expect(out).not.toContain('to="/docs/antibiotics/amoxicillin"');
+    expect(out).toContain('to="/docs/antibiotics/vancomycin"');
+  });
+
+  it('throws when no index provider has been registered', () => {
+    clearIndexProvider();
+
+    const proc = unified()
+      .use(remarkParse)
+      .use(remarkMdx)
+      .use(plugin)
+      .use(remarkStringify, { fences: true, bullet: '-', rule: '-' });
+
+    expect(() => proc.processSync({ value: 'Plain text', path: '/docs/some.mdx' })).toThrow(
+      /No index provider configured/
+    );
+  });
+
+  afterAll(() => {
+    clearIndexProvider();
   });
 });
