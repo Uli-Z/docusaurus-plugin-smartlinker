@@ -102,6 +102,21 @@ Some text with Amoxi.
     expect(out).not.toContain('to="/docs/self"');
   });
 
+  it('transforms terms inside MDX JSX containers while preserving formatting', () => {
+    const md = [
+      'Intro <strong>Amoxi</strong>.',
+      '',
+      '<details>',
+      '<summary><strong>Regimen</strong></summary>',
+      '<p><strong>Amoxicillin</strong> dosage.</p>',
+      '</details>',
+      ''
+    ].join('\n');
+    const out = run(md, targets);
+    expect(out).toContain('Intro <strong><SmartLink to="/antibiotics/amoxicillin" tipKey="amoxicillin" match="Amoxi" icon="pill">Amoxi</SmartLink></strong>.');
+    expect(out).toContain('<p><strong><SmartLink to="/antibiotics/amoxicillin" tipKey="amoxicillin" match="Amoxicillin" icon="pill">Amoxicillin</SmartLink></strong> dosage.</p>');
+  });
+
   it('replaces short note placeholder with LinkifyShortNote', () => {
     const tSelf: TargetInfo[] = [
       { id: 'self', slug: '/docs/self', sourcePath: '/docs/current.mdx', terms: ['Self'] },

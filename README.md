@@ -62,10 +62,20 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
          },
        ],
      ],
-   };
+    };
+    ```
+
+   ### Using the remark helper from CommonJS
+
+   When your `docusaurus.config.js` relies on CommonJS `require`, make sure to access the default export of the remark helper:
+
+   ```js
+   const remarkSmartlinker = require('docusaurus-plugin-smartlinker/remark').default;
    ```
 
-3. **Annotate your docs** with SmartLink metadata so the index provider can pick up synonyms, icons, and tooltip notes:
+   ESM projects can continue using `import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';` as shown above.
+
+ 3. **Annotate your docs** with SmartLink metadata so the index provider can pick up synonyms, icons, and tooltip notes:
 
    ```mdx
    ---
@@ -81,7 +91,17 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
    ---
    ```
 
-Smartlinker builds a registry from these front matter fields, injects `<SmartLink/>` nodes during the remark phase, and renders hover/tap tooltips at runtime.
+ Smartlinker builds a registry from these front matter fields, injects `<SmartLink/>` nodes during the remark phase, and renders hover/tap tooltips at runtime.
+
+### Frontmatter requirements
+
+To ensure a document participates in SmartLinking, the frontmatter must include:
+
+- `id`: a stable identifier for the document.
+- `slug`: the permalink that the SmartLink should point to. The slug must start with `/`; entries without a valid slug are skipped during indexing.
+- `smartlink-terms`: a non-empty array of synonyms that should be linkified elsewhere.
+
+Optional fields such as `smartlink-icon` and `smartlink-short-note` continue to work as before. If a page fails to produce SmartLinks, double-check that these required fields are present and that the slug uses the expected `/path` format.
 
 ## Packages
 
