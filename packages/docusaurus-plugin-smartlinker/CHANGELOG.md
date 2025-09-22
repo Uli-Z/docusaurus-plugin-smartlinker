@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Allow React 19 as a peer dependency so installing the plugin in Docusaurus projects using React 19 no longer fails.
+- Add a configurable debug logger with level filtering, environment overrides, and lifecycle instrumentation across the build pipeline.
 
 ## 0.1.0
 

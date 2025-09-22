@@ -16,6 +16,15 @@ const TooltipComponentSchema = z.union([
   }),
 ]);
 
+const DebugLevelSchema = z.enum(['error', 'warn', 'info', 'debug', 'trace']);
+
+const DebugOptionsSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    level: DebugLevelSchema.default('warn'),
+  })
+  .default({ enabled: false, level: 'warn' });
+
 export type TooltipComponentConfig = {
   importPath: string;
   exportName?: string;
@@ -53,6 +62,7 @@ export const OptionsSchema = z
     darkModeIcons: z.record(TrimmedString).optional(),
     iconProps: z.record(z.unknown()).optional(),
     folders: z.array(FolderSchema).default([]),
+    debug: DebugOptionsSchema,
   })
   .transform((value) => {
     const aggregated: Record<string, TooltipComponentConfig> = {};
@@ -68,6 +78,7 @@ export const OptionsSchema = z
 export type PluginOptions = z.input<typeof OptionsSchema>;
 export type NormalizedFolderOption = z.output<typeof FolderSchema>;
 export type NormalizedOptions = z.output<typeof OptionsSchema>;
+export type DebugOptions = z.output<typeof DebugOptionsSchema>;
 
 export type OptionsWarning = {
   code:
@@ -97,7 +108,12 @@ export function validateOptions(input: PluginOptions | undefined): ValidationRes
   if (!parsed.success) {
     // Should be rare; Zod already guards shapes.
     return {
-      options: { icons: {}, tooltipComponents: {}, folders: [] },
+      options: {
+        icons: {},
+        tooltipComponents: {},
+        folders: [],
+        debug: { enabled: false, level: 'warn' },
+      },
       warnings: [{
         code: 'EMPTY_ICONS_OBJECT',
         message: 'Invalid options; falling back to empty configuration.',

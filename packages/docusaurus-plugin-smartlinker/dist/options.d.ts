@@ -1,4 +1,14 @@
 import { z } from 'zod';
+declare const DebugOptionsSchema: z.ZodDefault<z.ZodObject<{
+    enabled: z.ZodDefault<z.ZodBoolean>;
+    level: z.ZodDefault<z.ZodEnum<["error", "warn", "info", "debug", "trace"]>>;
+}, "strip", z.ZodTypeAny, {
+    enabled: boolean;
+    level: "error" | "warn" | "info" | "debug" | "trace";
+}, {
+    enabled?: boolean | undefined;
+    level?: "error" | "warn" | "info" | "debug" | "trace" | undefined;
+}>>;
 export type TooltipComponentConfig = {
     importPath: string;
     exportName?: string;
@@ -63,7 +73,21 @@ export declare const OptionsSchema: z.ZodEffects<z.ZodObject<{
             export?: string | undefined;
         }> | undefined;
     }>, "many">>;
+    debug: z.ZodDefault<z.ZodObject<{
+        enabled: z.ZodDefault<z.ZodBoolean>;
+        level: z.ZodDefault<z.ZodEnum<["error", "warn", "info", "debug", "trace"]>>;
+    }, "strip", z.ZodTypeAny, {
+        enabled: boolean;
+        level: "error" | "warn" | "info" | "debug" | "trace";
+    }, {
+        enabled?: boolean | undefined;
+        level?: "error" | "warn" | "info" | "debug" | "trace" | undefined;
+    }>>;
 }, "strip", z.ZodTypeAny, {
+    debug: {
+        enabled: boolean;
+        level: "error" | "warn" | "info" | "debug" | "trace";
+    };
     icons: Record<string, string>;
     folders: {
         path: string;
@@ -73,6 +97,10 @@ export declare const OptionsSchema: z.ZodEffects<z.ZodObject<{
     darkModeIcons?: Record<string, string> | undefined;
     iconProps?: Record<string, unknown> | undefined;
 }, {
+    debug?: {
+        enabled?: boolean | undefined;
+        level?: "error" | "warn" | "info" | "debug" | "trace" | undefined;
+    } | undefined;
     icons?: Record<string, string> | undefined;
     darkModeIcons?: Record<string, string> | undefined;
     iconProps?: Record<string, unknown> | undefined;
@@ -86,6 +114,10 @@ export declare const OptionsSchema: z.ZodEffects<z.ZodObject<{
     }[] | undefined;
 }>, {
     tooltipComponents: Record<string, TooltipComponentConfig>;
+    debug: {
+        enabled: boolean;
+        level: "error" | "warn" | "info" | "debug" | "trace";
+    };
     icons: Record<string, string>;
     folders: {
         path: string;
@@ -95,6 +127,10 @@ export declare const OptionsSchema: z.ZodEffects<z.ZodObject<{
     darkModeIcons?: Record<string, string> | undefined;
     iconProps?: Record<string, unknown> | undefined;
 }, {
+    debug?: {
+        enabled?: boolean | undefined;
+        level?: "error" | "warn" | "info" | "debug" | "trace" | undefined;
+    } | undefined;
     icons?: Record<string, string> | undefined;
     darkModeIcons?: Record<string, string> | undefined;
     iconProps?: Record<string, unknown> | undefined;
@@ -110,6 +146,7 @@ export declare const OptionsSchema: z.ZodEffects<z.ZodObject<{
 export type PluginOptions = z.input<typeof OptionsSchema>;
 export type NormalizedFolderOption = z.output<typeof FolderSchema>;
 export type NormalizedOptions = z.output<typeof OptionsSchema>;
+export type DebugOptions = z.output<typeof DebugOptionsSchema>;
 export type OptionsWarning = {
     code: 'FOLDERS_REQUIRED' | 'FOLDER_PATH_DUPLICATE' | 'FOLDER_DEFAULT_ICON_UNKNOWN' | 'FOLDER_TOOLTIP_COMPONENT_ALIAS_EMPTY' | 'DARK_MODE_ICON_UNKNOWN' | 'ICON_ID_EMPTY' | 'EMPTY_ICONS_OBJECT';
     message: string;

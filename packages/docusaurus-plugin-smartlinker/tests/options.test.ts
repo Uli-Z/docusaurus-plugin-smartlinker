@@ -7,9 +7,17 @@ describe('options validation', () => {
     expect(options.icons).toBeDefined();
     expect(options.tooltipComponents).toBeDefined();
     expect(options.folders).toBeDefined();
+    expect(options.debug).toEqual({ enabled: false, level: 'warn' });
     expect(Array.isArray(warnings)).toBe(true);
     expect(warnings.some(w => w.code === 'EMPTY_ICONS_OBJECT')).toBe(true);
     expect(warnings.some(w => w.code === 'FOLDERS_REQUIRED')).toBe(true);
+  });
+
+  it('accepts explicit debug configuration', () => {
+    const { options } = validateOptions({
+      debug: { enabled: true, level: 'trace' },
+    });
+    expect(options.debug).toEqual({ enabled: true, level: 'trace' });
   });
 
   it('warns if a folder defaultIcon is unknown', () => {

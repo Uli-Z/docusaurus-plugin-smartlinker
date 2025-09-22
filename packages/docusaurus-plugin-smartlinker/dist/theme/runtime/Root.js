@@ -11,7 +11,12 @@ import { PLUGIN_NAME } from '../../pluginName.js';
 import { generatedRegistry } from './generatedRegistry.js';
 import { tooltipComponents } from './generatedTooltipComponents.js';
 const pluginName = PLUGIN_NAME;
-const EMPTY_OPTIONS = { icons: {}, tooltipComponents: {}, folders: [] };
+const EMPTY_OPTIONS = {
+    icons: {},
+    tooltipComponents: {},
+    folders: [],
+    debug: { enabled: false, level: 'warn' },
+};
 function Providers({ children }) {
     const data = usePluginData(pluginName) ?? null;
     const normalizedOptions = data?.options ?? EMPTY_OPTIONS;

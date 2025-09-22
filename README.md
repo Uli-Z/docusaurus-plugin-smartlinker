@@ -57,11 +57,17 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
               },
             },
           ],
+          debug: {
+            enabled: process.env.DOCUSAURUS_PLUGIN_DEBUG === '1',
+            level: process.env.DOCUSAURUS_PLUGIN_DEBUG_LEVEL ?? 'warn',
+          },
         },
       ],
     ],
    };
    ```
+
+   Debug mode is disabled by default. When you set `debug.enabled: true`, Smartlinker emits structured lifecycle logs during `docusaurus build`. Levels cascade just like most logging systems—`debug` includes `info`, `warn`, and `error`, while `trace` adds the most verbose diagnostics. You can also override the behavior per build by exporting `DOCUSAURUS_PLUGIN_DEBUG=1` and (optionally) `DOCUSAURUS_PLUGIN_DEBUG_LEVEL=trace` in your environment.
 
    ### Using the remark helper from CommonJS
 

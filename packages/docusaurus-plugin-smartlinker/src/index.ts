@@ -1,6 +1,8 @@
 import { dirname, join, resolve, relative, isAbsolute } from 'node:path';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { Buffer } from 'node:buffer';
 import { fileURLToPath } from 'node:url';
+import { performance } from 'node:perf_hooks';
 import type { Plugin } from '@docusaurus/types';
 import type { LoadContext, PluginContentLoadedActions } from '@docusaurus/types';
 import {
@@ -21,6 +23,7 @@ import { setIndexEntries } from './indexProviderStore.js';
 import { loadIndexFromFiles } from './frontmatterAdapter.js';
 import { resolveEntryPermalinks, type EntryWithResolvedUrl } from './node/permalinkResolver.js';
 import type { LoadedContent as DocsLoadedContent } from '@docusaurus/plugin-content-docs';
+import { resolveDebugConfig, createLogger, type LogLevel } from './logger.js';
 
 export type {
   FsIndexProviderOptions,
@@ -80,12 +83,82 @@ export default function smartlinkerPlugin(
   _context: LoadContext,
   optsIn?: PluginOptions
 ): Plugin<Content> {
-  const { options: normOpts } = validateOptions(optsIn);
+  const { options: validatedOptions, warnings } = validateOptions(optsIn);
+  const debugResolution = resolveDebugConfig(validatedOptions.debug);
+  const normOpts: NormalizedOptions = {
+    ...validatedOptions,
+    debug: debugResolution.config,
+  };
 
   if (normOpts.folders.length === 0) {
     throw new Error(
       `[${pluginName}] Configure at least one folder via the \`folders\` option.`
     );
+  }
+
+  const logger = createLogger({ pluginName, debug: normOpts.debug });
+  const initLogger = logger.child('init');
+  const optionsLogger = logger.child('options');
+  const scanLogger = logger.child('scan');
+  const indexLogger = logger.child('index');
+  const loadLogger = logger.child('loadContent');
+  const contentLogger = logger.child('contentLoaded');
+  const webpackLogger = logger.child('configureWebpack');
+  const postBuildLogger = logger.child('postBuild');
+
+  const stats = {
+    scannedFileCount: 0,
+    entryCount: 0,
+    noteCount: 0,
+    resolvedCount: 0,
+    reusedPrimedFiles: false,
+    registryBytes: 0,
+  };
+
+  const shouldMeasure = (
+    log: { isLevelEnabled(level: LogLevel): boolean },
+    ...levels: LogLevel[]
+  ): boolean => levels.some((level) => log.isLevelEnabled(level));
+
+  const startTimer = (
+    log: { isLevelEnabled(level: LogLevel): boolean },
+    ...levels: LogLevel[]
+  ): number | null => (shouldMeasure(log, ...levels) ? performance.now() : null);
+
+  const endTimer = (start: number | null): number | undefined => {
+    if (start === null) return undefined;
+    return Number((performance.now() - start).toFixed(2));
+  };
+
+  const formatSiteRelativePath = (absPath: string): string => {
+    const relPath = relative(_context.siteDir, absPath);
+    const useRel = relPath && !relPath.startsWith('..') && !isAbsolute(relPath);
+    const normalized = (useRel ? relPath : absPath).replace(/\\/g, '/');
+    return normalized || '.';
+  };
+
+  if (
+    debugResolution.invalidLevel &&
+    typeof console !== 'undefined' &&
+    typeof console.warn === 'function'
+  ) {
+    console.warn(
+      `[${pluginName}] Ignoring DOCUSAURUS_PLUGIN_DEBUG_LEVEL="${debugResolution.invalidLevel}" (expected one of: error, warn, info, debug, trace).`
+    );
+  }
+
+  if (normOpts.debug.enabled && initLogger.isLevelEnabled('info')) {
+    initLogger.info('Debug mode enabled', {
+      level: normOpts.debug.level,
+      source: debugResolution.source,
+    });
+  }
+
+  if (initLogger.isLevelEnabled('debug')) {
+    initLogger.debug('Smartlinker plugin initialized', {
+      folderCount: normOpts.folders.length,
+      iconCount: Object.keys(normOpts.icons ?? {}).length,
+    });
   }
 
   const resolvedFolders: ResolvedFolder[] = normOpts.folders.map((folder) => {
@@ -97,14 +170,32 @@ export default function smartlinkerPlugin(
     } satisfies ResolvedFolder;
   });
 
+  if (initLogger.isLevelEnabled('trace') && resolvedFolders.length > 0) {
+    initLogger.trace('Resolved SmartLink folders', () => ({
+      folders: resolvedFolders.map(
+        (folder) => `${folder.id}:${formatSiteRelativePath(folder.absPath)}`
+      ),
+    }));
+  }
+
   const folderById = new Map<string, ResolvedFolder>();
   for (const folder of resolvedFolders) {
     folderById.set(folder.id, folder);
   }
 
+  if (warnings.length > 0 && optionsLogger.isLevelEnabled('warn')) {
+    for (const warning of warnings) {
+      optionsLogger.warn(warning.message, () => ({
+        code: warning.code,
+        ...(warning.details ?? {}),
+      }));
+    }
+  }
+
   let primedFiles: RawDocFile[] | null = null;
 
   const collectFiles = (): RawDocFile[] => {
+    const start = startTimer(scanLogger, 'debug', 'info');
     const files: RawDocFile[] = [];
     for (const folder of resolvedFolders) {
       const scanned = scanMdFiles({ roots: [folder.absPath] });
@@ -112,6 +203,22 @@ export default function smartlinkerPlugin(
         files.push({ ...file, folderId: folder.id });
       }
     }
+    stats.scannedFileCount = files.length;
+
+    if (scanLogger.isLevelEnabled('debug')) {
+      scanLogger.debug('Scanned SmartLink folders', {
+        folderCount: resolvedFolders.length,
+        fileCount: files.length,
+        durationMs: endTimer(start),
+      });
+    }
+
+    if (scanLogger.isLevelEnabled('trace') && files.length > 0) {
+      scanLogger.trace('Collected SmartLink files', () => ({
+        files: files.map((file) => formatSiteRelativePath(file.path)),
+      }));
+    }
+
     return files;
   };
 
@@ -132,10 +239,25 @@ export default function smartlinkerPlugin(
   };
 
   const primeIndexProvider = () => {
+    const start = startTimer(indexLogger, 'debug', 'info');
     primedFiles = collectFiles();
     const { entries } = loadIndexFromFiles(primedFiles);
     applyFolderDefaults(entries);
     setIndexEntries(entries);
+    stats.entryCount = entries.length;
+
+    if (indexLogger.isLevelEnabled('debug')) {
+      indexLogger.debug('Primed SmartLink index provider', {
+        entryCount: entries.length,
+        durationMs: endTimer(start),
+      });
+    }
+
+    if (indexLogger.isLevelEnabled('trace') && entries.length > 0) {
+      indexLogger.trace('Primed entry identifiers', () => ({
+        entryIds: entries.map((entry) => entry.id),
+      }));
+    }
   };
 
   primeIndexProvider();
@@ -143,16 +265,68 @@ export default function smartlinkerPlugin(
   return {
     name: pluginName,
 
+    configureWebpack() {
+      if (webpackLogger.isLevelEnabled('debug')) {
+        webpackLogger.debug('configureWebpack invoked', {
+          tooltipComponentCount: Object.keys(normOpts.tooltipComponents ?? {}).length,
+        });
+      }
+      return {};
+    },
+
     async loadContent() {
+      const usingPrimed = primedFiles !== null;
+      const start = startTimer(loadLogger, 'info', 'debug');
       const files = primedFiles ?? collectFiles();
       primedFiles = null;
+      stats.reusedPrimedFiles = usingPrimed;
+      stats.scannedFileCount = files.length;
+
+      if (loadLogger.isLevelEnabled('debug')) {
+        loadLogger.debug('Building SmartLink artifacts', {
+          fileCount: files.length,
+          reusedPrimedFiles: usingPrimed,
+        });
+      }
+
+      if (loadLogger.isLevelEnabled('trace') && files.length > 0) {
+        loadLogger.trace('Processing SmartLink files', () => ({
+          files: files.map((file) => formatSiteRelativePath(file.path)),
+        }));
+      }
+
       const compileMdx = await createTooltipMdxCompiler(_context);
       const { entries, notes, registry } = await buildArtifacts(files, {
         compileMdx,
       });
 
+      stats.entryCount = entries.length;
+      stats.noteCount = notes.length;
+      stats.registryBytes = Buffer.byteLength(registry.contents, 'utf8');
+
       applyFolderDefaults(entries);
       setIndexEntries(entries);
+
+      if (loadLogger.isLevelEnabled('info')) {
+        loadLogger.info('Completed SmartLink artifact build', {
+          entryCount: entries.length,
+          noteCount: notes.length,
+          durationMs: endTimer(start),
+        });
+      }
+
+      if (loadLogger.isLevelEnabled('debug')) {
+        loadLogger.debug('Registry artifacts prepared', {
+          registryBytes: stats.registryBytes,
+        });
+      }
+
+      if (loadLogger.isLevelEnabled('trace') && entries.length > 0) {
+        loadLogger.trace('Generated SmartLink entries', () => ({
+          entryIds: entries.map((entry) => entry.id),
+          noteFiles: notes.map((note) => note.filename),
+        }));
+      }
 
       return {
         entries,
@@ -165,6 +339,15 @@ export default function smartlinkerPlugin(
     async contentLoaded({ content, actions }: { content: Content; actions: PluginContentLoadedActions }) {
       if (!content) return;
       const { notes, registry, entries, opts } = content;
+
+      const start = startTimer(contentLogger, 'info', 'debug');
+
+      if (contentLogger.isLevelEnabled('debug')) {
+        contentLogger.debug('Writing SmartLink generated modules', {
+          noteCount: notes.length,
+          registryModule: registry.filename,
+        });
+      }
 
       for (const note of notes) {
         await actions.createData(note.filename, note.contents);
@@ -191,7 +374,35 @@ export default function smartlinkerPlugin(
         docsContent,
       });
 
+      stats.resolvedCount = resolved.length;
+
       publishGlobalData(actions, opts, resolved);
+
+      if (contentLogger.isLevelEnabled('info')) {
+        contentLogger.info('Published SmartLink global data', {
+          entryCount: resolved.length,
+          durationMs: endTimer(start),
+        });
+      }
+
+      if (contentLogger.isLevelEnabled('trace') && resolved.length > 0) {
+        contentLogger.trace('Resolved SmartLink permalinks', () => ({
+          permalinks: resolved.map((entry) => entry.permalink ?? null),
+        }));
+      }
+    },
+
+    async postBuild() {
+      if (!postBuildLogger.isLevelEnabled('info')) {
+        return;
+      }
+      postBuildLogger.info('SmartLink build complete', {
+        entryCount: stats.resolvedCount,
+        noteCount: stats.noteCount,
+        filesScanned: stats.scannedFileCount,
+        reusedPrimedFiles: stats.reusedPrimedFiles,
+        registryBytes: stats.registryBytes,
+      });
     },
 
     getThemePath() {

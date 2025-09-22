@@ -739,6 +739,20 @@ Refactored the example site's remark integration to use a pure ESM import of `re
 - `npm run build`
 - `npm test`
 - `npm run site:build`
+- `npm run site:build`
+
+# Status Sync — Debug logging instrumentation (2025-03-XX)
+
+## Summary
+
+- Added a configurable debug logger with level-aware filtering, optional environment overrides, and colored output for the Smartlinker Docusaurus plugin.
+- Wired the logger through the plugin lifecycle to surface scan, build, and publish statistics, and exposed the new `debug` option (with defaults) through configuration, TypeScript types, and README guidance.
+- Authored unit and integration coverage to verify logger behavior, option precedence, and lifecycle logging without regressing existing tests.
+
+## Verification
+
+- `npm test`
+- `npm run build --workspace @internal/docusaurus-plugin-smartlinker`
 
 # Milestone B: Publishable 0.1.0
 
