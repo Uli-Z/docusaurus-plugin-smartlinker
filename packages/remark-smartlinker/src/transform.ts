@@ -3,7 +3,14 @@ import { visit, SKIP } from 'unist-util-visit';
 import { normalize } from 'node:path';
 import type { Parent } from 'unist';
 import type { Content, Root, Text, PhrasingContent } from 'mdast';
-import { getIndexProvider as getRegisteredIndexProvider } from 'docusaurus-plugin-smartlinker';
+import {
+  getIndexProvider as getRegisteredIndexProvider,
+  PLUGIN_NAME,
+  resolveDebugConfig,
+  createLogger,
+  type DebugOptions,
+  getDebugConfig,
+} from 'docusaurus-plugin-smartlinker';
 import { buildMatcher, type AutoLinkEntry } from './matcher.js';
 
 export interface TargetInfo {
@@ -31,6 +38,7 @@ export interface RemarkSmartlinkerOptions {
   shortNoteTipKeyAttr?: string;
   shortNotePlaceholder?: string;
   restrictToFolders?: string | string[];
+  debug?: DebugOptions;
 }
 
 type MdastNode = Content | Root;
@@ -88,6 +96,21 @@ function normalizeFolderKey(value: string): string {
 export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Transformer {
   const options = opts ?? {};
 
+  // Resolve debug config: prefer explicit option, else plugin's shared config, then env
+  const sharedDebug = typeof getDebugConfig === 'function' ? getDebugConfig() : undefined;
+  const debugInput = options.debug ?? sharedDebug;
+  const debugResolution = resolveDebugConfig(debugInput);
+  const baseLogger = createLogger({ pluginName: PLUGIN_NAME, debug: debugResolution.config });
+  const initLogger = baseLogger.child('remark:init');
+  const prepareLogger = baseLogger.child('remark:prepare');
+  const transformLogger = baseLogger.child('remark:transform');
+
+  if (debugResolution.invalidLevel && typeof console !== 'undefined' && typeof console.warn === 'function') {
+    console.warn(
+      `[${PLUGIN_NAME}] Ignoring DOCUSAURUS_PLUGIN_DEBUG_LEVEL="${debugResolution.invalidLevel}" (expected one of: error, warn, info, debug, trace).`
+    );
+  }
+
   const componentName = options.componentName ?? 'SmartLink';
   const toAttr = options.toAttr ?? 'to';
   const iconAttr = options.iconAttr ?? 'icon';
@@ -120,6 +143,16 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
     componentName,
     shortNoteComponentName,
   ]);
+
+  if (initLogger.isLevelEnabled('debug')) {
+    initLogger.debug('Remark transformer initialized', () => ({
+      componentName,
+      shortNoteComponentName,
+      restrictFilterCount: folderFilter.size,
+      debugLevel: debugResolution.config.level,
+      debugEnabled: debugResolution.config.enabled,
+    }));
+  }
 
   let cachedProvider: IndexProvider | undefined;
   let cachedFilterSignature = '';
@@ -185,6 +218,21 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
       prepared = { targets, matcher, claimMap, targetByPath, targetById, targetBySlug };
       cachedProvider = provider;
       cachedFilterSignature = filterSignature;
+
+      if (prepareLogger.isLevelEnabled('debug')) {
+        prepareLogger.debug('Prepared SmartLink term matcher', {
+          targetCount: targets.length,
+          termCount: termEntries.length,
+          filteredByFolders: folderFilter.size > 0,
+        });
+      }
+
+      if (prepareLogger.isLevelEnabled('trace')) {
+        const folders = Array.from(folderFilter.values());
+        if (folders.length > 0) {
+          prepareLogger.trace('Active folder filters', () => ({ folders }));
+        }
+      }
     }
 
     return { index: provider, ...(prepared as PreparedIndex) };
@@ -200,6 +248,33 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
       targetById,
       targetBySlug,
     });
+
+    const filePath = typeof file?.path === 'string' ? file.path : undefined;
+    if (transformLogger.isLevelEnabled('info')) {
+      transformLogger.info('Processing file', () => ({
+        filePath: filePath ?? null,
+        currentTargetId: currentTarget?.id ?? null,
+        currentTargetSlug: currentTarget?.slug ?? null,
+      }));
+    }
+
+    const onLinkInserted = (args: { text: string; slug: string; id: string; icon?: string }) => {
+      if (!transformLogger.isLevelEnabled('debug')) return;
+      transformLogger.debug('Smartlink inserted', () => ({
+        filePath: filePath ?? null,
+        text: args.text,
+        to: args.slug,
+        tipKey: args.id,
+        icon: args.icon ?? null,
+      }));
+    };
+    const onShortNoteInserted = (args: { id: string }) => {
+      if (!transformLogger.isLevelEnabled('debug')) return;
+      transformLogger.debug('Short-note placeholder replaced', () => ({
+        filePath: filePath ?? null,
+        tipKey: args.id,
+      }));
+    };
 
     visit(tree, (node, _index, parent: Parent | undefined) => {
       if (isSkippable(node as any, mdxComponentNamesToSkip)) return SKIP as any;
@@ -223,12 +298,17 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
         shortNoteTipKeyAttr,
         shortNotePlaceholder,
         currentTarget,
+        onLinkInserted,
+        onShortNoteInserted,
       });
       if (!result || !result.changed) return;
 
       const idx = (parent.children as Content[]).indexOf(node as any);
       if (idx >= 0) (parent.children as Content[]).splice(idx, 1, ...result.nodes);
+
     });
+
+    // No extra summary logs to avoid noise; per-insertion debug logs above
 
     return tree;
   };
@@ -258,6 +338,8 @@ interface TransformArgs {
   shortNoteTipKeyAttr: string;
   shortNotePlaceholder: string;
   currentTarget?: TargetInfo;
+  onLinkInserted?: (args: { text: string; slug: string; id: string; icon?: string }) => void;
+  onShortNoteInserted?: (args: { id: string }) => void;
 }
 
 type TransformResult = { nodes: PhrasingContent[]; changed: boolean } | null;
@@ -276,6 +358,8 @@ function transformText(args: TransformArgs): TransformResult {
     shortNoteTipKeyAttr,
     shortNotePlaceholder,
     currentTarget,
+    onLinkInserted,
+    onShortNoteInserted,
   } = args;
 
   const placeholder = shortNotePlaceholder;
@@ -312,6 +396,7 @@ function transformText(args: TransformArgs): TransformResult {
             undefined
           ) as any
         );
+        if (onShortNoteInserted) onShortNoteInserted({ id: currentTarget.id });
         changed = true;
       }
     }
@@ -334,6 +419,7 @@ function transformText(args: TransformArgs): TransformResult {
     matchAttr,
     iconAttr,
     currentTarget,
+    onLinkInserted,
   });
 }
 
@@ -347,10 +433,11 @@ interface TransformSegmentArgs {
   matchAttr: string;
   iconAttr: string;
   currentTarget?: TargetInfo;
+  onLinkInserted?: (args: { text: string; slug: string; id: string; icon?: string }) => void;
 }
 
 function transformSegment(args: TransformSegmentArgs): { nodes: PhrasingContent[]; changed: boolean } {
-  const { text, matcher, claimMap, componentName, toAttr, tipKeyAttr, matchAttr, iconAttr, currentTarget } = args;
+  const { text, matcher, claimMap, componentName, toAttr, tipKeyAttr, matchAttr, iconAttr, currentTarget, onLinkInserted } = args;
 
   if (!text) return { nodes: [], changed: false };
 
@@ -395,6 +482,7 @@ function transformSegment(args: TransformSegmentArgs): { nodes: PhrasingContent[
       );
       newChildren.push(element as any);
       anyLinkInserted = true;
+      if (onLinkInserted) onLinkInserted({ text: m.text, slug, id, icon });
     }
 
     cursor = end;

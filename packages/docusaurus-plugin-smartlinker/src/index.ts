@@ -24,6 +24,7 @@ import { loadIndexFromFiles } from './frontmatterAdapter.js';
 import { resolveEntryPermalinks, type EntryWithResolvedUrl } from './node/permalinkResolver.js';
 import type { LoadedContent as DocsLoadedContent } from '@docusaurus/plugin-content-docs';
 import { resolveDebugConfig, createLogger, type LogLevel } from './logger.js';
+import { setDebugConfig } from './debugStore.js';
 
 export type {
   FsIndexProviderOptions,
@@ -33,6 +34,10 @@ export type {
 export { createFsIndexProvider } from './fsIndexProvider.js';
 export { PLUGIN_NAME } from './pluginName.js';
 export { getIndexProvider } from './indexProviderStore.js';
+// Re-export logger utilities for reuse by the remark package
+export { resolveDebugConfig, createLogger, type LogLevel } from './logger.js';
+export type { DebugOptions } from './options.js';
+export { getDebugConfig, setDebugConfig } from './debugStore.js';
 
 export type { PluginOptions } from './options.js';
 
@@ -89,6 +94,10 @@ export default function smartlinkerPlugin(
     ...validatedOptions,
     debug: debugResolution.config,
   };
+
+  // Make debug configuration available globally so the remark transformer
+  // can mirror the same logging behavior without separate config.
+  setDebugConfig(normOpts.debug);
 
   if (normOpts.folders.length === 0) {
     throw new Error(
