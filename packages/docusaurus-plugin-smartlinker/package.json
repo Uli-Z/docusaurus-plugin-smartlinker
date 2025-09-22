@@ -11,9 +11,9 @@
     "./theme/styles.css": "./dist/theme/styles.css",
     "./theme/*": "./dist/theme/runtime/*",
     "./remark": {
-      "types": "../remark-linkify-med/dist/index.d.ts",
-      "import": "../remark-linkify-med/dist/index.js",
-      "default": "../remark-linkify-med/dist/index.js"
+      "types": "../remark-smartlinker/dist/index.d.ts",
+      "import": "../remark-smartlinker/dist/index.js",
+      "default": "../remark-smartlinker/dist/index.js"
     }
   },
   "files": [

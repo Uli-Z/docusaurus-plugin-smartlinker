@@ -35,7 +35,7 @@ function runWithPluginIndex(input: string, entries: IndexRawEntry[], filePath = 
   return String(proc.processSync({ value: input, path: filePath }));
 }
 
-describe('remark-linkify-med transform', () => {
+describe('remark-smartlinker transform', () => {
   const targets: TargetInfo[] = [
     { id: 'amoxicillin', slug: '/antibiotics/amoxicillin', icon: 'pill', sourcePath: '/a/amox.mdx', terms: ['Amoxi', 'Amoxicillin'], folderId: 'docs' },
     { id: 'vancomycin', slug: '/antibiotics/vancomycin', sourcePath: '/a/vanco.mdx', terms: ['Vanco'], folderId: 'guides' },
@@ -151,7 +151,7 @@ Some text with Amoxi.
   });
 });
 
-describe('remark-linkify-med transform (plugin-managed index)', () => {
+describe('remark-smartlinker transform (plugin-managed index)', () => {
   const pluginEntries: IndexRawEntry[] = [
     {
       id: 'amoxicillin',

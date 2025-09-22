@@ -1,5 +1,5 @@
 {
-  "name": "@internal/remark-linkify-med",
+  "name": "@internal/remark-smartlinker",
   "private": true,
   "version": "0.1.0",
   "type": "module",
