@@ -2,6 +2,17 @@
   "extends": "../../tsconfig.base.json",
   "include": ["src"],
   "compilerOptions": {
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      "docusaurus-plugin-smartlinker": [
+        "../docusaurus-plugin-smartlinker/dist/index.d.ts",
+        "../docusaurus-plugin-smartlinker/src/index.ts"
+      ],
+      "docusaurus-plugin-smartlinker/*": [
+        "../docusaurus-plugin-smartlinker/dist/*",
+        "../docusaurus-plugin-smartlinker/src/*"
+      ]
+    }
   }
 }
