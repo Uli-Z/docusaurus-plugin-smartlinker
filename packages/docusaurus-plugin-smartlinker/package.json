@@ -1,0 +1,62 @@
+{
+  "name": "@internal/docusaurus-plugin-smartlinker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./theme": "./dist/theme/index.js",
+    "./theme/styles.css": "./dist/theme/styles.css",
+    "./theme/*": "./dist/theme/runtime/*",
+    "./remark": {
+      "types": "../remark-linkify-med/dist/index.d.ts",
+      "import": "../remark-linkify-med/dist/index.js",
+      "default": "../remark-linkify-med/dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true});\" && tsc -p tsconfig.json && node ./scripts/postbuild-verify.mjs",
+    "test": "vitest run"
+  },
+  "vitest": {
+    "environment": "jsdom"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
+    "jsdom": "^24.1.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  },
+  "peerDependencies": {
+    "@docusaurus/core": "^3.0.0",
+    "react": "^18.2.0 || ^19.0.0",
+    "react-dom": "^18.2.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@docusaurus/mdx-loader": "^3.0.0",
+    "@mdx-js/react": "^3.1.1",
+    "@mdx-js/mdx": "^3.1.1",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "gray-matter": "^4.0.3",
+    "react-markdown": "^9.0.3",
+    "zod": "^3.23.0"
+  },
+  "license": "MIT",
+  "author": "Uli Z",
+  "description": "Docusaurus plugin that builds SmartLink tooltips and registry data.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker/issues"
+  },
+  "homepage": "https://uli-z.github.io/docusaurus-plugin-smartlinker/"
+}

@@ -1,0 +1,124 @@
+---
+id: demo
+title: Smartlinker — Live Demo
+sidebar_position: 1
+description: See how terms auto-link to docs with hover tooltips in seconds.
+---
+
+## At a glance
+
+> Continue Amoxi for five days. Reassess if signs of Clostridioides difficile appear. If symptoms persist, consider switching from Amoxicillin to Pip-tazo.
+
+- Amoxi, Clostridioides difficile, Amoxicillin, and Pip-tazo are automatically linked.
+- Hover to see a short note; an icon appears to the right of the text.
+- Mentions on the target page itself do not self-link.
+
+## How it works
+
+- You annotate documents with front matter (id, slug, smartlink-terms).
+- A remark plugin transforms matching text into `<SmartLink>` elements.
+- A theme component renders the link with an optional MDX tooltip and icon.
+
+## Minimal setup (snippet)
+
+```ts title="docusaurus.config.ts"
+import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
+
+export default {
+  presets: [['classic', {
+    docs: { remarkPlugins: [remarkSmartlinker] },
+    pages: { remarkPlugins: [remarkSmartlinker] },
+  }]],
+  plugins: [['docusaurus-plugin-smartlinker', {
+    icons: { pill: 'emoji:💊', bug: '/img/bug.svg' },
+    folders: [{
+      path: 'docs',
+      defaultIcon: 'pill',
+      // Example (optional): make your components available inside MDX short notes (tooltips)
+      // tooltipComponents: {
+      //   MyTip: '@site/src/components/MyTip',
+      // },
+    }],
+  }]],
+};
+```
+
+## Annotate documents
+
+```mdx title="docs/antibiotics/amoxicillin.mdx"
+---
+id: amoxicillin
+slug: /antibiotics/amoxicillin
+smartlink-terms: [Amoxi, Amoxicillin]
+smartlink-icon: pill
+smartlink-short-note: |
+  Aminopenicillin with good oral bioavailability.
+  <DrugTip note="Take with food" />
+---
+```
+
+```mdx title="docs/antibiotics/pip-tazo.mdx"
+---
+id: pip-tazo
+slug: /antibiotics/piperacillin-tazobactam
+smartlink-terms: [Pip-tazo, "Piperacillin/tazobactam", Piperacillin-tazobactam]
+smartlink-icon: pill
+smartlink-short-note: |
+  Broad-spectrum beta-lactam/beta-lactamase inhibitor combination.
+  <DrugTip note="Monitor sodium load in renal impairment" />
+---
+```
+
+## Render the short note inside a page
+
+Place the placeholder anywhere in the body of a target document to render its own short note inline:
+
+```md
+%%SHORT_NOTICE%%
+```
+
+- Works only on the target page (the page whose `id` matches the current doc).
+- If no short note is defined for the page, nothing is rendered.
+
+## What gets linked (rules & examples)
+
+Rules at a glance:
+
+- Case-insensitive, Unicode-aware, word boundaries.
+- Longest match wins; non-overlapping, left to right; all occurrences.
+- Skips code blocks, inline code, links, images, and H1–H3 headings.
+- Does not link terms on their own page.
+
+Live examples below demonstrate the skip rules and heading behavior:
+
+### H3 Amoxi (should NOT link)
+
+#### H4 Amoxi (should link)
+
+`Amoxi` in inline code (should NOT link).
+
+```ts
+// Amoxi inside a code block (should NOT link)
+```
+
+[An external link with Amoxi](https://example.com) (should NOT change)
+
+![Image alt Amoxi](/img/bug.svg) (should NOT change)
+
+Amoxicillin vs Amoxi vs Amoxicillin — the longest match at each position wins; all occurrences are considered without overlapping.
+
+## Dark mode icons
+
+Toggle the theme: links that use the `bug` icon (e.g., “Clostridioides difficile”) will switch to the dark icon variant.
+
+## Style SmartLinks
+
+SmartLinks expose dedicated class names (`.lm-smartlink`, `.lm-tooltip`, …) and CSS variables (`--lm-smartlink-gap`, `--lm-tooltip-bg`, `--lm-tooltip-radius`, …) so you can restyle links and tooltips like any other element. Tweak them in your site CSS (see `examples/site/src/css/custom.css` for a reference). The base stylesheet ships with the plugin at `docusaurus-plugin-smartlinker/theme/styles.css`.
+
+## Opt out
+
+```mdx
+---
+linkify: false
+---
+```

@@ -1,0 +1,59 @@
+:root {
+  --lm-tooltip-bg: rgba(107, 114, 128, 0.9);
+  --lm-tooltip-color: #111827;
+  --lm-tooltip-radius: 0.75rem;
+  --lm-tooltip-shadow: 0 18px 38px rgba(107, 114, 128, 0.45);
+  --lm-tooltip-padding: 0.85rem 1rem;
+}
+
+html[data-theme='dark'] {
+  --lm-tooltip-bg: rgba(148, 163, 184, 0.9);
+  --lm-tooltip-color: #f9fafb;
+  --lm-tooltip-shadow: 0 18px 38px rgba(148, 163, 184, 0.55);
+}
+
+.markdown .lm-smartlink {
+  --lm-smartlink-gap: 0.35rem;
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.3rem;
+  background: rgba(107, 114, 128, 0.08);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.markdown .lm-smartlink:hover {
+  background: rgba(107, 114, 128, 0.14);
+}
+
+html[data-theme='dark'] .markdown .lm-smartlink {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+html[data-theme='dark'] .markdown .lm-smartlink:hover {
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.markdown .lm-smartlink__anchor {
+  text-decoration: none;
+  color: inherit;
+}
+
+.markdown .lm-smartlink:hover .lm-smartlink__anchor {
+  text-decoration: underline;
+}
+
+.markdown .lm-smartlink__iconwrap {
+  --lm-smartlink-icon-gap: 0.25rem;
+}
+
+.markdown .lm-smartlink__iconlink {
+  font-style: normal;
+  text-decoration: none;
+}
+
+.markdown .lm-smartlink__icon {
+  filter: drop-shadow(0 2px 4px rgba(107, 114, 128, 0.25));
+}
+
+.markdown .lm-tooltip-content {
+  line-height: 1.5;
+}
