@@ -8,16 +8,20 @@ function fx(name: string): string {
   return readFileSync(join(__dirname, 'fixtures', 'docs', name), 'utf8');
 }
 
+function doc(name: string, relativePath: string): RawDocFile {
+  return { path: `/docs/${name}`, relativePath, content: fx(name) };
+}
+
 describe('frontmatter loader (raw)', () => {
   it('parses valid entries and skips invalid ones with warnings', () => {
     const files: RawDocFile[] = [
-      { path: '/docs/ok-amoxicillin.mdx', content: fx('ok-amoxicillin.mdx') },
-      { path: '/docs/ok-vancomycin.md', content: fx('ok-vancomycin.md') },
-      { path: '/docs/skip-linkify-false.mdx', content: fx('skip-linkify-false.mdx') },
-      { path: '/docs/bad-missing-id.mdx', content: fx('bad-missing-id.mdx') },
-      { path: '/docs/bad-empty-smartlink-terms.mdx', content: fx('bad-empty-smartlink-terms.mdx') },
-      { path: '/docs/bad-slug.mdx', content: fx('bad-slug.mdx') },
-      { path: '/docs/bad-notarray-smartlink-terms.mdx', content: fx('bad-notarray-smartlink-terms.mdx') },
+      doc('ok-amoxicillin.mdx', 'antibiotics/amoxicillin.mdx'),
+      doc('ok-vancomycin.md', 'antibiotics/vancomycin.md'),
+      doc('skip-linkify-false.mdx', 'antibiotics/ceftriaxone.mdx'),
+      doc('bad-missing-id.mdx', 'antibiotics/linezolid.mdx'),
+      doc('bad-empty-smartlink-terms.mdx', 'antibiotics/gentamicin.mdx'),
+      doc('bad-slug.mdx', 'antibiotics/clindamycin.mdx'),
+      doc('bad-notarray-smartlink-terms.mdx', 'antibiotics/pip-tazo.mdx'),
     ];
 
     const { entries, warnings } = loadIndexFromFiles(files);
@@ -49,7 +53,7 @@ describe('frontmatter loader (raw)', () => {
 
   it('skips unsupported extensions', () => {
     const files: RawDocFile[] = [
-      { path: '/docs/file.txt', content: '---\nid: x\nslug: /x\nsmartlink-terms: [x]\n---\n' }
+      { path: '/docs/file.txt', relativePath: 'file.txt', content: '---\nid: x\nslug: /x\nsmartlink-terms: [x]\n---\n' }
     ];
     const { entries, warnings } = loadIndexFromFiles(files);
     expect(entries.length).toBe(0);
@@ -58,7 +62,7 @@ describe('frontmatter loader (raw)', () => {
 
   it('trims and drops empty shortNote', () => {
     const files: RawDocFile[] = [
-      { path: '/docs/a.mdx', content: '---\nid: a\nslug: /a\nsmartlink-terms: [A]\nsmartlink-short-note: "    "\n---\n' }
+      { path: '/docs/a.mdx', relativePath: 'a.mdx', content: '---\nid: a\nslug: /a\nsmartlink-terms: [A]\nsmartlink-short-note: "    "\n---\n' }
     ];
     const { entries } = loadIndexFromFiles(files);
     expect(entries.length).toBe(1);
@@ -69,6 +73,7 @@ describe('frontmatter loader (raw)', () => {
     const files: RawDocFile[] = [
       {
         path: '/docs/no-auto.mdx',
+        relativePath: 'no-auto.mdx',
         content: [
           '---',
           'id: no-auto',
@@ -90,6 +95,7 @@ describe('frontmatter loader (raw)', () => {
     const files: RawDocFile[] = [
       {
         path: '/docs/norm.mdx',
+        relativePath: 'norm.mdx',
         content: [
           '---',
           'id: norm',
@@ -108,5 +114,28 @@ describe('frontmatter loader (raw)', () => {
     const { entries } = loadIndexFromFiles(files);
     expect(entries).toHaveLength(1);
     expect(entries[0]?.terms).toEqual(['Amoxi', 'Vanco']);
+  });
+
+  it('infers slug from the relative path when it is omitted', () => {
+    const files: RawDocFile[] = [
+      {
+        path: '/docs/antibiotics/amoxicillin.mdx',
+        relativePath: 'antibiotics/amoxicillin.mdx',
+        content: [
+          '---',
+          'id: amox-default',
+          'smartlink-terms:',
+          '  - Amox',
+          '---',
+          '',
+          'Body',
+        ].join('\n')
+      }
+    ];
+
+    const { entries, warnings } = loadIndexFromFiles(files);
+    expect(warnings).toHaveLength(0);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.slug).toBe('/antibiotics/amoxicillin');
   });
 });

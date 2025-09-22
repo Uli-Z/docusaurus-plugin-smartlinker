@@ -31,6 +31,30 @@ function normalizeSmartlinkTerms(list) {
     }
     return terms;
 }
+function pickRelativeCandidate(file) {
+    if (typeof file.relativePath === 'string' && file.relativePath.trim()) {
+        return file.relativePath.trim();
+    }
+    if (typeof file.path === 'string' && file.path.trim()) {
+        const normalized = file.path.replace(/\\/g, '/');
+        const idx = normalized.lastIndexOf('/');
+        return idx >= 0 ? normalized.slice(idx + 1) : normalized;
+    }
+    return null;
+}
+function inferDefaultSlug(file) {
+    const candidate = pickRelativeCandidate(file);
+    if (!candidate)
+        return null;
+    const normalized = candidate.replace(/\\/g, '/');
+    const withoutLeading = normalized.replace(/^\.+\/+/, '').replace(/^\/+/, '');
+    const collapsed = withoutLeading.replace(/\/+/g, '/');
+    const withoutExt = collapsed.replace(/\.[^./]+$/, '');
+    const trimmed = withoutExt.replace(/\/+$/, '');
+    if (!trimmed)
+        return null;
+    return `/${trimmed}`;
+}
 export function parseFrontmatter(files) {
     const entries = [];
     const warnings = [];
@@ -96,12 +120,15 @@ export function parseFrontmatter(files) {
                 });
                 continue;
             }
-            const slug = (fm.slug ?? '').trim();
+            let slug = (fm.slug ?? '').trim();
+            if (!slug) {
+                slug = inferDefaultSlug(file) ?? '';
+            }
             if (!slug) {
                 warnings.push({
                     path: file.path,
-                    code: 'EMPTY_SLUG',
-                    message: 'Missing required `slug`.'
+                    code: 'MISSING_REQUIRED',
+                    message: 'Unable to determine slug – please add a `slug` or ensure file path can be inferred.'
                 });
                 continue;
             }

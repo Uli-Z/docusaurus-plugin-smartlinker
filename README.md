@@ -75,8 +75,9 @@ Smartlinker is a Docusaurus v3 plugin (with an accompanying remark helper) that 
 
    Each entry under `folders` is scanned relative to your site directory.
    You can set a `defaultIcon` and `tooltipComponents` map for each folder
-   independently. Slugs are never rewritten — define the final permalink in
-   your frontmatter and Smartlinker will preserve it.
+   independently. Smartlinker keeps explicit slugs intact and, when omitted,
+   falls back to the default slug derived from the file's relative path so the
+   generated links match Docusaurus' routing.
 
 3. **Annotate your docs** with SmartLink metadata so the index provider can pick up synonyms, icons, and tooltip notes:
 
@@ -107,10 +108,12 @@ Smartlinker builds a registry from these front matter fields, injects `<SmartLin
 To ensure a document participates in SmartLinking, the frontmatter must include:
 
 - `id`: a stable identifier for the document.
-- `slug`: the permalink that the SmartLink should point to. The slug must start with `/`; entries without a valid slug are skipped during indexing.
 - `smartlink-terms`: a non-empty array of synonyms that should be linkified elsewhere.
 
-Optional fields such as `smartlink-icon` and `smartlink-short-note` continue to work as before. If a page fails to produce SmartLinks, double-check that these required fields are present and that the slug uses the expected `/path` format.
+The `slug` field remains available when you need to override the permalink. If
+it's omitted, Smartlinker infers the default slug from the document's relative
+path so the generated links line up with Docusaurus' routing. Optional fields
+such as `smartlink-icon` and `smartlink-short-note` continue to work as before.
 
 ## Packages
 

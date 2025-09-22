@@ -3,6 +3,8 @@ export interface RawDocFile {
   path: string;
   /** File content as UTF-8 string */
   content: string;
+  /** File path relative to the configured folder root (uses forward slashes). */
+  relativePath?: string;
   /** Optional explicit extension override; otherwise infer from path. */
   ext?: '.md' | '.mdx';
   /** Identifier of the configured folder that sourced this file. */
@@ -32,8 +34,7 @@ export interface FrontmatterWarning {
     | 'MISSING_REQUIRED'
     | 'INVALID_TYPE'
     | 'EMPTY_SMARTLINK_TERMS'
-    | 'EMPTY_ID'
-    | 'EMPTY_SLUG';
+    | 'EMPTY_ID';
   message: string;
   details?: Record<string, unknown>;
 }
