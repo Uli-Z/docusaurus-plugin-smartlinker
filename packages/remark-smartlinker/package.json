@@ -20,6 +20,9 @@
     "build": "tsc -p tsconfig.json && node ./scripts/build-cjs.js",
     "test": "vitest run"
   },
+  "dependencies": {
+    "docusaurus-plugin-smartlinker": "workspace:*"
+  },
   "devDependencies": {
     "@types/mdast": "^4.0.4",
     "@types/unist": "^3.0.2",
