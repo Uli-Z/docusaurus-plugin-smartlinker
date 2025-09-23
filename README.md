@@ -104,7 +104,14 @@ This only renders on the page whose `id` matches the current document.
 
 ## Styling
 
-The plugin ships CSS (`theme/styles.css`). Tweak via CSS variables such as `--lm-smartlink-gap`, `--lm-tooltip-bg`, `--lm-tooltip-radius`, `--lm-tooltip-font-size`.
+The plugin ships CSS (`theme/styles.css`) that now leans on Infima design tokens:
+
+- SmartLink spacing is driven by `--ifm-spacing-horizontal` with overrides via `--lm-smartlink-gap`/`--lm-smartlink-icon-gap`.
+- Text and icon anchors use Infima link variables (`--ifm-link-color`, `--ifm-link-hover-color`, `--ifm-link-decoration`) for hover/focus/visited states and can be tuned with `--lm-smartlink-link-*` variables.
+- Tooltip motion inherits `--ifm-transition-fast`, `--ifm-transition-timing-default`, and `--ifm-z-index-overlay` so it tracks the site’s easing and overlay stack.
+- Tooltip surfaces adopt Infima’s color, spacing, radius, and shadow tokens (`--ifm-color-emphasis-*`, `--ifm-spacing-*`, `--ifm-global-radius`, `--ifm-global-shadow-md`).
+
+Override any of the `--lm-*` variables in your site CSS to customize appearances while staying aligned with Infima. The only bespoke defaults that remain are the entry/exit scale (0.97 → 1) and the tooltip max width (`--lm-tooltip-max-width-default: 22.5rem`) because Infima does not expose dedicated tokens for those values.
 
 ## Examples
 
