@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Align SmartLink tooltip/link styling with Infima tokens and expose `--lm-*` overrides while documenting the remaining bespoke defaults.
+
 ## 0.1.0 — Initial preview
 
 This is the first, provisional release of docusaurus-plugin-smartlinker. It delivers the end‑to‑end SmartLink experience for Docusaurus v3 sites: front matter → auto‑links with MDX tooltips at runtime.

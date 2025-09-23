@@ -52,7 +52,9 @@ export default function Tooltip({
               align="center"
               sideOffset={8}
               collisionPadding={8}
-              style={{ maxWidth }}
+              style={{
+                '--lm-tooltip-max-width': `${maxWidth}px`,
+              } as React.CSSProperties}
             >
               <div className="lm-tooltip-content">
                 {content}
