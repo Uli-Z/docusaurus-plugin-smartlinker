@@ -15,7 +15,7 @@ export interface SmartLinkProps extends React.PropsWithChildren {
 /**
  * Behavior:
  * - Desktop: Hover over text shows tooltip; click on text or icon navigates.
- * - Mobile: Tap on icon toggles tooltip; tap on text navigates.
+ * - Mobile: First tap (text or icon) shows tooltip; second tap navigates.
  * Rendering: icon AFTER text.
  */
 export default function SmartLink({ to, children, tipKey, icon, match }: SmartLinkProps) {
@@ -40,27 +40,38 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
     return () => mq?.removeEventListener?.('change', onChange);
   }, []);
 
-  // Controlled open state for mobile (icon tap)
+  // Controlled open state for mobile interaction
   const [open, setOpen] = React.useState(false);
-  const toggleOpen = React.useCallback(() => setOpen(v => !v), []);
   const close = React.useCallback(() => setOpen(false), []);
 
   // Tooltip content: render ShortNote if available; otherwise no tooltip
   const content = Short ? <Short components={mdxComponents} /> : undefined;
+  const hasTooltip = Boolean(content);
 
-  // Anchor onClick should close tooltip on navigation
-  const onAnchorClick: React.MouseEventHandler<HTMLAnchorElement> = () => {
-    // allow navigation; just close
-    setOpen(false);
-  };
+  const handleAnchorClick = React.useCallback<
+    React.MouseEventHandler<HTMLAnchorElement>
+  >(
+    (event) => {
+      if (!isHoverCapable && hasTooltip) {
+        if (!open) {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen(true);
+          return;
+        }
+      }
+      close();
+    },
+    [isHoverCapable, hasTooltip, open, close],
+  );
 
-  // Icon button for mobile toggle (but clickable to navigate as well on desktop)
+  // Anchor text adopts shared mobile gating behavior
   const textNode = (
     <a
       href={resolvedHref}
       className="lm-smartlink__anchor"
       data-tipkey={tipKey ?? undefined}
-      onClick={onAnchorClick}
+      onClick={handleAnchorClick}
     >
       <span className="lm-smartlink__text">{children}</span>
     </a>
@@ -77,15 +88,7 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
     <a
       href={resolvedHref}
       className="lm-smartlink__iconlink"
-      onClick={(e) => {
-        if (!isHoverCapable && content) {
-          e.preventDefault();
-          e.stopPropagation();
-          toggleOpen();
-          return;
-        }
-        onAnchorClick(e);
-      }}
+      onClick={handleAnchorClick}
       onFocus={!isHoverCapable ? undefined : close}
       tabIndex={isHoverCapable ? -1 : 0}
       aria-hidden={isHoverCapable ? true : undefined}
