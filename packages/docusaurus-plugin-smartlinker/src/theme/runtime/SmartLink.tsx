@@ -42,33 +42,56 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
 
   // Controlled open state for mobile taps
   const [open, setOpen] = React.useState(false);
-  const close = React.useCallback(() => setOpen(false), []);
+  const triggerRef = React.useRef<HTMLSpanElement | null>(null);
+  const readyToNavigateRef = React.useRef(false);
+  const close = React.useCallback(() => {
+    readyToNavigateRef.current = false;
+    setOpen(false);
+  }, []);
   const hasTooltip = Boolean(Short);
 
   const handleAnchorClick = React.useCallback<React.MouseEventHandler<HTMLAnchorElement>>(
     (event) => {
       if (!isHoverCapable && hasTooltip) {
-        if (!open) {
+        if (!readyToNavigateRef.current) {
           event.preventDefault();
           event.stopPropagation();
+          readyToNavigateRef.current = true;
           setOpen(true);
           return;
         }
+        readyToNavigateRef.current = false;
+        setOpen(false);
       }
 
       close();
     },
-    [isHoverCapable, hasTooltip, open, close]
+    [isHoverCapable, hasTooltip, close]
   );
+  const noop = React.useCallback(() => {}, []);
 
-  const handleTooltipOpenChange = React.useCallback(
-    (value: boolean) => {
-      if (!value) {
-        close();
+  React.useEffect(() => {
+    if (isHoverCapable || !open) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent | MouseEvent | TouchEvent) => {
+      const node = triggerRef.current;
+      if (!node) return;
+      if (event.target instanceof Node && node.contains(event.target)) {
+        return;
       }
-    },
-    [close]
-  );
+      close();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('touchstart', handlePointerDown, true);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('touchstart', handlePointerDown, true);
+    };
+  }, [isHoverCapable, open, close]);
 
   // Tooltip content: render ShortNote if available; otherwise no tooltip
   const content = Short ? <Short components={mdxComponents} /> : undefined;
@@ -111,8 +134,20 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   ) : null;
 
   // Tooltip trigger groups text + icon so they can be styled separately
+  const handleTriggerBlur = React.useCallback(() => {
+    if (isHoverCapable) {
+      close();
+    }
+  }, [isHoverCapable, close]);
+
   const trigger = (
-    <span className="lm-smartlink" data-tipkey={tipKey ?? undefined} role="group" onBlur={close}>
+    <span
+      className="lm-smartlink"
+      data-tipkey={tipKey ?? undefined}
+      role="group"
+      onBlur={handleTriggerBlur}
+      ref={triggerRef}
+    >
       {textNode}
       {iconNode}
     </span>
@@ -122,7 +157,7 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
     <Tooltip
       content={content}
       open={isHoverCapable ? undefined : open}
-      onOpenChange={isHoverCapable ? undefined : handleTooltipOpenChange}
+      onOpenChange={isHoverCapable ? undefined : noop}
       delayDuration={150}
       maxWidth={360}
     >
