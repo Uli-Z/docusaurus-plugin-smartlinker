@@ -21,7 +21,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "docusaurus-plugin-smartlinker": "workspace:*"
+    "docusaurus-plugin-smartlinker": "file:../.."
   },
   "devDependencies": {
     "@types/mdast": "^4.0.4",

@@ -41,7 +41,7 @@
     "site:build": "npm run build --workspace @examples/site",
     "site:serve": "npm run serve --workspace @examples/site",
     "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site",
-    "prepare": "npm run build",
+    "prepublishOnly": "npm run build",
     "smoke:git-install": "node ./scripts/git-install-smoke.mjs"
   },
   "peerDependencies": {
