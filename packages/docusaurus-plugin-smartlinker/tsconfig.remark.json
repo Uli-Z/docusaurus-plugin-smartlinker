@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["src/remark/**/*.ts"],
+  "compilerOptions": {
+    "outDir": "./dist/remark",
+    "rootDir": "./src/remark",
+    "baseUrl": "./",
+    "paths": {
+      "docusaurus-plugin-smartlinker": [
+        "./dist/index.d.ts"
+      ],
+      "docusaurus-plugin-smartlinker/*": [
+        "./dist/*"
+      ]
+    }
+  }
+}

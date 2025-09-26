@@ -1,5 +1,5 @@
-import { rmSync, mkdirSync, cpSync, existsSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { rmSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
@@ -7,18 +7,14 @@ import { execFileSync } from 'node:child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const packageDir = dirname(__dirname);
-const remarkDir = join(packageDir, '..', 'remark-smartlinker');
 const distDir = join(packageDir, 'dist');
-const remarkDistDir = join(remarkDir, 'dist');
-const remarkTargetDir = join(distDir, 'remark');
-const remarkCjsDir = join(remarkDir, 'dist-cjs');
 
 const require = createRequire(import.meta.url);
 const tscBin = require.resolve('typescript/bin/tsc');
 
-const runTsc = (cwd, project = 'tsconfig.json') => {
+const runTsc = (project) => {
   execFileSync(process.execPath, [tscBin, '-p', project], {
-    cwd,
+    cwd: packageDir,
     stdio: 'inherit'
   });
 };
@@ -27,29 +23,19 @@ console.log('[build] Clean dist directory');
 rmSync(distDir, { recursive: true, force: true });
 
 console.log('[build] Compile plugin sources');
-runTsc(packageDir);
+runTsc('tsconfig.json');
 
-console.log('[build] Compile remark helper sources');
-runTsc(remarkDir);
+console.log('[build] Compile remark helper (ES modules)');
+runTsc('tsconfig.remark.json');
 
 console.log('[build] Compile remark helper (CommonJS)');
-runTsc(remarkDir, 'tsconfig.cjs.json');
+runTsc('tsconfig.remark.cjs.json');
 
-console.log('[build] Generate remark CommonJS bundle');
-execFileSync(process.execPath, [join(remarkDir, 'scripts', 'build-cjs.js')], {
-  cwd: remarkDir,
+console.log('[build] Generate remark CommonJS bundles');
+execFileSync(process.execPath, [join(__dirname, 'remark-build-cjs.mjs')], {
+  cwd: packageDir,
   stdio: 'inherit'
 });
-
-console.log('[build] Copy remark dist into plugin package');
-if (!existsSync(remarkDistDir)) {
-  const relPath = relative(packageDir, remarkDistDir);
-  throw new Error(`Expected remark dist at ${relPath}, but it was not found.`);
-}
-
-mkdirSync(distDir, { recursive: true });
-rmSync(remarkTargetDir, { recursive: true, force: true });
-cpSync(remarkDistDir, remarkTargetDir, { recursive: true });
 
 console.log('[build] Run post-build verification');
 await import(pathToFileURL(join(__dirname, 'postbuild-verify.mjs')));

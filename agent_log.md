@@ -24,3 +24,9 @@
 - Updated README/CHANGELOG documentation, removed the committed `package-lock.json`, and ignored future lockfile generation.
 - Commands: `pnpm install`; `pnpm --filter docusaurus-plugin-smartlinker test` (fails on existing tooltip specs & example build dependency on prebuilt remark); `pnpm run build`; `pnpm --filter docusaurus-plugin-smartlinker run verify:pack`; `pnpm run smoke:npm`; `pnpm run smoke:pnpm`.
 - Noted Vitest tooltip suites still require follow-up stabilization; smoke + packaging checks succeed with the new tooling.
+
+### 2025-09-28 Session
+- Collapsed the `@internal/remark-smartlinker` workspace into the publishable package by moving `src` and tests under `packages/docusaurus-plugin-smartlinker/src/remark` and `tests/remark` with dedicated TS configs for ESM and CJS outputs.
+- Simplified the build orchestrator to compile the plugin plus remark targets in-place and generate CommonJS bundles via an internal `remark-build-cjs.mjs` helper.
+- Updated the example site's dependency to a `file:` link, pruned remaining `workspace:*` specifiers, and confirmed `npm install` now succeeds without `EUNSUPPORTEDPROTOCOL` while still producing valid tarball contents.
+- Commands: `rm -rf node_modules …`; `npm install`; `pnpm install`; `pnpm run smoke:npm`.

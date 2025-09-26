@@ -1,13 +1,15 @@
 # docusaurus-plugin-smartlinker – npm/pnpm interoperability log (2025-09-26)
 
+> **Update (2025-09-27):** The remark transformer has been folded into the publishable plugin package under `packages/docusaurus-plugin-smartlinker/src/remark`. Notes below that mention the standalone `packages/remark-smartlinker` workspace capture the earlier state prior to this consolidation.
+
 ## Repository snapshot
 - **Branch**: `error-fix-branch`
 - **HEAD**: `c52ee817` (commit message: `chore: restructure plugin packaging`)
 - **Workspace layout**:
   - Root `package.json` renamed to `docusaurus-plugin-smartlinker-workspace`, `private: true`, workspaces `packages/*`, `examples/site`.
   - Publishable package lives at `packages/docusaurus-plugin-smartlinker`.
-  - Remark helper remains a workspace package at `packages/remark-smartlinker` but is *not* intended to be published independently (name still `@internal/remark-smartlinker`).
-  - A new build orchestrator (`packages/docusaurus-plugin-smartlinker/scripts/build.mjs`) and CJS tsconfig (`packages/remark-smartlinker/tsconfig.cjs.json`) were added to emit dual-format artifacts and copy the remark build output into `dist/remark/`.
+  - Remark helper now builds from `packages/docusaurus-plugin-smartlinker/src/remark` with dedicated TypeScript configs that emit both ESM (`dist/remark`) and CommonJS (`dist/remark/*.cjs`) artifacts.
+  - The build orchestrator (`packages/docusaurus-plugin-smartlinker/scripts/build.mjs`) compiles the plugin core plus the remark helper (ESM + CJS) before running post-build verification.
   - `package-lock.json` is now present because `npm install` was executed from the workspace root.
 
 ## Timeline of key actions
@@ -28,10 +30,10 @@
 ## Issue catalogue
 
 ### 1. `npm install` vs `workspace:*`
-- **Symptoms**: running `npm install` at the repo root (npm v10.9.3) aborts with `EUNSUPPORTEDPROTOCOL` whenever a dependency string contains `workspace:*`.
-- **Affected manifests**: `examples/site/package.json` and `packages/remark-smartlinker/package.json` currently depend on `docusaurus-plugin-smartlinker` via `"workspace:*"` (state at HEAD).
-- **Workaround tested**: swapping to `file:../../packages/docusaurus-plugin-smartlinker` (example) and `file:../docusaurus-plugin-smartlinker` (remark) allows `npm install`, but breaks the workspace linkage semantics (see Issue 2).
-- **Open question**: find a specifier pattern that keeps pnpm dev UX (workspace linking) while remaining acceptable to npm consumers. Options considered: publish a second package for remark, move remark into the same package at build time (current attempt), or rely on `npm workspaces` features (requires reworking install flow and dropping `workspace:*`).
+- **Symptoms**: running `npm install` at the repo root (npm v10.9.3) aborted with `EUNSUPPORTEDPROTOCOL` whenever a dependency string contained `workspace:*`.
+- **Affected manifests (prior to 2025-09-27)**: both `examples/site/package.json` and the now-removed `packages/remark-smartlinker/package.json` depended on `docusaurus-plugin-smartlinker` via `"workspace:*"`.
+- **Workaround tested**: swapping to `file:../../packages/docusaurus-plugin-smartlinker` (example) and `file:../docusaurus-plugin-smartlinker` (remark) allowed `npm install`, but broke the workspace linkage semantics (see Issue 2).
+- **Resolution**: folding the remark helper into the main package made it possible to keep only the example site dependency, which now uses a `file:` specifier compatible with both npm and pnpm while local development remains linked through the workspace.
 
 ### 2. Missing dependencies after `npm install`
 - **Scenario**: On a clean checkout using the current file-spec approach (`file:…`), run `npm install` followed by `npm run site:build`.
