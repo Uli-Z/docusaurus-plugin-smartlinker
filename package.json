@@ -16,7 +16,7 @@
     "test": "npm run test --workspace docusaurus-plugin-smartlinker",
     "lint": "echo \"@(optional) add eslint later\"",
     "site:dev": "npm run dev --workspace @examples/site",
-    "site:build": "npm run build && npm run build --workspace @examples/site",
+    "site:build": "node ./scripts/site-build.mjs",
     "site:serve": "npm run serve --workspace @examples/site",
     "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site",
     "smoke:git-install": "node ./scripts/git-install-smoke.mjs",

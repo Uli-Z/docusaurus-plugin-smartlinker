@@ -100,3 +100,19 @@
   2. Review repository scripts/tests to ensure CI exercises npm smoke test and other relevant checks mirroring local expectations.
   3. Update tests or add new npm-focused validation in CI configuration and, if necessary, adjust local scripts to catch mismatches.
 - Planned Tests: `npm test`, `npm run build`, `npm run smoke:npm`.
+### 2025-09-29 Session (Follow-up)
+- Action: Reviewed repository root for AGENTS.md and confirmed none exist, so default guidelines apply.
+- Action: Re-read `agent_plan.md` and the latest CI failure to scope the investigation.
+- Observation: GitHub CI example build test cannot find `examples/site/build/docs/demo/index.html`, indicating the example build step did not produce expected docs output.
+- Decision: Formulate a focused plan to reproduce the failure locally and adjust scripts/tests so the example site build artifact exists during `npm test` and in CI.
+- Plan:
+  1. Inspect the example site build scripts/tests to understand expectations for the `docs/demo` output.
+  2. Reproduce `npm test` locally to capture logs and confirm which step skips generating the docs page.
+  3. Modify build configuration or tests to ensure the example build generates `docs/demo/index.html` reliably, then re-run the full test/build suite.
+- Planned Tests: `npm test`, `npm run build`.
+- Action: Investigated `packages/docusaurus-plugin-smartlinker/tests/example.build.e2e.test.ts` and reproduced the CI failure locally; confirmed the example site build crashed because it consumed an outdated workspace install lacking the bundled remark helper.
+- Decision: Ensure the `site:build` workflow always installs the freshly built npm tarball before invoking the example site's Docusaurus build, mirroring the smoke test expectations.
+- Action: Added `scripts/site-build.mjs` to build the plugin, pack it, install the tarball into `@examples/site` with `--no-save`, and trigger the example site's production build while cleaning up the tarball afterward.
+- Action: Updated the root `package.json` `site:build` script to call the orchestrator so local tests and CI exercise the packaged output.
+- Test: `CI=1 npm test` (passes with the example build verifying generated SmartLinks).
+- Test: `npm run build`.
