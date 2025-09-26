@@ -7,27 +7,34 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22]
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-
-      - name: Use Node.js 20
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
 
       - name: Build packages
-        run: pnpm run build
+        run: npm run build
+
+      - name: Run npm smoke test
+        if: matrix.node-version == '20'
+        run: npm run smoke:npm
 
       - name: Build example site
-        run: pnpm run site:build
+        if: matrix.node-version == '20'
+        run: npm run site:build

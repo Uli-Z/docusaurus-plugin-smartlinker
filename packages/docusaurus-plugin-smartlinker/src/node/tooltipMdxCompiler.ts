@@ -12,15 +12,26 @@ export async function createTooltipMdxCompiler(
   context: LoadContext
 ): Promise<CompileMdx> {
   const { siteDir, siteConfig } = context;
+  type MarkdownHooksConfig = {
+    hooks?: {
+      onBrokenMarkdownLinks?: LoadContext['siteConfig']['onBrokenMarkdownLinks'];
+      onBrokenMarkdownImages?: 'ignore' | 'log' | 'warn' | 'error';
+    };
+  };
+  const markdownWithHooks =
+    siteConfig.markdown as typeof siteConfig.markdown & MarkdownHooksConfig;
   const markdownConfig = {
-    ...siteConfig.markdown,
+    ...markdownWithHooks,
     hooks: {
       onBrokenMarkdownLinks:
-        siteConfig.markdown.hooks?.onBrokenMarkdownLinks ?? 'warn',
+        markdownWithHooks.hooks?.onBrokenMarkdownLinks ??
+        siteConfig.onBrokenMarkdownLinks ??
+        'warn',
       onBrokenMarkdownImages:
-        siteConfig.markdown.hooks?.onBrokenMarkdownImages ?? 'warn',
+        markdownWithHooks.hooks?.onBrokenMarkdownImages ??
+        'warn',
     },
-  } as typeof siteConfig.markdown;
+  } satisfies typeof siteConfig.markdown & MarkdownHooksConfig;
   const mdxOptions: MdxLoaderOptions = {
     siteDir,
     staticDirs: resolveStaticDirs(siteDir, siteConfig.staticDirectories),

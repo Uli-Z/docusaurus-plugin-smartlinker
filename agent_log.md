@@ -69,6 +69,12 @@
   2. Implement code fixes or test adjustments necessary to restore intended behavior across tooltip rendering, debug logging, and MDX compiler integration.
   3. Re-run `npm test` to confirm all suites pass; follow with `npm run build` and `npm run smoke:npm` if source changes could affect packaging.
 - Planned Tests: `npm test`, `npm run build`, `npm run smoke:npm`.
+- Action: Updated `.github/workflows/ci.yml` to drop pnpm setup, adopt an npm-based Node matrix (18/20/22), and ensure the smoke test + example build execute on Node 20.
+- Action: Replaced pnpm bootstrap steps in `.github/workflows/deploy-example-site.yml` with npm cache/install/build equivalents referencing the npm lockfile.
+- Observation: TypeScript build failed referencing `siteConfig.markdown.hooks` due to stricter typings in `MarkdownConfig`.
+- Action: Relaxed `createTooltipMdxCompiler` typing by introducing a local `MarkdownHooksConfig` extension and fallback severities, satisfying TypeScript.
+- Action: Removed stale pnpm-installed dependencies (`node_modules` folders) and reinstalled via `npm ci` to align the workspace with the new npm manifest and avoid pnpm symlinks during tests.
+- Action: Re-ran validation commands: `CI=1 npm test`, `npm run build`, and `npm run smoke:npm` to confirm unit tests, packaging, and smoke flow succeed under npm tooling.
 - Action: Ran `npm test`; confirmed failures in tooltip/theme suites, debug logging, tooltip MDX compiler, and example site build due to missing `dist/remark/index.cjs` when consumed via npm-installed dependency.
 - Decision: Update SmartLink hover detection to avoid treating jsdom as touch-only, which suppressed tooltip rendering and caused controlled/uncontrolled warnings.
 - Action: Refined `SmartLink` hover detection to derive the initial `matchMedia('(hover: hover)')` state synchronously and fall back to hover-capable when unavailable, ensuring the tooltip remains uncontrolled on desktop and accessible on mobile.
@@ -81,3 +87,16 @@
 - Action: Captured the original `matchMedia` descriptor in `theme.smartlink.test.tsx` and re-applied it after each test while marking the mobile stub configurable, ensuring subsequent tests regain hover behavior.
 - Action: Removed debugging helpers and reran the targeted tooltip suite to confirm markdown tooltips render correctly under hover conditions.
 - Action: Executed full `npm test` (covering Vitest unit suites + example site build) and `npm run build` to verify the npm package outputs.
+- Changelog: tooltip + hover fixes, markdown compiler hardening, and npm tooling stabilization with smoke tests.
+
+### 2025-09-28 Session (Follow-up)
+- Action: Reviewed `agent_plan.md` to confirm standing objectives before addressing CI feedback.
+- Action: Checked repository root for scoped `AGENTS.md` instructions (none found) to validate operating constraints.
+- Action: Listed workspace contents to locate workflow configurations and supporting scripts related to CI failures.
+- Observation: GitHub Actions run fails at `pnpm/action-setup@v4` due to mismatch with `packageManager: npm@10.8.2` in `package.json`, indicating workflows still assume pnpm.
+- Decision: Update CI workflows to adopt npm tooling, mirroring local scripts, and ensure tests cover CI parity.
+- Plan:
+  1. Modify `.github/workflows/ci.yml` (and other workflows if needed) to use npm tooling, removing pnpm setup and aligning cache/install/build steps with npm commands.
+  2. Review repository scripts/tests to ensure CI exercises npm smoke test and other relevant checks mirroring local expectations.
+  3. Update tests or add new npm-focused validation in CI configuration and, if necessary, adjust local scripts to catch mismatches.
+- Planned Tests: `npm test`, `npm run build`, `npm run smoke:npm`.
