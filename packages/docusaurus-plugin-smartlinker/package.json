@@ -2,18 +2,27 @@
   "name": "docusaurus-plugin-smartlinker",
   "version": "0.1.0",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
-    "./theme": "./dist/theme/index.js",
+    "./theme": {
+      "types": "./dist/theme/index.d.ts",
+      "import": "./dist/theme/index.js",
+      "require": "./dist/theme/index.cjs"
+    },
     "./theme/styles.css": "./dist/theme/styles.css",
-    "./theme/*": "./dist/theme/runtime/*",
+    "./theme/*": {
+      "types": "./dist/theme/runtime/*.d.ts",
+      "import": "./dist/theme/runtime/*.js",
+      "require": "./dist/theme/runtime/*.cjs"
+    },
     "./remark": {
       "types": "./dist/remark/index.d.ts",
       "import": "./dist/remark/index.js",
@@ -25,6 +34,7 @@
   ],
   "scripts": {
     "build": "node ./scripts/build.mjs",
+    "prepack": "npm run build && node ./scripts/verify-tarball.mjs",
     "prepublishOnly": "npm run build",
     "test": "vitest run"
   },
@@ -32,15 +42,23 @@
     "environment": "jsdom"
   },
   "devDependencies": {
-    "@docusaurus/types": "^3.8.1",
     "@docusaurus/plugin-content-docs": "^3.0.0",
+    "@docusaurus/types": "^3.8.1",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.2",
-    "jsdom": "^24.1.0",
+    "@types/mdast": "^4.0.4",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
+    "@types/unist": "^3.0.2",
+    "jsdom": "^24.1.0",
+    "mdast-util-to-string": "^4.0.0",
+    "remark-mdx": "^3.1.1",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
     "typescript": "^5.5.4",
+    "unified": "^11.0.5",
+    "vfile": "^6.0.3",
     "vitest": "^2.0.5"
   },
   "peerDependencies": {

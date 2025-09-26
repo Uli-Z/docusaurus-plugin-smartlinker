@@ -11,6 +11,10 @@ import { LinkifyRegistryProvider, IconConfigProvider } from '../src/theme/runtim
 import { emitShortNoteModule } from '../src/codegen/notesEmitter.js';
 
 const useBaseUrlMock = vi.fn((value: string) => value);
+const originalMatchMediaDescriptor =
+  typeof window !== 'undefined'
+    ? Object.getOwnPropertyDescriptor(window, 'matchMedia')
+    : undefined;
 
 vi.mock('@docusaurus/useBaseUrl', () => ({
   __esModule: true,
@@ -20,6 +24,13 @@ vi.mock('@docusaurus/useBaseUrl', () => ({
 afterEach(() => {
   useBaseUrlMock.mockImplementation((value: string) => value);
   useBaseUrlMock.mockClear();
+  if (typeof window !== 'undefined') {
+    if (originalMatchMediaDescriptor) {
+      Object.defineProperty(window, 'matchMedia', originalMatchMediaDescriptor);
+    } else {
+      delete (window as any).matchMedia;
+    }
+  }
 });
 
 function setup(
@@ -116,6 +127,7 @@ describe('SmartLink (theme)', () => {
   it('mobile icon tap toggles tooltip; text tap navigates (we only assert no preventDefault)', async () => {
     // Force non-hover environment by mocking matchMedia
     Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
       writable: true,
       value: (query: string) => ({
         matches: false, media: query, addEventListener() {}, removeEventListener() {}, onchange: null, addListener() {}, removeListener() {}
@@ -181,7 +193,6 @@ describe('SmartLink (theme)', () => {
     const link = screen.getByRole('link', { name: /^Amoxi$/ });
     const wrapper = link.closest('.lm-smartlink') as HTMLElement;
     await userEvent.hover(wrapper);
-
     const bold = await screen.findAllByText('Aminopenicillin.', { selector: 'strong' });
     expect(bold.length).toBeGreaterThan(0);
 

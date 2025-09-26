@@ -1,4 +1,4 @@
-import { rmSync, mkdirSync, cpSync, existsSync } from 'node:fs';
+import { rmSync, mkdirSync, existsSync, readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
@@ -7,49 +7,63 @@ import { execFileSync } from 'node:child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const packageDir = dirname(__dirname);
-const remarkDir = join(packageDir, '..', 'remark-smartlinker');
 const distDir = join(packageDir, 'dist');
-const remarkDistDir = join(remarkDir, 'dist');
-const remarkTargetDir = join(distDir, 'remark');
-const remarkCjsDir = join(remarkDir, 'dist-cjs');
+const tmpCjsDir = join(packageDir, 'dist-cjs');
 
 const require = createRequire(import.meta.url);
 const tscBin = require.resolve('typescript/bin/tsc');
 
-const runTsc = (cwd, project = 'tsconfig.json') => {
+const runTsc = (project) => {
   execFileSync(process.execPath, [tscBin, '-p', project], {
-    cwd,
+    cwd: packageDir,
     stdio: 'inherit'
   });
 };
 
 console.log('[build] Clean dist directory');
 rmSync(distDir, { recursive: true, force: true });
+rmSync(tmpCjsDir, { recursive: true, force: true });
 
-console.log('[build] Compile plugin sources');
-runTsc(packageDir);
+console.log('[build] Compile TypeScript (ESM)');
+runTsc('tsconfig.json');
 
-console.log('[build] Compile remark helper sources');
-runTsc(remarkDir);
+console.log('[build] Compile TypeScript (CJS)');
+runTsc('tsconfig.cjs.json');
 
-console.log('[build] Compile remark helper (CommonJS)');
-runTsc(remarkDir, 'tsconfig.cjs.json');
+const walk = (dir) => {
+  const entries = [];
+  for (const item of readdirSync(dir)) {
+    const full = join(dir, item);
+    const stat = statSync(full);
+    if (stat.isDirectory()) {
+      entries.push(...walk(full));
+    } else {
+      entries.push(full);
+    }
+  }
+  return entries;
+};
 
-console.log('[build] Generate remark CommonJS bundle');
-execFileSync(process.execPath, [join(remarkDir, 'scripts', 'build-cjs.js')], {
-  cwd: remarkDir,
-  stdio: 'inherit'
-});
+const rewriteCjsImports = (code) =>
+  code.replace(/(require\(\s*['"])(\.{1,2}\/[^'"?#]+?)(\.js)(['"]\s*\))/g, '$1$2.cjs$4');
 
-console.log('[build] Copy remark dist into plugin package');
-if (!existsSync(remarkDistDir)) {
-  const relPath = relative(packageDir, remarkDistDir);
-  throw new Error(`Expected remark dist at ${relPath}, but it was not found.`);
+console.log('[build] Generate .cjs copies alongside ESM output');
+if (!existsSync(tmpCjsDir)) {
+  throw new Error('CommonJS build output (dist-cjs) is missing.');
 }
 
-mkdirSync(distDir, { recursive: true });
-rmSync(remarkTargetDir, { recursive: true, force: true });
-cpSync(remarkDistDir, remarkTargetDir, { recursive: true });
+for (const file of walk(tmpCjsDir)) {
+  if (!file.endsWith('.js')) continue;
+  const rel = relative(tmpCjsDir, file);
+  const target = join(distDir, rel).replace(/\.js$/u, '.cjs');
+  const dir = dirname(target);
+  mkdirSync(dir, { recursive: true });
+  const content = readFileSync(file, 'utf8');
+  const rewritten = rewriteCjsImports(content);
+  writeFileSync(target, rewritten);
+}
+
+rmSync(tmpCjsDir, { recursive: true, force: true });
 
 console.log('[build] Run post-build verification');
 await import(pathToFileURL(join(__dirname, 'postbuild-verify.mjs')));

@@ -10,7 +10,7 @@ import {
   createLogger,
   type DebugOptions,
   getDebugConfig,
-} from 'docusaurus-plugin-smartlinker';
+} from '../index.js';
 import { buildMatcher, type AutoLinkEntry } from './matcher.js';
 
 export interface TargetInfo {

@@ -64,7 +64,17 @@ function normalizeFolderId(siteDir: string, absPath: string): string {
   return normalized || '.';
 }
 
-const moduleDir = dirname(fileURLToPath(import.meta.url));
+const moduleDir =
+  typeof __dirname === 'string'
+    ? __dirname
+    : (() => {
+        try {
+          const metaUrl = Function('return import.meta.url')();
+          return dirname(fileURLToPath(metaUrl));
+        } catch {
+          return process.cwd();
+        }
+      })();
 const pluginName = PLUGIN_NAME;
 
 function publishGlobalData(

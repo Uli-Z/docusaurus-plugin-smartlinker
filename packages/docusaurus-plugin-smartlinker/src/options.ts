@@ -16,6 +16,8 @@ const TooltipComponentSchema = z.union([
   }),
 ]);
 
+type TooltipComponentInput = z.infer<typeof TooltipComponentSchema>;
+
 const DebugLevelSchema = z.enum(['error', 'warn', 'info', 'debug', 'trace']);
 
 const DebugOptionsSchema = z
@@ -31,11 +33,14 @@ export type TooltipComponentConfig = {
 };
 
 const TooltipComponentsRecord = z
-  .record(TooltipComponentSchema)
+  .record(z.string(), TooltipComponentSchema)
   .default({})
   .transform((value) => {
     const out: Record<string, TooltipComponentConfig> = {};
-    for (const [alias, spec] of Object.entries(value)) {
+    for (const [alias, spec] of Object.entries(value) as [
+      string,
+      TooltipComponentInput,
+    ][]) {
       const key = alias.trim();
       if (!key) continue;
       if (typeof spec === 'string') {
@@ -58,9 +63,9 @@ const FolderSchema = z.object({
 
 export const OptionsSchema = z
   .object({
-    icons: z.record(TrimmedString).default({}),
-    darkModeIcons: z.record(TrimmedString).optional(),
-    iconProps: z.record(z.unknown()).optional(),
+    icons: z.record(z.string(), TrimmedString).default({}),
+    darkModeIcons: z.record(z.string(), TrimmedString).optional(),
+    iconProps: z.record(z.string(), z.unknown()).optional(),
     folders: z.array(FolderSchema).default([]),
     debug: DebugOptionsSchema,
   })

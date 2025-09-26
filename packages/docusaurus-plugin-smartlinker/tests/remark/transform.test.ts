@@ -3,9 +3,13 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import remarkMdx from 'remark-mdx';
-import plugin, { type TargetInfo, type IndexProvider, type RemarkSmartlinkerOptions } from '../src/transform.js';
-import { setIndexEntries, clearIndexProvider } from '../../docusaurus-plugin-smartlinker/src/indexProviderStore.js';
-import type { IndexRawEntry } from '../../docusaurus-plugin-smartlinker/src/types.js';
+import plugin, {
+  type TargetInfo,
+  type IndexProvider,
+  type RemarkSmartlinkerOptions,
+} from '../../src/remark/transform.js';
+import { setIndexEntries, clearIndexProvider } from '../../src/indexProviderStore.js';
+import type { IndexRawEntry } from '../../src/types.js';
 
 function makeIndex(targets: TargetInfo[]): IndexProvider {
   return {

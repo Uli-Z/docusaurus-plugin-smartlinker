@@ -5,7 +5,7 @@
 # Maintenance — Post v0.1.0 cleanup
 
 - Remove legacy linkify-med artifacts and stale lockfile entries.
-- Drop npm lockfile in favor of pnpm.
+- Adopt npm (npm@10) as the workspace package manager and regenerate the npm lockfile; pnpm manifests removed.
 - Keep package dist directories tracked.
 
 This is the first, provisional release of Smartlinker for Docusaurus v3. It ships the core experience: annotate docs via front matter, and Smartlinker turns matching terms across your site into links with contextual MDX tooltips and icons.

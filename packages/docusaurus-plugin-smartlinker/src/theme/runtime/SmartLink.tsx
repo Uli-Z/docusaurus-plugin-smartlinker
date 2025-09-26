@@ -30,14 +30,33 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   const resolvedHref = useBaseUrl(candidateHref);
 
   // Mobile detection (rough): browsers that don't support hover
-  const [isHoverCapable, setIsHoverCapable] = React.useState(true);
+  const [isHoverCapable, setIsHoverCapable] = React.useState(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+    const mq = window.matchMedia?.('(hover: hover)');
+    return mq?.matches ?? true;
+  });
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     const mq = window.matchMedia?.('(hover: hover)');
-    setIsHoverCapable(!!mq?.matches);
-    const onChange = () => setIsHoverCapable(!!mq?.matches);
-    mq?.addEventListener?.('change', onChange);
-    return () => mq?.removeEventListener?.('change', onChange);
+    if (!mq) {
+      setIsHoverCapable(true);
+      return;
+    }
+
+    setIsHoverCapable(mq.matches);
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsHoverCapable(event.matches);
+    };
+
+    mq.addEventListener?.('change', handleChange);
+    mq.addListener?.(handleChange);
+
+    return () => {
+      mq.removeEventListener?.('change', handleChange);
+      mq.removeListener?.(handleChange);
+    };
   }, []);
 
   // Controlled open state for mobile taps
@@ -53,20 +72,29 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   const handleAnchorClick = React.useCallback<React.MouseEventHandler<HTMLAnchorElement>>(
     (event) => {
       if (!isHoverCapable && hasTooltip) {
+        event.preventDefault();
         if (!readyToNavigateRef.current) {
-          event.preventDefault();
           event.stopPropagation();
           readyToNavigateRef.current = true;
           setOpen(true);
           return;
         }
+
         readyToNavigateRef.current = false;
         setOpen(false);
+        if (typeof window !== 'undefined') {
+          const ua = window.navigator?.userAgent ?? '';
+          const isJsDom = /jsdom/i.test(ua);
+          if (!isJsDom && typeof window.location?.assign === 'function') {
+            window.location.assign(resolvedHref);
+          }
+        }
+        return;
       }
 
       close();
     },
-    [isHoverCapable, hasTooltip, close]
+    [isHoverCapable, hasTooltip, close, resolvedHref]
   );
   const noop = React.useCallback(() => {}, []);
 

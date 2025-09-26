@@ -15,10 +15,10 @@ Smartlinker is a Docusaurus v3 plugin (with an optional remark helper) that turn
 
 ## Quick start
 
-1) Install
+1) Install (npm only)
 
 ```bash
-npm install github:Uli-Z/docusaurus-plugin-smartlinker
+npm install docusaurus-plugin-smartlinker
 ```
 
 2) Register (plugin + remark) in `docusaurus.config`
@@ -66,7 +66,9 @@ export default {
 };
 ```
 
-CommonJS config: `const remarkSmartlinker = require('docusaurus-plugin-smartlinker/remark').default;`
+CommonJS config: `const remarkSmartlinker = require('docusaurus-plugin-smartlinker/remark');`
+
+When using CommonJS, the plugin entry (`require('docusaurus-plugin-smartlinker')`) and remark helper both return callable functions.
 
 3) Annotate front matter
 
@@ -117,6 +119,7 @@ Override any of the `--lm-*` variables in your site CSS to customize appearances
 
 - Live demo: https://uli-z.github.io/docusaurus-plugin-smartlinker/docs/demo
 - Example site in this repo under `examples/site`.
+- Automated npm smoke test: `npm run smoke:npm` packs the plugin, scaffolds a fresh Docusaurus site with npm, installs the tarball, and runs `npm run build` to confirm everything wires up without workspace tooling.
 
 ## License
 
