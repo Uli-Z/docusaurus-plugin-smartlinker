@@ -28,6 +28,7 @@ const runJsonArray = (command, options = {}) => {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, '..');
 const exampleDir = join(rootDir, 'examples', 'site');
+const pluginDir = join(rootDir, 'packages', 'docusaurus-plugin-smartlinker');
 
 let tarballPath;
 let tempDir;
@@ -36,12 +37,12 @@ try {
   console.log('▶ Building workspaces before packing...');
   run('npm run build', { cwd: rootDir, env: { npm_config_loglevel: 'error', npm_config_progress: 'false' } });
 
-  console.log('▶ Packing repository...');
-  const packEntries = runJsonArray('npm pack --json', { cwd: rootDir, env: { npm_config_loglevel: 'error', npm_config_progress: 'false' } });
+  console.log('▶ Packing plugin package...');
+  const packEntries = runJsonArray('npm pack --json', { cwd: pluginDir, env: { npm_config_loglevel: 'error', npm_config_progress: 'false' } });
   if (packEntries.length === 0) {
     throw new Error('npm pack did not return a filename');
   }
-  tarballPath = join(rootDir, packEntries[0].filename);
+  tarballPath = join(pluginDir, packEntries[0].filename);
 
   tempDir = mkdtempSync(join(tmpdir(), 'smartlinker-smoke-'));
   const siteDir = join(tempDir, 'site');

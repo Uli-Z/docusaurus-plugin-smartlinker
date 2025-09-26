@@ -1,44 +1,53 @@
 {
-  "name": "@internal/docusaurus-plugin-smartlinker",
-  "private": true,
+  "name": "docusaurus-plugin-smartlinker",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
     "./theme": "./dist/theme/index.js",
     "./theme/styles.css": "./dist/theme/styles.css",
     "./theme/*": "./dist/theme/runtime/*",
     "./remark": {
-      "types": "../remark-smartlinker/dist/index.d.ts",
-      "import": "../remark-smartlinker/dist/index.js",
-      "default": "../remark-smartlinker/dist/index.js"
+      "types": "./dist/remark/index.d.ts",
+      "import": "./dist/remark/index.js",
+      "require": "./dist/remark/index.cjs"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true});\" && tsc -p tsconfig.json && node ./scripts/postbuild-verify.mjs",
+    "build": "node ./scripts/build.mjs",
+    "prepublishOnly": "npm run build",
     "test": "vitest run"
   },
   "vitest": {
     "environment": "jsdom"
   },
   "devDependencies": {
+    "@docusaurus/types": "^3.8.1",
     "@docusaurus/plugin-content-docs": "^3.0.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.2",
     "jsdom": "^24.1.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"
   },
   "peerDependencies": {
     "@docusaurus/core": "^3.0.0",
     "react": "^18.2.0 || ^19.0.0",
-    "react-dom": "^18.2.0 || ^19.0.0"
+    "react-dom": "^18.2.0 || ^19.0.0",
+    "unified": "^11.0.0"
   },
   "dependencies": {
     "@docusaurus/mdx-loader": "^3.0.0",
@@ -47,6 +56,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "gray-matter": "^4.0.3",
     "react-markdown": "^9.0.3",
+    "unist-util-visit": "^5.0.0",
     "zod": "^3.23.0"
   },
   "license": "MIT",
