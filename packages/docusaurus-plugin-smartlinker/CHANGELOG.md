@@ -6,6 +6,7 @@
 - Added automated packaging verification that packs the plugin, inspects exported entrypoints, and guards against stray `workspace:` links.
 - Introduced npm and pnpm smoke scripts that install the packed tarball into a fresh Docusaurus example and confirm both import/require usage before building.
 - Folded the remark transformer into the published package build so npm installs no longer encounter `workspace:*` protocols while keeping the `./remark` export intact.
+- Adjusted the repository workspace layout and helper scripts so root `npm install` succeeds without Arborist crashes and example site builds run via `site:prepare`.
 
 ## 0.1.0 — Initial preview
 

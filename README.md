@@ -120,7 +120,7 @@ Override any of the `--lm-*` variables in your site CSS to customize appearances
 ## Examples
 
 - Live demo: https://uli-z.github.io/docusaurus-plugin-smartlinker/docs/demo
-- Example site in this repo under `examples/site`.
+- Example site in this repo under `examples/site`. Run `npm run site:prepare` once to build the plugin and install the example’s dependencies, then `npm run site:build`/`site:dev`/`site:serve` to exercise it.
 
 ## Verification & smoke tests
 

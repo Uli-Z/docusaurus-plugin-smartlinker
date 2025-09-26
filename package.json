@@ -4,8 +4,7 @@
   "description": "Monorepo workspace for docusaurus-plugin-smartlinker and related packages.",
   "type": "module",
   "workspaces": [
-    "packages/*",
-    "examples/site"
+    "packages/*"
   ],
   "packageManager": "pnpm@9.0.0",
   "engines": {
@@ -15,10 +14,11 @@
     "build": "npm run build --workspace docusaurus-plugin-smartlinker",
     "test": "npm run test --workspace docusaurus-plugin-smartlinker",
     "lint": "echo \"@(optional) add eslint later\"",
-    "site:dev": "npm run dev --workspace @examples/site",
-    "site:build": "npm run build --workspace @examples/site",
-    "site:serve": "npm run serve --workspace @examples/site",
-    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site",
+    "site:prepare": "npm run build && npm install --prefix examples/site --no-save",
+    "site:dev": "npm run site:prepare && npm --prefix examples/site run dev",
+    "site:build": "npm run site:prepare && npm --prefix examples/site run build",
+    "site:serve": "npm run site:prepare && npm --prefix examples/site run serve",
+    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run site:build",
     "smoke:git-install": "node ./scripts/git-install-smoke.mjs",
     "smoke:npm": "node ./scripts/smoke-npm.mjs",
     "smoke:pnpm": "node ./scripts/smoke-pnpm.mjs",

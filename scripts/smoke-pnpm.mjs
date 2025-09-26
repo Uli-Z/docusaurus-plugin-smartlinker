@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { join } from 'node:path';
 import {
+  addTarballDependency,
   cleanupSandbox,
   createSmokeSandbox,
   ensureBuilt,
@@ -18,6 +19,7 @@ try {
   tarballPath = packPlugin();
   sandbox = createSmokeSandbox();
   stripWorkspaceSpecifier(sandbox.siteDir);
+  addTarballDependency(sandbox.siteDir, tarballPath);
 
   console.log('▶ Adding packed plugin via pnpm add...');
   runPnpm(['add', tarballPath], { cwd: sandbox.siteDir });
