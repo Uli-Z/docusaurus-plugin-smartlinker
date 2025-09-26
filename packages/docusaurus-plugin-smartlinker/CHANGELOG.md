@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Align SmartLink tooltip/link styling with Infima tokens and expose `--lm-*` overrides while documenting the remaining bespoke defaults.
+- Added automated packaging verification that packs the plugin, inspects exported entrypoints, and guards against stray `workspace:` links.
+- Introduced npm and pnpm smoke scripts that install the packed tarball into a fresh Docusaurus example and confirm both import/require usage before building.
 
 ## 0.1.0 — Initial preview
 

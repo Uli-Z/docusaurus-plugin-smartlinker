@@ -7,27 +7,47 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22]
+        package-manager: [npm, pnpm]
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-
-      - name: Use Node.js 20
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          node-version: ${{ matrix.node-version }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Prepare pnpm
+        if: matrix.package-manager == 'pnpm'
+        run: corepack prepare pnpm@9.0.0 --activate
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          if [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm install --frozen-lockfile
+          else
+            npm install
+          fi
 
-      - name: Build packages
-        run: pnpm run build
-
-      - name: Build example site
-        run: pnpm run site:build
+      - name: Run workspace checks
+        run: |
+          if [ "${{ matrix.package-manager }}" = "pnpm" ]; then
+            pnpm run build
+            pnpm run test
+            pnpm run site:build
+            pnpm run verify:pack
+            pnpm run smoke:pnpm
+          else
+            npm run build
+            npm run test
+            npm run site:build
+            npm run verify:pack
+            npm run smoke:npm
+          fi

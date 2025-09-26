@@ -19,7 +19,10 @@
     "site:build": "npm run build --workspace @examples/site",
     "site:serve": "npm run serve --workspace @examples/site",
     "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site",
-    "smoke:git-install": "node ./scripts/git-install-smoke.mjs"
+    "smoke:git-install": "node ./scripts/git-install-smoke.mjs",
+    "smoke:npm": "node ./scripts/smoke-npm.mjs",
+    "smoke:pnpm": "node ./scripts/smoke-pnpm.mjs",
+    "verify:pack": "npm run verify:pack --workspace docusaurus-plugin-smartlinker"
   },
   "pnpm": {
     "overrides": {

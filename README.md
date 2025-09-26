@@ -18,8 +18,12 @@ Smartlinker is a Docusaurus v3 plugin (with an optional remark helper) that turn
 1) Install
 
 ```bash
-npm install github:Uli-Z/docusaurus-plugin-smartlinker
+npm install docusaurus-plugin-smartlinker
+# or
+pnpm add docusaurus-plugin-smartlinker
 ```
+
+Smartlinker lists `@docusaurus/core`, `react`, `react-dom`, and `unified` as peer dependencies; install versions compatible with your site (Docusaurus v3+).
 
 2) Register (plugin + remark) in `docusaurus.config`
 
@@ -117,6 +121,16 @@ Override any of the `--lm-*` variables in your site CSS to customize appearances
 
 - Live demo: https://uli-z.github.io/docusaurus-plugin-smartlinker/docs/demo
 - Example site in this repo under `examples/site`.
+
+## Verification & smoke tests
+
+The repository ships helper scripts to verify packaging before publishing:
+
+- `npm run verify:pack` (root) – builds the plugin workspace and re-packs it, checking the tarball for the expected exports and remark artifacts.
+- `npm run smoke:npm` – packs the plugin, installs it into a fresh copy of the example site via npm, asserts both ESM (`import`) and CJS (`require`) entry points, then runs `docusaurus build`.
+- `npm run smoke:pnpm` – same coverage as the npm smoke test but installing via pnpm.
+
+Both smoke tests clean up their temporary directories and tarballs automatically.
 
 ## License
 

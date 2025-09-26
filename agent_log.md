@@ -17,3 +17,10 @@
 - pnpm test
 - pnpm run site:build (passes)
 - npm run site:build (fails: missing workspace dependency @radix-ui/react-tooltip after npm install)
+
+### 2025-09-27 Session
+- Added shared smoke harness plus dedicated npm/pnpm scripts that pack the plugin, copy the example site, install from the tarball, assert both entrypoints, and run Docusaurus builds with debug disabled to keep logs lean.
+- Implemented a tarball verification script inside the plugin package and wired new scripts into root/package manifests alongside CI matrix coverage (Node 18/20/22 × npm|pnpm).
+- Updated README/CHANGELOG documentation, removed the committed `package-lock.json`, and ignored future lockfile generation.
+- Commands: `pnpm install`; `pnpm --filter docusaurus-plugin-smartlinker test` (fails on existing tooltip specs & example build dependency on prebuilt remark); `pnpm run build`; `pnpm --filter docusaurus-plugin-smartlinker run verify:pack`; `pnpm run smoke:npm`; `pnpm run smoke:pnpm`.
+- Noted Vitest tooltip suites still require follow-up stabilization; smoke + packaging checks succeed with the new tooling.
