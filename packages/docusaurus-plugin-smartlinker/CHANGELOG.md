@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Align SmartLink tooltip/link styling with Infima tokens and expose `--lm-*` overrides while documenting the remaining bespoke defaults.
+- Adopted pnpm-native build/test scripts that verify dist artifacts, pack output, and the example Docusaurus site build from the generated tarball.
 
 ## 0.1.0 — Initial preview
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added Vitest configuration and pnpm-driven scripts to keep tests green against the plugin source during packaging verification.
+
 ## 0.1.0 — Initial preview
 
 First, provisional release of the remark helper used by Smartlinker.

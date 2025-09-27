@@ -1,25 +1,46 @@
-import { describe, it, beforeAll, expect } from 'vitest';
-import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = join(__dirname, '..', '..', '..');
-const siteDir = join(repoRoot, 'examples', 'site');
+interface VerificationContext {
+  dist: Array<{ path: string; size: number }>;
+  tarEntries: string[];
+  exampleHtml: string;
+  cleanup: () => void;
+}
 
-beforeAll(() => {
-  execFileSync('npm', ['run', 'site:build'], {
-    cwd: repoRoot,
-    env: { ...process.env, CI: '1' },
-    stdio: 'inherit',
+let verificationModule: any;
+let context: VerificationContext;
+
+beforeAll(async () => {
+  verificationModule = await import('../../../scripts/utils/package-verifier.mjs');
+  context = verificationModule.createVerificationContext();
+}, 360_000);
+
+afterAll(() => {
+  context?.cleanup?.();
+});
+
+describe('package build artifacts', () => {
+  it('includes required dist outputs', () => {
+    const produced = new Set(context.dist.map((item) => item.path));
+    const missing = (verificationModule.REQUIRED_DIST_PATHS as string[]).filter(
+      (expected: string) => !produced.has(expected)
+    );
+    expect(missing).toHaveLength(0);
   });
-}, 180_000);
+
+  it('packs dist files into the tarball', () => {
+    const entries = new Set(context.tarEntries);
+    const missing = (verificationModule.REQUIRED_TARBALL_ENTRIES as string[]).filter(
+      (expected: string) => !entries.has(expected)
+    );
+    expect(missing).toHaveLength(0);
+  });
+});
 
 describe('example site build', () => {
-  it('emits SmartLinks with Docusaurus-resolved hrefs', () => {
-    const html = readFileSync(join(siteDir, 'build', 'docs', 'demo', 'index.html'), 'utf8');
-    expect(html).toContain('href="/docs/antibiotics/amoxicillin"');
-    expect(html).toContain('href="/docs/antibiotics/piperacillin-tazobactam"');
+  it('renders SmartLinks when installed from the packed tarball', () => {
+    for (const snippet of verificationModule.EXAMPLE_HTML_ASSERTIONS as string[]) {
+      expect(context.exampleHtml).toContain(snippet);
+    }
   });
 });

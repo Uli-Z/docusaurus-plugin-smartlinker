@@ -7,6 +7,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -16,18 +19,35 @@ jobs:
         with:
           version: 9.0.0
 
-      - name: Use Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
+      - name: Build workspaces
         run: pnpm run build
 
-      - name: Build example site
-        run: pnpm run site:build
+      - name: Run tests and artifact verification
+        run: pnpm test
+
+      - name: Pack release tarball
+        run: |
+          rm -rf artifacts
+          mkdir -p artifacts/dist-plugin artifacts/dist-remark
+          pnpm pack --pack-destination artifacts --json
+          cp -R packages/docusaurus-plugin-smartlinker/dist artifacts/dist-plugin/
+          cp -R packages/remark-smartlinker/dist artifacts/dist-remark/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: smartlinker-artifacts-${{ matrix.node-version }}
+          path: |
+            artifacts/dist-plugin
+            artifacts/dist-remark
+            artifacts/*.tgz
