@@ -30,6 +30,24 @@ const normalizedBaseUrl = (() => {
   return '/';
 })();
 
+type DebugLevel = 'error' | 'warn' | 'info' | 'debug' | 'trace';
+
+const resolveDebugLevel = (): DebugLevel => {
+  const envLevelRaw = process.env.DOCUSAURUS_PLUGIN_DEBUG_LEVEL?.trim();
+  if (envLevelRaw) {
+    const envLevel = envLevelRaw.toLowerCase();
+    if (['error', 'warn', 'info', 'debug', 'trace'].includes(envLevel)) {
+      return envLevel as DebugLevel;
+    }
+  }
+
+  if (process.env.CI === 'true' || process.env.NODE_ENV === 'test') {
+    return 'error';
+  }
+
+  return 'trace';
+};
+
 const config: Config = {
   title: 'Smartlinker Example',
   favicon: 'img/favicon.ico',
@@ -82,7 +100,7 @@ const config: Config = {
       ],
       debug: {
         enabled: true,
-        level: 'trace',
+        level: resolveDebugLevel(),
       },
     }]
   ],
