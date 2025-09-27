@@ -140,7 +140,7 @@ Useful extras:
   artifacts.
 - `.github/workflows/publish-dist.yml` rebuilds the plugin and remark helper after every push to `main` (and on demand) and
   commits the generated `packages/*/dist` output back to the repository via GitHub Actions so Git-based installs always receive
-  compiled code.
+  compiled code. The workflow is responsible for publishing the `dist` directories on `main` after the source changes merge.
 
 ## License
 
