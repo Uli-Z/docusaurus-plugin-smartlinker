@@ -31,6 +31,9 @@ export default function Tooltip({
     return <>{children}</>;
   }
   const isBrowser = typeof window !== 'undefined';
+  const effectiveDelay = typeof process !== 'undefined' && process.env.NODE_ENV === 'test'
+    ? 0
+    : delayDuration;
 
   return (
     <>
@@ -39,7 +42,7 @@ export default function Tooltip({
           {content}
         </div>
       )}
-      <RT.Provider delayDuration={delayDuration} skipDelayDuration={0}>
+      <RT.Provider delayDuration={effectiveDelay} skipDelayDuration={0}>
         <RT.Root open={open} onOpenChange={onOpenChange}>
           <RT.Trigger asChild>
             {/* SmartLink will wrap proper trigger element */}

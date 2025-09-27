@@ -14,3 +14,17 @@ class RO {
 }
 // @ts-ignore
 globalThis.ResizeObserver = (globalThis as any).ResizeObserver || RO;
+
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: (query: string) => ({
+    matches: true,
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    onchange: null,
+    dispatchEvent() { return false; },
+  }),
+});

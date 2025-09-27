@@ -18,7 +18,7 @@ Smartlinker is a Docusaurus v3 plugin (with an optional remark helper) that turn
 1) Install
 
 ```bash
-npm install github:Uli-Z/docusaurus-plugin-smartlinker
+pnpm add github:Uli-Z/docusaurus-plugin-smartlinker
 ```
 
 2) Register (plugin + remark) in `docusaurus.config`

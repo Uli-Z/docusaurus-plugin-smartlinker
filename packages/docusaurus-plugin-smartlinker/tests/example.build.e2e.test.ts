@@ -9,7 +9,12 @@ const repoRoot = join(__dirname, '..', '..', '..');
 const siteDir = join(repoRoot, 'examples', 'site');
 
 beforeAll(() => {
-  execFileSync('npm', ['run', 'site:build'], {
+  execFileSync('pnpm', ['run', 'build'], {
+    cwd: repoRoot,
+    env: { ...process.env, CI: '1' },
+    stdio: 'inherit',
+  });
+  execFileSync('pnpm', ['run', 'site:build'], {
     cwd: repoRoot,
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',

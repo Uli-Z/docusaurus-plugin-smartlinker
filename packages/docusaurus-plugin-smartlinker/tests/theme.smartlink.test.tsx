@@ -11,6 +11,7 @@ import { LinkifyRegistryProvider, IconConfigProvider } from '../src/theme/runtim
 import { emitShortNoteModule } from '../src/codegen/notesEmitter.js';
 
 const useBaseUrlMock = vi.fn((value: string) => value);
+const originalMatchMedia = window.matchMedia;
 
 vi.mock('@docusaurus/useBaseUrl', () => ({
   __esModule: true,
@@ -20,6 +21,10 @@ vi.mock('@docusaurus/useBaseUrl', () => ({
 afterEach(() => {
   useBaseUrlMock.mockImplementation((value: string) => value);
   useBaseUrlMock.mockClear();
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: originalMatchMedia,
+  });
 });
 
 function setup(

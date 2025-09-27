@@ -34,10 +34,14 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     const mq = window.matchMedia?.('(hover: hover)');
-    setIsHoverCapable(!!mq?.matches);
-    const onChange = () => setIsHoverCapable(!!mq?.matches);
-    mq?.addEventListener?.('change', onChange);
-    return () => mq?.removeEventListener?.('change', onChange);
+    if (!mq) {
+      setIsHoverCapable(true);
+      return;
+    }
+    setIsHoverCapable(mq.matches);
+    const onChange = () => setIsHoverCapable(mq.matches);
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
   }, []);
 
   // Controlled open state for mobile taps

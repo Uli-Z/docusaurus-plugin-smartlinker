@@ -34,12 +34,12 @@ let tempDir;
 
 try {
   console.log('▶ Building workspaces before packing...');
-  run('npm run build', { cwd: rootDir, env: { npm_config_loglevel: 'error', npm_config_progress: 'false' } });
+  run('pnpm run build', { cwd: rootDir });
 
   console.log('▶ Packing repository...');
-  const packEntries = runJsonArray('npm pack --json', { cwd: rootDir, env: { npm_config_loglevel: 'error', npm_config_progress: 'false' } });
+  const packEntries = runJsonArray('pnpm pack --json', { cwd: rootDir });
   if (packEntries.length === 0) {
-    throw new Error('npm pack did not return a filename');
+    throw new Error('pnpm pack did not return a filename');
   }
   tarballPath = join(rootDir, packEntries[0].filename);
 
@@ -70,14 +70,11 @@ try {
   pkg.dependencies['docusaurus-plugin-smartlinker'] = `file:${tarballPath}`;
   writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
 
-  console.log('▶ Installing dependencies via npm...');
-  run('npm install', {
-    cwd: siteDir,
-    env: { npm_config_loglevel: 'error', npm_config_progress: 'false', npm_config_fund: 'false' },
-  });
+  console.log('▶ Installing dependencies via pnpm...');
+  run('pnpm install', { cwd: siteDir });
 
   console.log('▶ Running docusaurus build in smoke environment...');
-  run('npm run build', { cwd: siteDir, env: { npm_config_loglevel: 'error', npm_config_progress: 'false' } });
+  run('pnpm run build', { cwd: siteDir });
 
   console.log('\n✔ Git install smoke test succeeded. Build output located at:', join(siteDir, 'build'));
 } finally {
