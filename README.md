@@ -134,6 +134,14 @@ Useful extras:
 - `pnpm typecheck` – runs `tsc --noEmit` for both workspaces.
 - `pnpm site:build` – builds the example Docusaurus site from source.
 
+## Continuous integration
+
+- `.github/workflows/ci.yml` runs type-checking, builds/tests every workspace, packs the repository, and uploads the resulting
+  artifacts.
+- `.github/workflows/publish-dist.yml` rebuilds the plugin and remark helper after every push to `main` (and on demand) and
+  commits the generated `packages/*/dist` output back to the repository via GitHub Actions so Git-based installs always receive
+  compiled code. The workflow is responsible for publishing the `dist` directories on `main` after the source changes merge.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
