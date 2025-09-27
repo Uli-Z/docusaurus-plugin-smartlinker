@@ -22,7 +22,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "docusaurus-plugin-smartlinker": "file:../.."
+    "docusaurus-plugin-smartlinker": "workspace:*"
   },
   "devDependencies": {
     "@types/mdast": "^4.0.4",

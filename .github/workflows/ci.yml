@@ -38,6 +38,12 @@ jobs:
       - name: Build & test
         run: pnpm test
 
+      - name: Build packages
+        run: pnpm run build
+
+      - name: Build example site
+        run: pnpm run site:build
+
       - name: Create publishable tarball
         run: pnpm run pack:ci
 
