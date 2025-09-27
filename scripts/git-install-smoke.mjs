@@ -12,17 +12,10 @@ const run = (command, options = {}) => {
   execSync(command, { stdio: 'inherit', ...rest, env });
 };
 
-const runJsonArray = (command, options = {}) => {
+const runCapture = (command, options = {}) => {
   const { env: optionEnv, ...rest } = options;
   const env = { ...process.env, ...optionEnv };
-  const raw = execSync(command, { stdio: 'pipe', encoding: 'utf8', ...rest, env });
-  const start = raw.indexOf('[');
-  const end = raw.lastIndexOf(']');
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error(`Failed to parse JSON output from command: ${command}`);
-  }
-  const jsonSlice = raw.slice(start, end + 1);
-  return JSON.parse(jsonSlice);
+  return execSync(command, { stdio: 'pipe', encoding: 'utf8', ...rest, env }).trim();
 };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -34,14 +27,18 @@ let tempDir;
 
 try {
   console.log('▶ Building workspaces before packing...');
-  run('npm run build', { cwd: rootDir, env: { npm_config_loglevel: 'error', npm_config_progress: 'false' } });
+  run('pnpm run build', { cwd: rootDir, env: { npm_config_loglevel: 'error', npm_config_progress: 'false' } });
 
   console.log('▶ Packing repository...');
-  const packEntries = runJsonArray('npm pack --json', { cwd: rootDir, env: { npm_config_loglevel: 'error', npm_config_progress: 'false' } });
-  if (packEntries.length === 0) {
-    throw new Error('npm pack did not return a filename');
+  const packOutput = runCapture('pnpm pack --pack-destination .', {
+    cwd: rootDir,
+    env: { npm_config_loglevel: 'error', npm_config_progress: 'false' },
+  });
+  const filename = packOutput.split('\n').pop();
+  if (!filename) {
+    throw new Error('pnpm pack did not return a filename');
   }
-  tarballPath = join(rootDir, packEntries[0].filename);
+  tarballPath = join(rootDir, filename);
 
   tempDir = mkdtempSync(join(tmpdir(), 'smartlinker-smoke-'));
   const siteDir = join(tempDir, 'site');

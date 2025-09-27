@@ -34,14 +34,14 @@
     "packages/remark-smartlinker/dist"
   ],
   "scripts": {
-    "build": "npm run build --workspace=@internal/docusaurus-plugin-smartlinker --workspace=@internal/remark-smartlinker",
-    "test": "npm run test --workspace=@internal/docusaurus-plugin-smartlinker --workspace=@internal/remark-smartlinker",
+    "build": "pnpm --filter @internal/docusaurus-plugin-smartlinker run build && pnpm --filter @internal/remark-smartlinker run build",
+    "test": "pnpm --filter @internal/docusaurus-plugin-smartlinker run test && pnpm --filter @internal/remark-smartlinker run test",
     "lint": "echo \"@(optional) add eslint later\"",
-    "site:dev": "npm run dev --workspace @examples/site",
-    "site:build": "npm run build --workspace @examples/site",
-    "site:serve": "npm run serve --workspace @examples/site",
-    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site",
-    "prepublishOnly": "npm run build",
+    "site:dev": "pnpm --filter @examples/site run dev",
+    "site:build": "pnpm --filter @examples/site run build",
+    "site:serve": "pnpm --filter @examples/site run serve",
+    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && pnpm install && pnpm run build && pnpm --filter @examples/site run build",
+    "prepublishOnly": "pnpm run build",
     "smoke:git-install": "node ./scripts/git-install-smoke.mjs"
   },
   "peerDependencies": {
