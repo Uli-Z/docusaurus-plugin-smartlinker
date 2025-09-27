@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeAll, afterAll } from 'vitest
 import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MDXProvider } from '@mdx-js/react';
 import SmartLink from '../src/theme/runtime/SmartLink.js';
@@ -179,10 +179,32 @@ describe('SmartLink (theme)', () => {
     const tips = await screen.findAllByTestId('tooltip-note');
     expect(tips.length).toBeGreaterThan(0);
 
-    // Tap text: click the anchor (should close tooltip on blur/click)
-    await userEvent.click(link);
-    // we cannot assert navigation in jsdom; just ensure still defined
-    expect(link).toHaveAttribute('href', '/x');
+    // Tap text: invoke the React click handler directly so we can assert that the
+    // event is allowed to bubble without preventing navigation (calling the
+    // handler directly avoids jsdom's unimplemented navigation warnings).
+    const reactPropsKey = Object.keys(link).find((key) => key.startsWith('__reactProps$'));
+    expect(reactPropsKey).toBeTruthy();
+    const reactOnClick = (link as any)[reactPropsKey!].onClick as (event: React.MouseEvent<HTMLAnchorElement>) => void;
+
+    const preventDefault = vi.fn();
+    const stopPropagation = vi.fn();
+    const nativeEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
+
+    reactOnClick({
+      preventDefault,
+      stopPropagation,
+      currentTarget: link,
+      target: link,
+      nativeEvent,
+    } as unknown as React.MouseEvent<HTMLAnchorElement>);
+
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(stopPropagation).not.toHaveBeenCalled();
+
+    // Tooltip should close after the click handler runs.
+    await waitFor(() => {
+      expect(screen.queryByTestId('tooltip-note')).toBeNull();
+    });
   });
 
   it('does not render tooltip if no ShortNote in registry', async () => {
