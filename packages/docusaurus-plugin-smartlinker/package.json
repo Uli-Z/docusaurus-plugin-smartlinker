@@ -21,7 +21,8 @@
   ],
   "scripts": {
     "build": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true});\" && tsc -p tsconfig.json && node ./scripts/postbuild-verify.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "vitest": {
     "environment": "jsdom"

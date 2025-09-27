@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeAll, afterAll } from 'vitest';
 import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -17,9 +17,57 @@ vi.mock('@docusaurus/useBaseUrl', () => ({
   default: (value: string) => useBaseUrlMock(value),
 }));
 
+type MatchMediaResult = {
+  matches: boolean;
+  media: string;
+  onchange: null;
+  addEventListener: () => void;
+  removeEventListener: () => void;
+  addListener: () => void;
+  removeListener: () => void;
+  dispatchEvent: () => boolean;
+};
+
+const createMatchMedia = (matches: boolean) => (query: string): MatchMediaResult => ({
+  matches,
+  media: query,
+  onchange: null,
+  addEventListener() {},
+  removeEventListener() {},
+  addListener() {},
+  removeListener() {},
+  dispatchEvent() { return false; },
+});
+
+let originalMatchMedia: typeof window.matchMedia;
+
+const setMatchMedia = (matches: boolean) => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: createMatchMedia(matches),
+  });
+};
+
+beforeAll(() => {
+  originalMatchMedia = window.matchMedia;
+  setMatchMedia(true);
+});
+
+afterAll(() => {
+  if (originalMatchMedia) {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: originalMatchMedia,
+    });
+  } else {
+    delete (window as any).matchMedia;
+  }
+});
+
 afterEach(() => {
   useBaseUrlMock.mockImplementation((value: string) => value);
   useBaseUrlMock.mockClear();
+  setMatchMedia(true);
 });
 
 function setup(
@@ -115,12 +163,7 @@ describe('SmartLink (theme)', () => {
 
   it('mobile icon tap toggles tooltip; text tap navigates (we only assert no preventDefault)', async () => {
     // Force non-hover environment by mocking matchMedia
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: (query: string) => ({
-        matches: false, media: query, addEventListener() {}, removeEventListener() {}, onchange: null, addListener() {}, removeListener() {}
-      })
-    });
+    setMatchMedia(false);
 
     setup(
       <SmartLink to="/x" icon="pill" tipKey="amoxicillin">Amoxi</SmartLink>,

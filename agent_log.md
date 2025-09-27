@@ -1,10 +1,11 @@
 # Log
 
 ## Summary
-- Replaced SmartLink/Tooltip base styles with Infima-backed variables and state rules, dropping bespoke inheritance overrides.
-- Updated tooltip runtime to push the max-width through a CSS custom property so the stylesheet can control it via Infima tokens.
-- Documented the new token mapping and kept CHANGELOG notes for the alignment work.
+- Replaced npm-based workspace scripts with pnpm equivalents, including new `typecheck`, `ci`, and `pack:ci` flows.
+- Updated integration tests to package the plugin tarball, install it into a copied example site via pnpm, and assert dist contents and site build success with reduced progress noise.
+- Added a Vitest alias so remark tests resolve the built plugin dist, and documented the pnpm-first workflow (README, release notes, changelog).
 
 ## Verification
-- pnpm build
-- pnpm test
+- pnpm typecheck
+- CI=1 pnpm test
+- pnpm run pack:ci

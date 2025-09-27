@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterEach, afterAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Root from '../src/theme/runtime/Root.js';
@@ -50,6 +50,53 @@ vi.mock('@generated/docusaurus-plugin-smartlinker/default/registry', () => ({
   },
 }));
 
+type MatchMediaResult = {
+  matches: boolean;
+  media: string;
+  onchange: null;
+  addEventListener: () => void;
+  removeEventListener: () => void;
+  addListener: () => void;
+  removeListener: () => void;
+  dispatchEvent: () => boolean;
+};
+
+const createMatchMedia = (matches: boolean) => (query: string): MatchMediaResult => ({
+  matches,
+  media: query,
+  onchange: null,
+  addEventListener() {},
+  removeEventListener() {},
+  addListener() {},
+  removeListener() {},
+  dispatchEvent() { return false; },
+});
+
+let originalMatchMedia: typeof window.matchMedia;
+
+const setMatchMedia = (matches: boolean) => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: createMatchMedia(matches),
+  });
+};
+
+beforeAll(() => {
+  originalMatchMedia = window.matchMedia;
+  setMatchMedia(true);
+});
+
+afterAll(() => {
+  if (originalMatchMedia) {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: originalMatchMedia,
+    });
+  } else {
+    delete (window as any).matchMedia;
+  }
+});
+
 describe('theme Root provider', () => {
   beforeEach(() => {
     usePluginDataMock.mockClear();
@@ -61,6 +108,10 @@ describe('theme Root provider', () => {
       },
       entries: [{ id: 'amoxicillin', slug: '/docs/amoxicillin', docId: 'antibiotics/amoxicillin', permalink: '/docs/docs/amoxicillin', icon: 'pill' }],
     });
+  });
+
+  afterEach(() => {
+    setMatchMedia(true);
   });
 
   it('hydrates SmartLink with registry + icon contexts from plugin data', async () => {
