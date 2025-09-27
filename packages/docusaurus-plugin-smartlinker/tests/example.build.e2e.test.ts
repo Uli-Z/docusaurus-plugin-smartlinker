@@ -64,7 +64,9 @@ function run(command: string, args: string[], options?: ExecFileSyncOptionsWithS
 }
 
 beforeAll(() => {
+  console.info('Preparing temporary workspace for example site build test');
   tempRoot = mkdtempSync(join(tmpdir(), 'smartlinker-example-'));
+  console.info('Packing plugin tarball with pnpm');
   const packOutput = run('pnpm', ['pack', '--pack-destination', tempRoot], {
     cwd: repoRoot,
   });
@@ -73,6 +75,7 @@ beforeAll(() => {
   tarballPath = resolve(tempRoot, tarballName);
 
   packedSiteDir = join(tempRoot, 'site');
+  console.info('Copying example site into temporary workspace');
   cpSync(siteDir, packedSiteDir, { recursive: true, filter: filterSiteCopy });
 
   const pkgJsonPath = join(packedSiteDir, 'package.json');
@@ -80,19 +83,21 @@ beforeAll(() => {
   const relativeTarball = relative(packedSiteDir, tarballPath);
   pkg.dependencies = pkg.dependencies ?? {};
   pkg.dependencies['docusaurus-plugin-smartlinker'] = `file:${relativeTarball}`;
+  console.info('Updated example site package.json to reference packed tarball');
   writeFileSync(pkgJsonPath, `${JSON.stringify(pkg, null, 2)}\n`);
 
+  console.info('Installing example site dependencies via pnpm (frozen lockfile disabled for temp workspace)');
   run('pnpm', ['install', '--frozen-lockfile=false', '--reporter=silent'], {
     cwd: packedSiteDir,
   });
-  console.info('Installed example site dependencies via pnpm');
 
+  console.info('Running docusaurus build for example site');
   run('pnpm', ['exec', 'docusaurus', 'build'], {
     cwd: packedSiteDir,
     env: { ...process.env, CI: '1', FORCE_COLOR: '0', TERM: 'dumb' },
   });
-  console.info('Built example site with packed plugin');
 
+  console.info('Reading packed tarball contents for assertions');
   const tarListing = run('tar', ['-tf', tarballPath]);
   tarballEntries = tarListing.trim().split(/\r?\n/);
 }, 360_000);
