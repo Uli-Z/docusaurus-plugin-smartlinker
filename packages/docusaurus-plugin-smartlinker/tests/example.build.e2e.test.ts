@@ -10,6 +10,7 @@ const repoRoot = join(__dirname, '..', '..', '..');
 const siteDir = join(repoRoot, 'examples', 'site');
 const pluginDistDir = join(repoRoot, 'packages', 'docusaurus-plugin-smartlinker', 'dist');
 const remarkDistDir = join(repoRoot, 'packages', 'remark-smartlinker', 'dist');
+const repoName = 'docusaurus-plugin-smartlinker';
 
 const disallowedTokens = ['node_modules', 'build', '.docusaurus'];
 
@@ -26,6 +27,23 @@ let tempRoot;
 let tarballPath;
 let packedSiteDir;
 let tarballEntries;
+
+const ensureSlashes = (value: string) => {
+  const withLeading = value.startsWith('/') ? value : `/${value}`;
+  return withLeading.endsWith('/') ? withLeading : `${withLeading}/`;
+};
+
+const normalizedBaseUrl = (() => {
+  if (process.env.SITE_BASE_URL) {
+    return ensureSlashes(process.env.SITE_BASE_URL);
+  }
+
+  if (process.env.GITHUB_ACTIONS === 'true' && repoName) {
+    return ensureSlashes(`/${repoName}`);
+  }
+
+  return '/';
+})();
 
 function run(command: string, args: string[], options?: ExecFileSyncOptionsWithStringEncoding): string {
   try {
@@ -127,7 +145,13 @@ describe('example site build', () => {
 
   it('emits SmartLinks with Docusaurus-resolved hrefs', () => {
     const html = readFileSync(join(packedSiteDir, 'build', 'docs', 'demo', 'index.html'), 'utf8');
-    expect(html).toContain('href="/docs/antibiotics/amoxicillin"');
-    expect(html).toContain('href="/docs/antibiotics/piperacillin-tazobactam"');
+    const expectedLinks = [
+      'docs/antibiotics/amoxicillin',
+      'docs/antibiotics/piperacillin-tazobactam',
+    ].map((path) => `${normalizedBaseUrl}${path}`);
+
+    for (const link of expectedLinks) {
+      expect(html).toContain(`href="${link}"`);
+    }
   });
 });

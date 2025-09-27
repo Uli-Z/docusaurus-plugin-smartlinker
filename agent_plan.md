@@ -25,6 +25,7 @@
      - Run the build and assert `dist/` contains required files.
      - Inspect `pnpm pack` tarball to verify packaged files.
      - Use a minimal example Docusaurus site that installs the tarball and runs a production build (headless) to confirm plugin integration.
+     - Ensure assertions that validate built HTML (e.g., SmartLink hrefs) respect dynamic `baseUrl` configuration to keep tests portable across CI/local environments.
    - Update existing unit tests / vitest configuration to align with pnpm workspace.
 
 5. **CI Pipeline**
@@ -40,6 +41,7 @@
 - `pnpm install`
 - `pnpm build`
 - `pnpm test`
+- `pnpm test -- --runInBand packages/docusaurus-plugin-smartlinker/tests/example.build.e2e.test.ts` (when iterating on the example build expectations)
 - `pnpm run lint` / `pnpm typecheck` (if added)
 - `pnpm pack` (root) with custom verification script
 - Example site build command (e.g., `pnpm --filter @examples/site build`)
