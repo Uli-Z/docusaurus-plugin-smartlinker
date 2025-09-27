@@ -7,6 +7,7 @@
 - Remove legacy linkify-med artifacts and stale lockfile entries.
 - Drop npm lockfile in favor of pnpm.
 - Keep package dist directories tracked.
+- Adopt pnpm-only build/test scripts, new artifact verification, and CI automation that packs the plugin and builds the example site.
 
 This is the first, provisional release of Smartlinker for Docusaurus v3. It ships the core experience: annotate docs via front matter, and Smartlinker turns matching terms across your site into links with contextual MDX tooltips and icons.
 

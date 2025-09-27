@@ -18,7 +18,7 @@ Smartlinker is a Docusaurus v3 plugin (with an optional remark helper) that turn
 1) Install
 
 ```bash
-npm install github:Uli-Z/docusaurus-plugin-smartlinker
+pnpm add github:Uli-Z/docusaurus-plugin-smartlinker
 ```
 
 2) Register (plugin + remark) in `docusaurus.config`
@@ -117,6 +117,22 @@ Override any of the `--lm-*` variables in your site CSS to customize appearances
 
 - Live demo: https://uli-z.github.io/docusaurus-plugin-smartlinker/docs/demo
 - Example site in this repo under `examples/site`.
+
+## Local development (pnpm only)
+
+This repository is pnpm-first. To work on the plugin locally:
+
+```bash
+pnpm install
+pnpm build          # builds both the plugin and remark helper
+CI=1 pnpm test      # runs unit + integration tests (including the example site build)
+pnpm run pack:ci    # produces a tarball under build-artifacts/
+```
+
+Useful extras:
+
+- `pnpm typecheck` – runs `tsc --noEmit` for both workspaces.
+- `pnpm site:build` – builds the example Docusaurus site from source.
 
 ## License
 

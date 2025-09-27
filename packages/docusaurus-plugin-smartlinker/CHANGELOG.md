@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Align SmartLink tooltip/link styling with Infima tokens and expose `--lm-*` overrides while documenting the remaining bespoke defaults.
+- Switched workspace scripts and integration tests to pnpm, added example-site packaging checks, and aliased remark tests to the built plugin dist.
 
 ## 0.1.0 — Initial preview
 

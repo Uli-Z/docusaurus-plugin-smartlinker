@@ -34,14 +34,17 @@
     "packages/remark-smartlinker/dist"
   ],
   "scripts": {
-    "build": "npm run build --workspace=@internal/docusaurus-plugin-smartlinker --workspace=@internal/remark-smartlinker",
-    "test": "npm run test --workspace=@internal/docusaurus-plugin-smartlinker --workspace=@internal/remark-smartlinker",
+    "build": "pnpm --filter @internal/docusaurus-plugin-smartlinker run build && pnpm --filter @internal/remark-smartlinker run build",
+    "test": "pnpm build && pnpm --filter @internal/docusaurus-plugin-smartlinker run test && pnpm --filter @internal/remark-smartlinker run test",
+    "typecheck": "pnpm --filter @internal/docusaurus-plugin-smartlinker run typecheck && pnpm --filter @internal/remark-smartlinker run typecheck",
     "lint": "echo \"@(optional) add eslint later\"",
-    "site:dev": "npm run dev --workspace @examples/site",
-    "site:build": "npm run build --workspace @examples/site",
-    "site:serve": "npm run serve --workspace @examples/site",
-    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && npm install && npm run build && npm run build --workspace @examples/site",
-    "prepublishOnly": "npm run build",
+    "ci": "pnpm test && pnpm run pack:ci",
+    "site:dev": "pnpm --filter @examples/site run dev",
+    "site:build": "pnpm --filter @examples/site run build",
+    "site:serve": "pnpm --filter @examples/site run serve",
+    "pack:ci": "node -e \"require('fs').rmSync('build-artifacts', { recursive: true, force: true });\" && pnpm pack --pack-destination build-artifacts",
+    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && pnpm install && pnpm build && pnpm --filter @examples/site run build",
+    "prepublishOnly": "pnpm build",
     "smoke:git-install": "node ./scripts/git-install-smoke.mjs"
   },
   "peerDependencies": {
