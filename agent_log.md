@@ -16,3 +16,4 @@
 - Baseline `pnpm test` failed: plugin tests could not open tooltips under jsdom and example site build crashed because the packed workspace lacked `dist/` files; remark tests could not resolve the published entry.
 - Added `scripts/utils/package-verifier.mjs` to verify dist layout, tarball contents, and build a tarball-backed copy of the example Docusaurus site via pnpm.
 - Updated CI to run the pnpm build/test flow and upload both dist directories and the generated tarball as workflow artifacts.
+- Re-ran `pnpm install` and `pnpm test` after follow-up review; both commands succeeded without additional changes.
