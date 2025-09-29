@@ -73,4 +73,7 @@
 - Created root `CHANGELOG.md` entry documenting the new `agents.md` guide.
 - Attempted `npm run build`; TypeScript compilation failed because `unified`, `mdast`, `unist`, and `vfile` types are absent in the workspace. Documented this as a known issue with a suggested workaround.
 - Captured build-time peer dependency gap in `agents.md` (Local Development + Known Issues) with workaround instructions.
->>>>>>> Stashed changes
+- Reviewed current agent_plan.md goals and implementation outline to understand existing PNPM-first focus.
+- Rewrote agent_plan.md to foreground PNPM-first policy, prebuilt dist distribution, package metadata, and verification strategy.
+- Logged PNPM-first packaging specification in CHANGELOG.
+- Ensured agent_plan.md test plan is deduplicated and finalised for PNPM-first + npm consumer verification.

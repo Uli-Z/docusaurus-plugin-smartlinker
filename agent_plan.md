@@ -1,48 +1,43 @@
 # Plan
 
 ## Goals
-- Ensure the packages build, test, and pack correctly using **pnpm** only.
-- Produce distributable artifacts (`dist/` JS + types + assets) for both plugin and remark helper, and guarantee they are published.
-- Provide automated validation (unit + integration) and CI pipeline mirroring local workflow, including an example Docusaurus site smoke test.
+- **PNPM-first** workflows: all workspace packages and the example site build, test, and smoke using pnpm (`pnpm install`, `pnpm run build`, `pnpm run site:build`).
+- Ship a **prebuilt `dist/`** (ESM, CJS if required, `.d.ts`, source maps, CSS assets) with the published npm package so consumers never run a build step or require pnpm.
+- Maintain npm compatibility: `package.json` metadata (`name`, `version`, `main`, `module`, `types`, `exports`, `files`, `engines`) must reference `dist/` outputs and support npm-and-Node-based installs.
+- Provide a verification strategy proving that a fresh Docusaurus project created with npm can install and use the plugin without pnpm or local compilation.
 
-## Implementation Outline
-1. **Baseline & Analysis**
-   - Record current Node/pnpm versions and run `pnpm install`, `pnpm build`, `pnpm test` to capture existing issues in `agent_log.md`.
-   - Inspect existing build outputs and packaging rules to understand gaps (missing dist, tarball content, etc.).
+## Specification Outline
+1. **Problem Statement & Objectives**
+   - Restate PNPM-first build expectation for repo contributors.
+   - Define the requirement for prebuilt artifacts in `dist/` distributed via npm, eliminating consumer build steps.
+   - Emphasize npm consumer success: installers using npm must be supported without pnpm tooling leakage.
 
-2. **Tooling & Scripts**
-   - Convert workspace scripts to `pnpm` equivalents (use recursive/filtered commands) and remove npm-specific scripts.
-   - Introduce shared scripts (e.g., `pnpm run -r build`, `pnpm lint`, `pnpm test`, `pnpm typecheck`, `pnpm pack:verify`).
-   - Ensure consistent TypeScript configs, incremental builds, and source maps; set up bundler (`tsc` + helper) as needed.
+2. **Build & Packaging Requirements**
+   - Detail required `dist/` contents: `index.js`, optional `index.cjs`, `.d.ts`, `.map`, `theme/` assets, remark helper outputs.
+   - Specify build scripts: pnpm-driven commands (`pnpm run build`, `pnpm run verify:pack`, etc.).
+   - Document `package.json` fields: `main`, `module`, `types`, `exports`, `files`, `type`, `scripts`, `publishConfig` (if needed), ensuring artifacts resolve to `dist/`.
+   - Confirm publish-time inclusion: `npm pack` tarball must contain `dist/` outputs and exclude sources/tests, with no `postinstall` build hooks.
 
-3. **Build Output Guarantees**
-   - Standardize each package's build pipeline (likely `tsup` or `tsc` + copy assets) to emit `dist/` with both ESM & CJS (if required), and type declarations.
-   - Add post-build checks ensuring expected files (JS, d.ts, CSS) exist; fail build otherwise.
-   - Update `files`, `exports`, and supporting configs so `pnpm pack` includes dist outputs only (no src/tests).
+3. **Compatibility & Constraints**
+   - Supported Node.js versions and Docusaurus peer ranges.
+   - Platform support (Linux/macOS/Windows) considerations.
+   - Workspace layout: pnpm monorepo, lockfile policy (`pnpm-lock.yaml` authoritative), no npm lock.
+   - Decision on tracking `dist/`: typically committed in package directory for quicker installs or generated during release but bundled in tarball; clarify expected practice.
 
-4. **Integration Testing**
-   - Author automated tests that:
-     - Run the build and assert `dist/` contains required files.
-     - Inspect `pnpm pack` tarball to verify packaged files.
-     - Use a minimal example Docusaurus site that installs the tarball and runs a production build (headless) to confirm plugin integration.
-     - Ensure assertions that validate built HTML (e.g., SmartLink hrefs) respect dynamic `baseUrl` configuration to keep tests portable across CI/local environments.
-   - Update existing unit tests / vitest configuration to align with pnpm workspace.
+4. **Verification & Test Specification**
+   - **Pnpm workspace tests**: `pnpm install`, `pnpm run build`, `pnpm run site:build` to confirm plugin + example site coverage.
+   - **Tarball verification**: run `pnpm run build` then `npm pack` (or workspace script) and inspect tarball for required `dist/` artifacts and metadata.
+   - **Npm consumer scenario**: using npm, scaffold `npm create docusaurus@latest`, install the plugin from the packed tarball/registry, run `npm run build` and optionally `npm run start`, assert Smartlinker components render (e.g., check HTML output or CLI logs).
+   - Ensure npm consumer tests forbid pnpm usage and fail if the plugin attempts a build or requires pnpm.
+   - Map each requirement to corresponding tests with pass/fail signals (commands + expected outcomes).
 
-5. **CI Pipeline**
-   - Create `.github/workflows/ci.yml` using `actions/setup-node` + `pnpm/action-setup`, caching pnpm store.
-   - CI steps: install, lint/typecheck (if applicable), build, test, pack verification, example site build.
-   - Upload `dist/` and packed tarball as artifacts; ensure workflow fails if build outputs missing.
-
-6. **Docs & Logs**
-   - Update `README`, `CHANGELOG`, and `agent_log.md` with new workflow, commands, and findings.
-   - Document usage instructions (pnpm only) and CI details.
+5. **Process & Logging Expectations**
+   - All actions logged in `agent_log.md`; include changelog notes for documentation/spec updates.
+   - Iterative loop: plan → document tests → later implement/tests/fix (not part of this spec task).
 
 ## Test Plan
-- `pnpm install`
-- `pnpm build`
-- `pnpm test`
-- `pnpm test -- --runInBand packages/docusaurus-plugin-smartlinker/tests/example.build.e2e.test.ts` (when iterating on the example build expectations)
-- `pnpm run lint` / `pnpm typecheck` (if added)
-- `pnpm pack` (root) with custom verification script
-- Example site build command (e.g., `pnpm --filter @examples/site build`)
-- Any new integration test commands (e.g., `pnpm run verify:artifacts`, `pnpm run test:integration`)
+- **Workspace validation**: `pnpm install`, `pnpm run build`, `pnpm run site:build`, `pnpm run smoke:pnpm`.
+- **Packaging audit**: `pnpm run verify:pack`, `npm pack` + inspect contents (`tar -tf`/script) to ensure `dist/` completeness and absence of build scripts in `postinstall`.
+- **Npm consumer scenario**: `npm create docusaurus@latest`, `npm install docusaurus-plugin-smartlinker-<version>.tgz`, `npm run build`, `npm run start`; validate SmartLink rendering or registry logs.
+- **Metadata checks**: script/assertion that `package.json` fields resolve to `dist/` (e.g., Node `require`/`import` smoke tests).
+- **Traceability matrix**: document mapping between requirements and verification steps to guarantee full coverage before implementation begins.
