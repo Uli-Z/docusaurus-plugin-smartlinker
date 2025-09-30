@@ -1,0 +1,59 @@
+name: release-tarball
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  pack-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          check-latest: true
+
+      - name: Enable Corepack (pnpm 9)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.0.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build plugin
+        working-directory: packages/docusaurus-plugin-smartlinker
+        run: pnpm build
+
+      - name: Pack tarball
+        id: pack
+        working-directory: packages/docusaurus-plugin-smartlinker
+        run: |
+          set -e
+          TARBALL=$(pnpm pack --silent)
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          cp "$TARBALL" docusaurus-plugin-smartlinker-latest.tgz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          draft: false
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+          files: |
+            packages/docusaurus-plugin-smartlinker/${{ steps.pack.outputs.tarball }}
+            packages/docusaurus-plugin-smartlinker/docusaurus-plugin-smartlinker-latest.tgz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -11,5 +11,5 @@ export interface SmartLinkProps extends React.PropsWithChildren {
  * - Mobile: First tap (text or icon) shows tooltip; second tap navigates.
  * Rendering: icon AFTER text.
  */
-export default function SmartLink({ to, children, tipKey, icon, match }: SmartLinkProps): import("react/jsx-runtime.js").JSX.Element;
+export default function SmartLink({ to, children, tipKey, icon, match }: SmartLinkProps): import("react/jsx-runtime").JSX.Element;
 //# sourceMappingURL=SmartLink.d.ts.map

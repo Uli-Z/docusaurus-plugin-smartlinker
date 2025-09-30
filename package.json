@@ -21,7 +21,7 @@
     "site:dev": "pnpm --filter @examples/site run dev",
     "site:build": "pnpm --filter @examples/site run build",
     "site:serve": "pnpm --filter @examples/site run serve",
-    "pack:ci": "node -e \"require('fs').rmSync('build-artifacts', { recursive: true, force: true });\" && pnpm --filter docusaurus-plugin-smartlinker pack --pack-destination build-artifacts",
+    "pack:ci": "rm -rf build-artifacts && pnpm --filter docusaurus-plugin-smartlinker pack --pack-destination build-artifacts",
     "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && pnpm install && pnpm run build && pnpm --filter @examples/site run build",
     "prepublishOnly": "pnpm --filter docusaurus-plugin-smartlinker run build",
     "smoke:git-install": "node ./scripts/git-install-smoke.mjs"
