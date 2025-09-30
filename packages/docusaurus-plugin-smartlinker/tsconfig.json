@@ -4,11 +4,15 @@
   "compilerOptions": {
     "outDir": "./dist-tsc",
     "baseUrl": "./",
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
+    "module": "NodeNext",
     "types": ["vitest/globals", "mdast", "unist", "vfile"],
     "paths": {
       "docusaurus-plugin-smartlinker": ["./src/index.ts"],
-      "docusaurus-plugin-smartlinker/*": ["./src/*"]
+      "docusaurus-plugin-smartlinker/*": ["./src/*"],
+      "mdast": ["./node_modules/@types/mdast/index.d.ts"],
+      "unist": ["./node_modules/@types/unist/index.d.ts"],
+      "vfile": ["./node_modules/vfile/index.d.ts"]
     }
   }
 }
