@@ -1,5 +1,6 @@
 {
   "name": "docusaurus-plugin-smartlinker",
+  "private": true,
   "version": "0.1.0",
   "description": "Docusaurus plugin + remark helper for SmartLink tooltips.",
   "type": "module",
@@ -11,40 +12,18 @@
   "engines": {
     "node": ">=18 <25"
   },
-  "main": "./packages/docusaurus-plugin-smartlinker/dist/index.js",
-  "types": "./packages/docusaurus-plugin-smartlinker/dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./packages/docusaurus-plugin-smartlinker/dist/index.d.ts",
-      "import": "./packages/docusaurus-plugin-smartlinker/dist/index.js",
-      "default": "./packages/docusaurus-plugin-smartlinker/dist/index.js"
-    },
-    "./theme": "./packages/docusaurus-plugin-smartlinker/dist/theme/index.js",
-    "./theme/styles.css": "./packages/docusaurus-plugin-smartlinker/dist/theme/styles.css",
-    "./theme/*": "./packages/docusaurus-plugin-smartlinker/dist/theme/runtime/*",
-    "./remark": {
-      "types": "./packages/remark-smartlinker/dist/index.d.ts",
-      "import": "./packages/remark-smartlinker/dist/index.js",
-      "default": "./packages/remark-smartlinker/dist/index.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "packages/docusaurus-plugin-smartlinker/dist",
-    "packages/remark-smartlinker/dist"
-  ],
   "scripts": {
-    "build": "pnpm --filter @internal/docusaurus-plugin-smartlinker run build && pnpm --filter @internal/remark-smartlinker run build",
-    "test": "pnpm build && pnpm --filter @internal/docusaurus-plugin-smartlinker run test && pnpm --filter @internal/remark-smartlinker run test",
-    "typecheck": "pnpm --filter @internal/docusaurus-plugin-smartlinker run typecheck && pnpm --filter @internal/remark-smartlinker run typecheck",
+    "build": "pnpm --filter docusaurus-plugin-smartlinker run build",
+    "test": "pnpm run build && pnpm --filter docusaurus-plugin-smartlinker run test",
+    "typecheck": "pnpm --filter docusaurus-plugin-smartlinker run typecheck",
     "lint": "echo \"@(optional) add eslint later\"",
     "ci": "pnpm test && pnpm run pack:ci",
     "site:dev": "pnpm --filter @examples/site run dev",
     "site:build": "pnpm --filter @examples/site run build",
     "site:serve": "pnpm --filter @examples/site run serve",
-    "pack:ci": "node -e \"require('fs').rmSync('build-artifacts', { recursive: true, force: true });\" && pnpm pack --pack-destination build-artifacts",
-    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && pnpm install && pnpm build && pnpm --filter @examples/site run build",
-    "prepublishOnly": "pnpm build",
+    "pack:ci": "node -e \"require('fs').rmSync('build-artifacts', { recursive: true, force: true });\" && pnpm --filter docusaurus-plugin-smartlinker pack --pack-destination build-artifacts",
+    "reset": "rm -rf node_modules packages/*/node_modules examples/site/node_modules && pnpm install && pnpm run build && pnpm --filter @examples/site run build",
+    "prepublishOnly": "pnpm --filter docusaurus-plugin-smartlinker run build",
     "smoke:git-install": "node ./scripts/git-install-smoke.mjs"
   },
   "peerDependencies": {

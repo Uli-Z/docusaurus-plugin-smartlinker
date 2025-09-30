@@ -1,40 +1,41 @@
 {
-  "name": "@internal/docusaurus-plugin-smartlinker",
-  "private": true,
+  "name": "docusaurus-plugin-smartlinker",
   "version": "0.1.0",
+  "description": "Docusaurus plugin that builds SmartLink tooltips and registry data.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./remark": {
+      "types": "./dist/remark/index.d.ts",
+      "import": "./dist/remark/index.mjs",
+      "require": "./dist/remark/index.cjs"
+    },
     "./theme": "./dist/theme/index.js",
     "./theme/styles.css": "./dist/theme/styles.css",
     "./theme/*": "./dist/theme/runtime/*",
-    "./remark": {
-      "types": "../remark-smartlinker/dist/index.d.ts",
-      "import": "../remark-smartlinker/dist/index.js",
-      "default": "../remark-smartlinker/dist/index.js"
-    }
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
-    "build": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true});\" && tsc -p tsconfig.json && node ./scripts/postbuild-verify.mjs",
+    "clean": "rimraf dist dist-tsc",
+    "build": "pnpm run clean && pnpm run build:tsc && pnpm run build:bundle && pnpm run postbuild",
+    "build:tsc": "tsc -p tsconfig.json",
+    "build:bundle": "tsup",
+    "postbuild": "node ./scripts/postbuild-verify.mjs",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
-  },
-  "vitest": {
-    "environment": "jsdom"
-  },
-  "devDependencies": {
-    "@docusaurus/plugin-content-docs": "^3.0.0",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.0.0",
-    "@testing-library/user-event": "^14.5.2",
-    "jsdom": "^24.1.0",
-    "typescript": "^5.5.4",
-    "vitest": "^2.0.5"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepack": "pnpm run clean && pnpm run build"
   },
   "peerDependencies": {
     "@docusaurus/core": "^3.0.0",
@@ -43,16 +44,40 @@
   },
   "dependencies": {
     "@docusaurus/mdx-loader": "^3.0.0",
-    "@mdx-js/react": "^3.1.1",
     "@mdx-js/mdx": "^3.1.1",
+    "@mdx-js/react": "^3.1.1",
     "@radix-ui/react-tooltip": "^1.2.8",
     "gray-matter": "^4.0.3",
     "react-markdown": "^9.0.3",
+    "unist-util-visit": "^5.0.0",
     "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@docusaurus/plugin-content-docs": "^3.0.0",
+    "@docusaurus/types": "^3.8.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/mdast": "^4.0.4",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@types/unist": "^3.0.2",
+    "@types/vfile": "^4.0.0",
+    "jsdom": "^24.1.0",
+    "mdast": "^3.0.0",
+    "rimraf": "^5.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.4",
+    "unified": "^11.0.5",
+    "unist": "^0.0.1",
+    "vfile": "^6.0.3",
+    "vitest": "^2.0.5"
+  },
+  "engines": {
+    "node": ">=18 <25"
   },
   "license": "MIT",
   "author": "Uli Z",
-  "description": "Docusaurus plugin that builds SmartLink tooltips and registry data.",
   "repository": {
     "type": "git",
     "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker.git"

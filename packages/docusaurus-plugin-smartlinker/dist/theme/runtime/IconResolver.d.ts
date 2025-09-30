@@ -4,5 +4,5 @@ export interface IconResolverProps extends Omit<React.ImgHTMLAttributes<HTMLImag
     /** render after text so no need for alt; mark decorative */
     className?: string;
 }
-export default function IconResolver({ iconId, className, ...rest }: IconResolverProps): import("react/jsx-runtime").JSX.Element | null;
+export default function IconResolver({ iconId, className, ...rest }: IconResolverProps): import("react/jsx-runtime.js").JSX.Element | null;
 //# sourceMappingURL=IconResolver.d.ts.map

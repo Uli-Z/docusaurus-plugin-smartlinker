@@ -1,53 +1,5 @@
 {
-  "name": "@internal/remark-smartlinker",
+  "name": "remark-smartlinker",
   "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsc -p tsconfig.json && node ./scripts/build-cjs.js",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
-  },
-  "dependencies": {
-    "docusaurus-plugin-smartlinker": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/mdast": "^4.0.4",
-    "@types/unist": "^3.0.2",
-    "remark-mdx": "^3.1.1",
-    "remark-parse": "^11.0.0",
-    "remark-stringify": "^11.0.0",
-    "typescript": "^5.5.4",
-    "unified": "^11.0.5",
-    "unist-util-visit": "^5.0.0",
-    "vfile": "^6.0.3",
-    "vitest": "^2.0.5"
-  },
-  "peerDependencies": {
-    "unified": "^11.0.0"
-  },
-  "license": "MIT",
-  "author": "Uli Z",
-  "description": "Remark plugin that transforms SmartLink terms into tooltip components.",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker.git"
-  },
-  "bugs": {
-    "url": "https://github.com/Uli-Z/docusaurus-plugin-smartlinker/issues"
-  },
-  "homepage": "https://uli-z.github.io/docusaurus-plugin-smartlinker/"
+  "type": "module"
 }

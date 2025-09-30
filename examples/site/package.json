@@ -1,7 +1,6 @@
 {
   "name": "@examples/site",
   "private": true,
-  
   "scripts": {
     "dev": "docusaurus start",
     "build": "docusaurus build",
@@ -10,7 +9,7 @@
   "dependencies": {
     "@docusaurus/core": "^3.0.0",
     "@docusaurus/preset-classic": "^3.0.0",
-    "docusaurus-plugin-smartlinker": "workspace:*",
+    "docusaurus-plugin-smartlinker": "link:../../packages/docusaurus-plugin-smartlinker",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }
