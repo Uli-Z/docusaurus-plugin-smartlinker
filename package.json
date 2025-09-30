@@ -1,7 +1,7 @@
 {
   "name": "docusaurus-plugin-smartlinker",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0-alpha",
   "description": "Docusaurus plugin + remark helper for SmartLink tooltips.",
   "type": "module",
   "workspaces": [

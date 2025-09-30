@@ -2,8 +2,14 @@
 
 ## Unreleased
 
-- Align SmartLink tooltip/link styling with Infima tokens and expose `--lm-*` overrides while documenting the remaining bespoke defaults.
-- Switched workspace scripts and integration tests to pnpm, added example-site packaging checks, and aliased remark tests to the built plugin dist.
+- _Nothing yet._
+
+## 0.2.0-alpha — Dual-format packaging & tooling
+
+- Aligned SmartLink tooltip/link styling with Infima tokens and exposed `--lm-*` overrides while documenting bespoke defaults.
+- Switched workspace scripts and integration tests to pnpm, introduced tarball smoke coverage, and aliased the remark helper to the plugin dist.
+- Bundled both CJS and ESM outputs (plus declarations) for the plugin and `./remark` subpath via `tsup`, added a workspace `pack:ci` script, and ensured release tarballs include dual-format dist assets.
+- Simplified CI to typecheck/test/build the plugin and example site while deferring heavy smoke tests to manual workflows.
 
 ## 0.1.0 — Initial preview
 
