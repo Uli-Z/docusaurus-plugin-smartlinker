@@ -40,7 +40,7 @@ jobs:
         working-directory: packages/docusaurus-plugin-smartlinker
         run: |
           set -eo pipefail
-          TARBALL=$(pnpm pack --pack-destination . --json | jq -r '.[0].filename')
+          TARBALL=$(pnpm pack --pack-destination . --json | tail -n 1 | jq -r '.[0].filename')
           echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
           cp "$TARBALL" docusaurus-plugin-smartlinker-latest.tgz
 
