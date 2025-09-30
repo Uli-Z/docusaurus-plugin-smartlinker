@@ -17,12 +17,14 @@ Smartlinker is a Docusaurus v3 plugin (with an optional remark helper) that turn
 
 1) Install
 
-Grab the release tarball attached to the latest GitHub Release and install it directly:
+Grab the tarball attached to the latest GitHub Release and install it directly (
+the Release attaches both the versioned tarball and `docusaurus-plugin-smartlinker-latest.tgz`):
 
 ```bash
+# exact version
 npm install https://github.com/Uli-Z/docusaurus-plugin-smartlinker/releases/download/vX.Y.Z/docusaurus-plugin-smartlinker-X.Y.Z.tgz
-# or
-pnpm add https://github.com/Uli-Z/docusaurus-plugin-smartlinker/releases/download/vX.Y.Z/docusaurus-plugin-smartlinker-X.Y.Z.tgz
+# always fetch the most recent tagged build (latest tarball)
+pnpm add https://github.com/Uli-Z/docusaurus-plugin-smartlinker/releases/latest/download/docusaurus-plugin-smartlinker-latest.tgz
 ```
 
 2) Register (plugin + remark) in `docusaurus.config`
