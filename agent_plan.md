@@ -1,43 +1,268 @@
-# Plan
+# agent_plan.md — Smartlinker Packaging (B1 “Single-Bundle” via GitHub Release Tarball)
 
-## Goals
-- **PNPM-first** workflows: all workspace packages and the example site build, test, and smoke using pnpm (`pnpm install`, `pnpm run build`, `pnpm run site:build`).
-- Ship a **prebuilt `dist/`** (ESM, CJS if required, `.d.ts`, source maps, CSS assets) with the published npm package so consumers never run a build step or require pnpm.
-- Maintain npm compatibility: `package.json` metadata (`name`, `version`, `main`, `module`, `types`, `exports`, `files`, `engines`) must reference `dist/` outputs and support npm-and-Node-based installs.
-- Provide a verification strategy proving that a fresh Docusaurus project created with npm can install and use the plugin without pnpm or local compilation.
+## Goal
+A **single installable package** (`docusaurus-plugin-smartlinker`) that:
+- exposes the **Remark transformer as a subpath** (`docusaurus-plugin-smartlinker/remark`),
+- bundles **all internal code** (including Remark), but keeps **peers external**,
+- works with **npm** or **pnpm** without any build step during install,
+- can be installed from a **GitHub Release tarball**, and locally linked in the example site.
 
-## Specification Outline
-1. **Problem Statement & Objectives**
-   - Restate PNPM-first build expectation for repo contributors.
-   - Define the requirement for prebuilt artifacts in `dist/` distributed via npm, eliminating consumer build steps.
-   - Emphasize npm consumer success: installers using npm must be supported without pnpm tooling leakage.
+## Acceptance Criteria
+1. Consumers can import the Remark plugin like this:
+   ```ts
+   import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
+````
 
-2. **Build & Packaging Requirements**
-   - Detail required `dist/` contents: `index.js`, optional `index.cjs`, `.d.ts`, `.map`, `theme/` assets, remark helper outputs.
-   - Specify build scripts: pnpm-driven commands (`pnpm run build`, `pnpm run verify:pack`, etc.).
-   - Document `package.json` fields: `main`, `module`, `types`, `exports`, `files`, `type`, `scripts`, `publishConfig` (if needed), ensuring artifacts resolve to `dist/`.
-   - Confirm publish-time inclusion: `npm pack` tarball must contain `dist/` outputs and exclude sources/tests, with no `postinstall` build hooks.
+and use it in `remarkPlugins` (global or per preset/plugin).
+2. Consumers install the package with **npm** or **pnpm**:
 
-3. **Compatibility & Constraints**
-   - Supported Node.js versions and Docusaurus peer ranges.
-   - Platform support (Linux/macOS/Windows) considerations.
-   - Workspace layout: pnpm monorepo, lockfile policy (`pnpm-lock.yaml` authoritative), no npm lock.
-   - Decision on tracking `dist/`: typically committed in package directory for quicker installs or generated during release but bundled in tarball; clarify expected practice.
+* `npm i https://github.com/<owner>/<repo>/releases/download/vX.Y.Z/docusaurus-plugin-smartlinker-X.Y.Z.tgz`
+* `pnpm add https://github.com/<owner>/<repo>/releases/download/vX.Y.Z/docusaurus-plugin-smartlinker-X.Y.Z.tgz`
 
-4. **Verification & Test Specification**
-   - **Pnpm workspace tests**: `pnpm install`, `pnpm run build`, `pnpm run site:build` to confirm plugin + example site coverage.
-   - **Tarball verification**: run `pnpm run build` then `npm pack` (or workspace script) and inspect tarball for required `dist/` artifacts and metadata.
-   - **Npm consumer scenario**: using npm, scaffold `npm create docusaurus@latest`, install the plugin from the packed tarball/registry, run `npm run build` and optionally `npm run start`, assert Smartlinker components render (e.g., check HTML output or CLI logs).
-   - Ensure npm consumer tests forbid pnpm usage and fail if the plugin attempts a build or requires pnpm.
-   - Map each requirement to corresponding tests with pass/fail signals (commands + expected outcomes).
+3. Both **CJS** and **ESM** outputs exist, including **.d.ts**:
 
-5. **Process & Logging Expectations**
-   - All actions logged in `agent_log.md`; include changelog notes for documentation/spec updates.
-   - Iterative loop: plan → document tests → later implement/tests/fix (not part of this spec task).
+   * `dist/index.{cjs,mjs,d.ts}` (plugin)
+   * `dist/remark/index.{cjs,mjs,d.ts}` (remark subpath)
+4. **No** `prepare` script in the publishable package. Build only happens on `pack/publish` via `prepack`.
+5. Tarball includes only `dist`, `README.md`, and `LICENSE`. **No** `workspace:*` or `link:` leftovers.
 
-## Test Plan
-- **Workspace validation**: `pnpm install`, `pnpm run build`, `pnpm run site:build`, `pnpm run smoke:pnpm`.
-- **Packaging audit**: `pnpm run verify:pack`, `npm pack` + inspect contents (`tar -tf`/script) to ensure `dist/` completeness and absence of build scripts in `postinstall`.
-- **Npm consumer scenario**: `npm create docusaurus@latest`, `npm install docusaurus-plugin-smartlinker-<version>.tgz`, `npm run build`, `npm run start`; validate SmartLink rendering or registry logs.
-- **Metadata checks**: script/assertion that `package.json` fields resolve to `dist/` (e.g., Node `require`/`import` smoke tests).
-- **Traceability matrix**: document mapping between requirements and verification steps to guarantee full coverage before implementation begins.
+---
+
+## Assumptions (repo layout)
+
+```
+.
+├─ packages/
+│  ├─ docusaurus-plugin-smartlinker/    # publishable package
+│  │  ├─ src/
+│  │  │  ├─ index.ts                    # plugin entry
+│  │  │  ├─ remark/                     # (new) wrapper entry for subpath
+│  │  │  │  └─ index.ts
+│  │  │  └─ theme/...                   # runtime/styles
+│  │  ├─ package.json
+│  │  ├─ tsup.config.ts
+│  │  └─ scripts/... (optional)
+│  └─ remark-smartlinker/               # source only, NOT published
+│     ├─ src/index.ts
+│     └─ package.json
+└─ examples/site/                       # example site
+```
+
+---
+
+## Ground Rules
+
+* **Remark** remains **separately usable** via subpath export (`./remark`) so that it can be configured in specific areas.
+* The **Remark source code** is bundled into the plugin package. The `remark-smartlinker` workspace package itself is never published.
+* **Peers stay external**: `@docusaurus/core`, `react`, `react-dom`.
+* **No** `workspace:*` in publishable manifests.
+* **No** `prepare`. Only `prepack` runs the build.
+
+---
+
+## Implementation Steps
+
+### 1) `packages/remark-smartlinker/package.json`
+
+```json
+{
+  "name": "remark-smartlinker",
+  "private": true,
+  "type": "module"
+}
+```
+
+### 2) `packages/docusaurus-plugin-smartlinker/tsup.config.ts`
+
+```ts
+import { defineConfig } from 'tsup';
+
+export default defineConfig({
+  entry: {
+    index: 'src/index.ts',
+    'remark/index': 'src/remark/index.ts'
+  },
+  format: ['cjs', 'esm'],
+  dts: true,
+  sourcemap: true,
+  clean: true,
+  bundle: true,
+  external: [
+    '@docusaurus/core',
+    '@docusaurus/types',
+    'react',
+    'react-dom'
+  ],
+  treeshake: true,
+  minify: false
+});
+```
+
+### 3) `packages/docusaurus-plugin-smartlinker/src/remark/index.ts`
+
+```ts
+import * as src from '../../remark-smartlinker/src/index';
+
+const attacher =
+  (src as any).default ??
+  (src as any).remarkSmartlinker ??
+  (src as any);
+
+export default attacher;
+export * from '../../remark-smartlinker/src/index';
+```
+
+### 4) `packages/docusaurus-plugin-smartlinker/package.json`
+
+```json
+{
+  "name": "docusaurus-plugin-smartlinker",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./remark": {
+      "import": "./dist/remark/index.mjs",
+      "require": "./dist/remark/index.cjs",
+      "types": "./dist/remark/index.d.ts"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "tsup",
+    "prepack": "pnpm clean && pnpm build"
+  },
+  "peerDependencies": {
+    "@docusaurus/core": "^3",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0",
+    "unified": "^11.0.0",
+    "@types/unist": "^3.0.0",
+    "@types/mdast": "^4.0.0",
+    "@types/vfile": "^5.0.0",
+    "rimraf": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18 <25"
+  }
+}
+```
+
+### 5) Example site (dev mode)
+
+`examples/site/package.json`:
+
+```json
+{
+  "dependencies": {
+    "docusaurus-plugin-smartlinker": "link:../../packages/docusaurus-plugin-smartlinker"
+  }
+}
+```
+
+### 6) Consumer smoke test (like an external project)
+
+```bash
+pnpm -C packages/docusaurus-plugin-smartlinker clean
+pnpm -C packages/docusaurus-plugin-smartlinker build
+pnpm -C packages/docusaurus-plugin-smartlinker pack
+
+pnpm -C examples/site remove docusaurus-plugin-smartlinker || true
+pnpm -C examples/site add file:../../packages/docusaurus-plugin-smartlinker/docusaurus-plugin-smartlinker-0.1.0.tgz
+
+pnpm -C examples/site run build
+```
+
+### 7) Consumer config (unchanged)
+
+```ts
+import type { Config } from '@docusaurus/types';
+import remarkSmartlinker from 'docusaurus-plugin-smartlinker/remark';
+
+const config: Config = {
+  presets: [
+    [
+      'classic',
+      {
+        docs:  { remarkPlugins: [remarkSmartlinker] },
+        pages: { remarkPlugins: [remarkSmartlinker] },
+        blog: false
+      }
+    ]
+  ],
+  plugins: [
+    ['docusaurus-plugin-smartlinker', { /* options */ }]
+  ]
+};
+export default config;
+```
+
+### 8) Self-check
+
+```bash
+node -e "import('file://$PWD/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs').then(m=>console.log(typeof m.default))"
+# expect "function"
+
+node -e "console.log(typeof require('./packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs').default)"
+# expect "function"
+```
+
+### 9) Release tarball
+
+```bash
+pnpm -C packages/docusaurus-plugin-smartlinker version patch
+pnpm -C packages/docusaurus-plugin-smartlinker clean && pnpm -C packages/docusaurus-plugin-smartlinker build && pnpm -C packages/docusaurus-plugin-smartlinker pack
+```
+
+Attach the generated `.tgz` to a GitHub Release.
+
+Install snippet for README:
+
+```bash
+npm i https://github.com/<owner>/<repo>/releases/download/vX.Y.Z/docusaurus-plugin-smartlinker-X.Y.Z.tgz
+```
+
+---
+
+## Troubleshooting
+
+* Missing typings (`unified`, `mdast`, `unist`, `vfile`) → add to devDependencies.
+* `workspace:*` in tarball → ensure only plugin package is packed, no workspace references in its `package.json`.
+* Styles missing → import CSS in code or copy in `postbuild`.
+* Install triggers build → remove `prepare`, use `prepack`.
+* Node 22 Vitest crash → run tests under Node 20.
+
+---
+
+## CI (optional)
+
+* Matrix: Node 18/20/22 × npm/pnpm.
+* Steps:
+
+  1. Install deps
+  2. Build plugin
+  3. Pack tarball
+  4. Smoke test: install tarball into example site and run `docusaurus build`.
+
+---
+
+## Definition of Done
+
+* Tarball includes `dist/index.*` and `dist/remark/index.*` with typings.
+* Example site builds against tarball without local sources.
+* README shows working `npm i <release-url>` snippet.
+* No `workspace:*`, no `prepare`, peers correct, imports stable.
+
+
