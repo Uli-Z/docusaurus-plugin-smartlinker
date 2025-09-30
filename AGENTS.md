@@ -42,8 +42,8 @@ Generated artifacts are emitted to `packages/docusaurus-plugin-smartlinker/dist/
 
 ## Components & Repositories
 
-- [`package.json`](package.json): private workspace root targeting Node `>=18 <25`, configured with pnpm 9. Scripts proxy to the plugin workspace (`build`, `test`, `typecheck`), example site helpers (`site:*`), packaging (`pack:ci`), and the tarball smoke harness (`smoke:git-install`).
-- [`packages/docusaurus-plugin-smartlinker`](packages/docusaurus-plugin-smartlinker): publishable package with TypeScript sources, `tsup.config.ts` for dual-format bundling, `scripts/postbuild-verify.mjs` to enforce dist integrity, Vitest configuration, and tracked `dist/` artifacts. The workspace now owns its README and MIT license so the published tarball is self-contained.
+- [`package.json`](package.json): private workspace root targeting Node `>=18 <25`, configured with pnpm 9. Scripts proxy to the plugin workspace (`build`, `test`, `typecheck`), example site helpers (`site:*`), packaging (`pack:ci` which shells into the plugin workspace), and the tarball smoke harness (`smoke:git-install`).
+- [`packages/docusaurus-plugin-smartlinker`](packages/docusaurus-plugin-smartlinker): publishable package with TypeScript sources, `tsup.config.ts` for dual-format bundling, `scripts/postbuild-verify.mjs` to enforce dist integrity, Vitest configuration, and tracked `dist/` artifacts. The workspace now owns its README and MIT license so the published tarball is self-contained. Its `pack:ci` script performs a clean build and `pnpm pack` so packaging may be driven directly from the workspace (the root script delegates here).
 - [`packages/remark-smartlinker`](packages/remark-smartlinker): legacy workspace retained for tests and TypeScript sources; runtime bundles are emitted from the plugin’s `dist/remark`. Keep until the layout is simplified.
 - [`examples/site`](examples/site): Docusaurus project consuming the plugin via a workspace `link:` dependency. Commands are proxied through root `site:*` scripts.
 - [`scripts`](scripts): currently houses `git-install-smoke.mjs`, which packs the repository, rewrites the example site dependency to the generated tarball, installs, and triggers `docusaurus build`.
@@ -116,14 +116,17 @@ Helpful utilities:
 - `packages/docusaurus-plugin-smartlinker/dist/theme/**/*` — runtime components and CSS copied from `src/theme/styles.css`.
 - Tarballs generated via `pnpm pack` (root or plugin workspace) contain README, LICENSE, and the dist assets required by consumers.
 
+The plugin TypeScript project is configured with `moduleResolution: "nodenext"` so the shared remark sources (which live in `packages/remark-smartlinker`) can be re-exported with explicit `.js` extensions while still producing `.d.ts` bundles for both entrypoints.
+
 `postbuild-verify.mjs` ensures the required files exist, copies theme assets, enforces explicit relative import extensions, and removes legacy single-format outputs (`dist/index.js`, `dist/remark/index.js`) before cleaning the `dist-tsc` staging directory.
 
 ### Commands
 ```bash
-pnpm run build                     # clean + TypeScript compile + tsup bundle + postbuild verification
-pnpm run pack:ci                   # pnpm --filter docusaurus-plugin-smartlinker pack -> build-artifacts/*.tgz
-pnpm run smoke:git-install         # packs repository and runs a Docusaurus build from the tarball
-pnpm --filter docusaurus-plugin-smartlinker pack  # direct pack for ad-hoc tarball creation
+pnpm -C packages/docusaurus-plugin-smartlinker run build      # clean + TypeScript compile + tsup bundle + postbuild verification
+pnpm -C packages/docusaurus-plugin-smartlinker run pack:ci    # clean build + pnpm pack -> workspace tarball
+pnpm run pack:ci                                               # root proxy: wipes build-artifacts/ and calls workspace pack:ci
+pnpm run smoke:git-install                                      # packs repository and runs a Docusaurus build from the tarball
+pnpm --filter docusaurus-plugin-smartlinker pack                # direct pack for ad-hoc tarball creation
 ```
 
 The root README recommends installing the published `.tgz` directly from GitHub Releases (matching the versioned tarballs produced by these commands).
@@ -186,6 +189,9 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 - **Pages Deploy**: [`.github/workflows/deploy-example-site.yml`](.github/workflows/deploy-example-site.yml)
   - Triggered on push to `main` and `work`, plus manual dispatch.
   - Builds packages and example site with pnpm before uploading to GitHub Pages.
+- **Release Tarball**: [`.github/workflows/release-tarball.yml`](.github/workflows/release-tarball.yml)
+  - Triggered on version tags (`v*`) or manual dispatch.
+  - Installs with pnpm 9, builds the plugin workspace, runs `pnpm pack`, and uploads the generated tarball (plus a `-latest` alias) to the GitHub Release created for the tag.
 - **Status checks**: Ensure both workflows stay green before merging or tagging releases.
 
 ## Observability & Troubleshooting

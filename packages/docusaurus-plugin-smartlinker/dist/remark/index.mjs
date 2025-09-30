@@ -803,14 +803,13 @@ function findCurrentTarget(args) {
   return void 0;
 }
 
-// src/remark/index.ts
-function buildMatcher2(entries) {
-  return buildMatcher(entries);
-}
-function remarkSmartlinker2(opts) {
-  return remarkSmartlinker(opts);
-}
+// ../remark-smartlinker/src/index.ts
+var src_default = remarkSmartlinker;
 
-export { buildMatcher2 as buildMatcher, remarkSmartlinker2 as default };
+// src/remark/index.ts
+var attacher = src_default ?? void 0 ?? src_default;
+var remark_default = attacher;
+
+export { buildMatcher, remark_default as default };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

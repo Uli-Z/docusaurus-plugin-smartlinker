@@ -35,7 +35,8 @@
     "postbuild": "node ./scripts/postbuild-verify.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "prepack": "pnpm run clean && pnpm run build"
+    "prepack": "pnpm run clean && pnpm run build",
+    "pack:ci": "pnpm run clean && pnpm run build && pnpm pack --silent"
   },
   "peerDependencies": {
     "@docusaurus/core": "^3.0.0",

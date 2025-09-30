@@ -808,15 +808,14 @@ function findCurrentTarget(args) {
   return void 0;
 }
 
-// src/remark/index.ts
-function buildMatcher2(entries) {
-  return buildMatcher(entries);
-}
-function remarkSmartlinker2(opts) {
-  return remarkSmartlinker(opts);
-}
+// ../remark-smartlinker/src/index.ts
+var src_default = remarkSmartlinker;
 
-exports.buildMatcher = buildMatcher2;
-exports.default = remarkSmartlinker2;
+// src/remark/index.ts
+var attacher = src_default ?? void 0 ?? src_default;
+var remark_default = attacher;
+
+exports.buildMatcher = buildMatcher;
+exports.default = remark_default;
 //# sourceMappingURL=index.cjs.map
 //# sourceMappingURL=index.cjs.map
