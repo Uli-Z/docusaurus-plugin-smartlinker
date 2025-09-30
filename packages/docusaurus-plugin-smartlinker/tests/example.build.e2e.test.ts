@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, '..', '..', '..');
 const siteDir = join(repoRoot, 'examples', 'site');
 const pluginDistDir = join(repoRoot, 'packages', 'docusaurus-plugin-smartlinker', 'dist');
-const remarkDistDir = join(repoRoot, 'packages', 'remark-smartlinker', 'dist');
+const pluginRemarkDistDir = join(pluginDistDir, 'remark');
 const repoName = 'docusaurus-plugin-smartlinker';
 
 const disallowedTokens = ['node_modules', 'build', '.docusaurus'];
@@ -132,7 +132,7 @@ describe('example site build', () => {
   it('builds remark dist before packaging', () => {
     const files = ['index.cjs', 'index.mjs', 'index.d.ts'];
     for (const file of files) {
-      const absolute = join(remarkDistDir, file);
+      const absolute = join(pluginRemarkDistDir, file);
       const contents = readFileSync(absolute, 'utf8');
       expect(contents.length).toBeGreaterThan(0);
     }
@@ -144,9 +144,9 @@ describe('example site build', () => {
       'package/packages/docusaurus-plugin-smartlinker/dist/index.mjs',
       'package/packages/docusaurus-plugin-smartlinker/dist/index.d.ts',
       'package/packages/docusaurus-plugin-smartlinker/dist/theme/styles.css',
-      'package/packages/remark-smartlinker/dist/index.cjs',
-      'package/packages/remark-smartlinker/dist/index.mjs',
-      'package/packages/remark-smartlinker/dist/index.d.ts',
+      'package/packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs',
+      'package/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs',
+      'package/packages/docusaurus-plugin-smartlinker/dist/remark/index.d.ts',
     ];
 
     expect(tarballEntries).toEqual(expect.arrayContaining(requiredEntries));
