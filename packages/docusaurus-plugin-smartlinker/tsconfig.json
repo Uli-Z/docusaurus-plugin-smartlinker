@@ -2,6 +2,13 @@
   "extends": "../../tsconfig.base.json",
   "include": ["src"],
   "compilerOptions": {
-    "outDir": "./dist"
+    "outDir": "./dist-tsc",
+    "baseUrl": "./",
+    "moduleResolution": "node",
+    "types": ["vitest/globals", "mdast", "unist", "vfile"],
+    "paths": {
+      "docusaurus-plugin-smartlinker": ["./src/index.ts"],
+      "docusaurus-plugin-smartlinker/*": ["./src/*"]
+    }
   }
 }

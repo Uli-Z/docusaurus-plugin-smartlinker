@@ -77,3 +77,9 @@
 - Rewrote agent_plan.md to foreground PNPM-first policy, prebuilt dist distribution, package metadata, and verification strategy.
 - Logged PNPM-first packaging specification in CHANGELOG.
 - Ensured agent_plan.md test plan is deduplicated and finalised for PNPM-first + npm consumer verification.
+
+### 2025-09-30 Session (packaging wrap-up)
+- Rebuilt the Smartlinker plugin with the new tsup multi-entry config (esm/cjs + declaration bundling) and cleaned legacy single-format bundles.
+- Inlined the remark helper type definitions to avoid cross-package declaration references; wrapper now re-exports runtime matcher with local typings.
+- Verified pnpm install/build for the example site against the regenerated dist artifacts (link mode) to confirm the bundle still satisfies the integration smoke test.
+- Captured build logs for inclusion in the final report (pnpm build + site build, pnpm pack/smoke already archived earlier in session summary).
