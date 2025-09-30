@@ -185,7 +185,7 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 - **Workflow**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
   - Triggered on pushes to `main`, pull requests, and manual dispatch.
   - Runs on Node 20 with pnpm 9.
-  - Steps: checkout → setup pnpm → install (`pnpm install --frozen-lockfile`) → `pnpm typecheck` → `pnpm test` (build + vitest) → `pnpm run build` (ensures dist refreshed post-tests) → `pnpm run site:build` → `pnpm run pack:ci` → upload dist folders and tarballs.
+  - Steps: checkout → setup pnpm → install (`pnpm install --frozen-lockfile`) → `pnpm typecheck` → `pnpm --filter docusaurus-plugin-smartlinker run test` → `pnpm --filter docusaurus-plugin-smartlinker run build` → `pnpm --filter @examples/site run build`.
 - **Pages Deploy**: [`.github/workflows/deploy-example-site.yml`](.github/workflows/deploy-example-site.yml)
   - Triggered on push to `main` and `work`, plus manual dispatch.
   - Builds packages and example site with pnpm before uploading to GitHub Pages.

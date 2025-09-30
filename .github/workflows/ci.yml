@@ -35,28 +35,11 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Build & test
-        run: pnpm test
+      - name: Run plugin tests
+        run: pnpm --filter docusaurus-plugin-smartlinker run test
 
-      - name: Build packages
-        run: pnpm run build
+      - name: Build plugin package
+        run: pnpm --filter docusaurus-plugin-smartlinker run build
 
       - name: Build example site
-        run: pnpm run site:build
-
-      - name: Create publishable tarball
-        run: pnpm run pack:ci
-
-      - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-${{ matrix.node-version }}
-          path: |
-            packages/docusaurus-plugin-smartlinker/dist
-            packages/remark-smartlinker/dist
-
-      - name: Upload package tarball
-        uses: actions/upload-artifact@v4
-        with:
-          name: package-tarball-${{ matrix.node-version }}
-          path: build-artifacts/*.tgz
+        run: pnpm --filter @examples/site run build
