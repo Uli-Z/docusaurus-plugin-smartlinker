@@ -111,7 +111,8 @@ afterAll(() => {
 describe('example site build', () => {
   it('builds plugin dist before packaging', () => {
     const files = [
-      'index.js',
+      'index.cjs',
+      'index.mjs',
       'index.d.ts',
       'theme/index.js',
       'theme/styles.css',
@@ -129,7 +130,7 @@ describe('example site build', () => {
   });
 
   it('builds remark dist before packaging', () => {
-    const files = ['index.js', 'index.d.ts', 'index.cjs'];
+    const files = ['index.cjs', 'index.mjs', 'index.d.ts'];
     for (const file of files) {
       const absolute = join(remarkDistDir, file);
       const contents = readFileSync(absolute, 'utf8');
@@ -138,14 +139,17 @@ describe('example site build', () => {
   });
 
   it('includes dist files in the packed tarball', () => {
-    expect(tarballEntries).toEqual(expect.arrayContaining([
-      'package/packages/docusaurus-plugin-smartlinker/dist/index.js',
+    const requiredEntries = [
+      'package/packages/docusaurus-plugin-smartlinker/dist/index.cjs',
+      'package/packages/docusaurus-plugin-smartlinker/dist/index.mjs',
       'package/packages/docusaurus-plugin-smartlinker/dist/index.d.ts',
       'package/packages/docusaurus-plugin-smartlinker/dist/theme/styles.css',
-      'package/packages/remark-smartlinker/dist/index.js',
-      'package/packages/remark-smartlinker/dist/index.d.ts',
       'package/packages/remark-smartlinker/dist/index.cjs',
-    ]));
+      'package/packages/remark-smartlinker/dist/index.mjs',
+      'package/packages/remark-smartlinker/dist/index.d.ts',
+    ];
+
+    expect(tarballEntries).toEqual(expect.arrayContaining(requiredEntries));
   });
 
   it('emits SmartLinks with Docusaurus-resolved hrefs', () => {
