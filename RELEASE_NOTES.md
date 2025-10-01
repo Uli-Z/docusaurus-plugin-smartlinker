@@ -1,4 +1,4 @@
-# Release Notes — v0.2.0-alpha
+# Release Notes — v0.2.0
 
 Smartlinker 0.2.0 focuses on packaging and automation:
 
