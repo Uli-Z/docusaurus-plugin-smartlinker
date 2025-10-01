@@ -1,8 +1,7 @@
 import * as vfile from 'vfile';
 import { VFile } from 'vfile';
 import * as unist from 'unist';
-import { D as DebugOptions } from '../options-DZxWH42N.cjs';
-import 'zod';
+import { DebugOptions } from 'docusaurus-plugin-smartlinker';
 
 /**
  * Callback passed to transforms.
