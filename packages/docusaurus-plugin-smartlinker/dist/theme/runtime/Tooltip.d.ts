@@ -15,6 +15,8 @@ export interface TooltipProps {
     delayDuration?: number;
     /** max width style */
     maxWidth?: number;
+    /** expose the tooltip content node to callers (e.g. SmartLink outside-click checks) */
+    onContentNode?: (node: HTMLElement | null) => void;
 }
-export default function Tooltip({ content, open, onOpenChange, children, delayDuration, maxWidth, }: TooltipProps): import("react/jsx-runtime").JSX.Element;
+export default function Tooltip({ content, open, onOpenChange, children, delayDuration, maxWidth, onContentNode, }: TooltipProps): import("react/jsx-runtime").JSX.Element;
 //# sourceMappingURL=Tooltip.d.ts.map

@@ -17,6 +17,8 @@ export interface TooltipProps {
   delayDuration?: number;
   /** max width style */
   maxWidth?: number;
+  /** expose the tooltip content node to callers (e.g. SmartLink outside-click checks) */
+  onContentNode?: (node: HTMLElement | null) => void;
 }
 
 export default function Tooltip({
@@ -26,11 +28,19 @@ export default function Tooltip({
   children,
   delayDuration = 150,
   maxWidth = 360,
+  onContentNode,
 }: TooltipProps) {
   if (!content) {
     return <>{children}</>;
   }
   const isBrowser = typeof window !== 'undefined';
+  type TooltipContentElement = React.ElementRef<typeof RT.Content>;
+  const setContentNode = React.useCallback(
+    (node: TooltipContentElement | null) => {
+      onContentNode?.(node);
+    },
+    [onContentNode]
+  );
 
   return (
     <>
@@ -52,6 +62,7 @@ export default function Tooltip({
               align="center"
               sideOffset={8}
               collisionPadding={8}
+              ref={setContentNode}
               style={{
                 '--lm-tooltip-max-width': `${maxWidth}px`,
               } as React.CSSProperties}

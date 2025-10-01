@@ -205,6 +205,7 @@ The root README recommends installing the published `.tgz` directly from GitHub 
   - Vitest tinypool crash on Node 22 (`pnpm test`); workaround: use Node 20.
   - Example site build failing with missing `dist` assets: run `pnpm run build` before invoking `pnpm run site:build`.
   - Tarball verification issues: ensure `pnpm run pack:ci` completed after a fresh build so the bundle includes the remark helper and theme assets.
+  - Mobile tooltip: SmartLink listens for bubble-phase `pointerdown` events and ignores taps that land inside the trigger or the portal content node exposed via `Tooltip`'s `onContentNode` prop. Regressions usually stem from removing that ref wiring or reinstating capture-phase listeners that close before Radix links can fire.
 
 ## Security & Compliance
 
