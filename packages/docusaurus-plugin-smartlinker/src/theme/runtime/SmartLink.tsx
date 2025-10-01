@@ -43,7 +43,11 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   // Controlled open state for mobile taps
   const [open, setOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLSpanElement | null>(null);
+  const contentRef = React.useRef<HTMLElement | null>(null);
   const readyToNavigateRef = React.useRef(false);
+  const handleContentNode = React.useCallback((node: HTMLElement | null) => {
+    contentRef.current = node;
+  }, []);
   const close = React.useCallback(() => {
     readyToNavigateRef.current = false;
     setOpen(false);
@@ -75,21 +79,25 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
       return;
     }
 
-    const handlePointerDown = (event: PointerEvent | MouseEvent | TouchEvent) => {
-      const node = triggerRef.current;
-      if (!node) return;
-      if (event.target instanceof Node && node.contains(event.target)) {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) {
+        return;
+      }
+      if (triggerRef.current?.contains(target)) {
+        return;
+      }
+      // Tooltip content is rendered in a portal; ignore taps that land inside it so links remain interactive.
+      if (contentRef.current?.contains(target)) {
         return;
       }
       close();
     };
 
-    document.addEventListener('pointerdown', handlePointerDown, true);
-    document.addEventListener('touchstart', handlePointerDown, true);
-
+    // Bubble phase is sufficient once we know the portal content node.
+    document.addEventListener('pointerdown', handlePointerDown);
     return () => {
-      document.removeEventListener('pointerdown', handlePointerDown, true);
-      document.removeEventListener('touchstart', handlePointerDown, true);
+      document.removeEventListener('pointerdown', handlePointerDown);
     };
   }, [isHoverCapable, open, close]);
 
@@ -160,6 +168,7 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
       onOpenChange={isHoverCapable ? undefined : noop}
       delayDuration={150}
       maxWidth={360}
+      onContentNode={handleContentNode}
     >
       {trigger}
     </Tooltip>

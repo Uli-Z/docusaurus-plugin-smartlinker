@@ -34,7 +34,11 @@ export default function SmartLink({ to, children, tipKey, icon, match }) {
     // Controlled open state for mobile taps
     const [open, setOpen] = React.useState(false);
     const triggerRef = React.useRef(null);
+    const contentRef = React.useRef(null);
     const readyToNavigateRef = React.useRef(false);
+    const handleContentNode = React.useCallback((node) => {
+        contentRef.current = node;
+    }, []);
     const close = React.useCallback(() => {
         readyToNavigateRef.current = false;
         setOpen(false);
@@ -60,19 +64,23 @@ export default function SmartLink({ to, children, tipKey, icon, match }) {
             return;
         }
         const handlePointerDown = (event) => {
-            const node = triggerRef.current;
-            if (!node)
+            const target = event.target;
+            if (!target) {
                 return;
-            if (event.target instanceof Node && node.contains(event.target)) {
+            }
+            if (triggerRef.current?.contains(target)) {
+                return;
+            }
+            // Tooltip content is rendered in a portal; ignore taps that land inside it so links remain interactive.
+            if (contentRef.current?.contains(target)) {
                 return;
             }
             close();
         };
-        document.addEventListener('pointerdown', handlePointerDown, true);
-        document.addEventListener('touchstart', handlePointerDown, true);
+        // Bubble phase is sufficient once we know the portal content node.
+        document.addEventListener('pointerdown', handlePointerDown);
         return () => {
-            document.removeEventListener('pointerdown', handlePointerDown, true);
-            document.removeEventListener('touchstart', handlePointerDown, true);
+            document.removeEventListener('pointerdown', handlePointerDown);
         };
     }, [isHoverCapable, open, close]);
     // Tooltip content: render ShortNote if available; otherwise no tooltip
@@ -93,6 +101,6 @@ export default function SmartLink({ to, children, tipKey, icon, match }) {
         }
     }, [isHoverCapable, close]);
     const trigger = (_jsxs("span", { className: "lm-smartlink", "data-tipkey": tipKey ?? undefined, role: "group", onBlur: handleTriggerBlur, ref: triggerRef, children: [textNode, iconNode] }));
-    return (_jsx(Tooltip, { content: content, open: isHoverCapable ? undefined : open, onOpenChange: isHoverCapable ? undefined : noop, delayDuration: 150, maxWidth: 360, children: trigger }));
+    return (_jsx(Tooltip, { content: content, open: isHoverCapable ? undefined : open, onOpenChange: isHoverCapable ? undefined : noop, delayDuration: 150, maxWidth: 360, onContentNode: handleContentNode, children: trigger }));
 }
 //# sourceMappingURL=SmartLink.js.map
