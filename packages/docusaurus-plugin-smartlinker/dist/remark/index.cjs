@@ -4,328 +4,9 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 var unistUtilVisit = require('unist-util-visit');
 var path = require('path');
-require('fs');
-require('buffer');
-var url = require('url');
-require('perf_hooks');
-var zod = require('zod');
-require('gray-matter');
-require('@docusaurus/mdx-loader/lib/processor.js');
+var docusaurusPluginSmartlinker = require('docusaurus-plugin-smartlinker');
 
-var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
 // ../remark-smartlinker/src/transform.ts
-
-// src/pluginName.ts
-var PLUGIN_NAME = "docusaurus-plugin-smartlinker";
-
-// src/options.ts
-var TrimmedString = zod.z.string().transform((value) => value.trim()).refine((value) => value.length > 0, {
-  message: "Expected a non-empty string"
-});
-var TooltipComponentSchema = zod.z.union([
-  TrimmedString,
-  zod.z.object({
-    path: TrimmedString,
-    export: TrimmedString.optional()
-  })
-]);
-var DebugLevelSchema = zod.z.enum(["error", "warn", "info", "debug", "trace"]);
-var DebugOptionsSchema = zod.z.object({
-  enabled: zod.z.boolean().default(false),
-  level: DebugLevelSchema.default("warn")
-}).default({ enabled: false, level: "warn" });
-var TooltipComponentsRecord = zod.z.record(TooltipComponentSchema).default({}).transform((value) => {
-  const out = {};
-  for (const [alias, spec] of Object.entries(value)) {
-    const key = alias.trim();
-    if (!key) continue;
-    if (typeof spec === "string") {
-      out[key] = { importPath: spec };
-    } else {
-      out[key] = {
-        importPath: spec.path,
-        exportName: spec.export ?? void 0
-      };
-    }
-  }
-  return out;
-});
-var FolderSchema = zod.z.object({
-  path: TrimmedString,
-  defaultIcon: TrimmedString.optional(),
-  tooltipComponents: TooltipComponentsRecord
-});
-zod.z.object({
-  icons: zod.z.record(TrimmedString).default({}),
-  darkModeIcons: zod.z.record(TrimmedString).optional(),
-  iconProps: zod.z.record(zod.z.unknown()).optional(),
-  folders: zod.z.array(FolderSchema).default([]),
-  debug: DebugOptionsSchema
-}).transform((value) => {
-  const aggregated = {};
-  for (const folder of value.folders) {
-    for (const [alias, spec] of Object.entries(folder.tooltipComponents)) {
-      if (aggregated[alias]) continue;
-      aggregated[alias] = spec;
-    }
-  }
-  return { ...value, tooltipComponents: aggregated };
-});
-zod.z.object({
-  id: zod.z.string().optional(),
-  slug: zod.z.string().optional(),
-  title: zod.z.string().optional(),
-  "smartlink-terms": zod.z.array(zod.z.string()).optional(),
-  linkify: zod.z.boolean().optional(),
-  "smartlink-icon": zod.z.string().optional(),
-  "smartlink-short-note": zod.z.string().optional()
-});
-
-// src/indexProviderStore.ts
-var GLOBAL_KEY = Symbol.for("docusaurus-plugin-smartlinker.indexProvider");
-function readGlobalProvider() {
-  const store = globalThis;
-  const value = store[GLOBAL_KEY];
-  if (value && typeof value === "object") {
-    return value;
-  }
-  return void 0;
-}
-function getIndexProvider() {
-  return readGlobalProvider();
-}
-
-// src/logger.ts
-var LOG_LEVELS = ["error", "warn", "info", "debug", "trace"];
-var LEVEL_RANK = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  debug: 3,
-  trace: 4
-};
-var LEVEL_COLORS = {
-  error: "\x1B[31m",
-  warn: "\x1B[33m",
-  info: "\x1B[36m",
-  debug: "\x1B[35m",
-  trace: "\x1B[90m"
-};
-var COLOR_RESET = "\x1B[0m";
-function normalizeBoolean(value) {
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) {
-    return false;
-  }
-  if (["0", "false", "no", "off", "disable", "disabled"].includes(normalized)) {
-    return false;
-  }
-  if (["1", "true", "yes", "on", "enable", "enabled"].includes(normalized)) {
-    return true;
-  }
-  return true;
-}
-function normalizeLevel(value) {
-  const normalized = value.trim().toLowerCase();
-  if (LOG_LEVELS.includes(normalized)) {
-    return normalized;
-  }
-  return void 0;
-}
-function shouldUseColor(env) {
-  if (typeof process === "undefined") {
-    return false;
-  }
-  const stdout = process.stdout;
-  if (!stdout || typeof stdout.isTTY !== "boolean") {
-    return false;
-  }
-  if (!stdout.isTTY) {
-    return false;
-  }
-  const ci = env?.CI ?? process.env?.CI;
-  if (typeof ci === "string" && ci !== "" && ci !== "0" && ci.toLowerCase() !== "false") {
-    return false;
-  }
-  return true;
-}
-function getConsoleMethod(level) {
-  if (level === "error" && typeof console.error === "function") {
-    return console.error.bind(console);
-  }
-  if (level === "warn" && typeof console.warn === "function") {
-    return console.warn.bind(console);
-  }
-  return typeof console.log === "function" ? console.log.bind(console) : () => {
-  };
-}
-function formatFieldValue(value) {
-  if (value === void 0) {
-    return void 0;
-  }
-  if (value === null) {
-    return "null";
-  }
-  if (typeof value === "string") {
-    if (!value) {
-      return "''";
-    }
-    if (/\s/.test(value) || /["'\\]/.test(value)) {
-      return JSON.stringify(value);
-    }
-    return value;
-  }
-  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
-    return String(value);
-  }
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-}
-function formatDetails(details) {
-  if (!details) {
-    return "";
-  }
-  const parts = [];
-  for (const [key, rawValue] of Object.entries(details)) {
-    const formatted = formatFieldValue(rawValue);
-    if (formatted === void 0) continue;
-    parts.push(`${key}=${formatted}`);
-  }
-  return parts.length > 0 ? ` ${parts.join(" ")}` : "";
-}
-function resolveDetails(details) {
-  if (!details) {
-    return void 0;
-  }
-  if (typeof details === "function") {
-    try {
-      return details();
-    } catch {
-      return void 0;
-    }
-  }
-  return details;
-}
-function resolveDebugConfig(base, env = process.env) {
-  const fallback = base ?? { enabled: false, level: "warn" };
-  let enabled = fallback.enabled ?? false;
-  let level = fallback.level ?? "warn";
-  let source = "config";
-  const appliedOverrides = {};
-  let invalidLevel;
-  const envEnabledRaw = env?.DOCUSAURUS_PLUGIN_DEBUG;
-  if (typeof envEnabledRaw === "string") {
-    enabled = normalizeBoolean(envEnabledRaw);
-    appliedOverrides.enabled = enabled;
-    source = "env";
-  }
-  const envLevelRaw = env?.DOCUSAURUS_PLUGIN_DEBUG_LEVEL;
-  if (typeof envLevelRaw === "string") {
-    const normalized = normalizeLevel(envLevelRaw);
-    if (normalized) {
-      level = normalized;
-      appliedOverrides.level = normalized;
-      source = "env";
-    } else {
-      invalidLevel = envLevelRaw;
-    }
-  }
-  if (!LOG_LEVELS.includes(level)) {
-    level = "warn";
-  }
-  return {
-    config: { enabled, level },
-    source,
-    appliedOverrides,
-    invalidLevel
-  };
-}
-function createLogger(init) {
-  const { pluginName, debug } = init;
-  const env = init.env ?? process.env;
-  const now = init.now ?? (() => /* @__PURE__ */ new Date());
-  const active = Boolean(debug?.enabled);
-  const thresholdLevel = debug?.level ?? "warn";
-  const threshold = LEVEL_RANK[thresholdLevel] ?? LEVEL_RANK.warn;
-  const colorize = shouldUseColor(env);
-  const isLevelEnabled = (level) => {
-    if (!active) return false;
-    return LEVEL_RANK[level] <= threshold;
-  };
-  const write = (level, context, message, details) => {
-    if (!isLevelEnabled(level)) {
-      return;
-    }
-    const consoleMethod = getConsoleMethod(level);
-    const timestamp = now().toISOString();
-    const levelTag = `[${level.toUpperCase()}]`;
-    const coloredLevel = colorize ? `${LEVEL_COLORS[level]}${levelTag}${COLOR_RESET}` : levelTag;
-    const pluginTag = `[${pluginName}]`;
-    const contextTag = context ? ` [${context}]` : "";
-    const resolvedDetails = resolveDetails(details);
-    const detailStr = formatDetails(resolvedDetails);
-    const line = `${timestamp} ${coloredLevel} ${pluginTag}${contextTag} ${message}${detailStr}`.trimEnd();
-    consoleMethod(line);
-  };
-  const log = (level, context, message, details) => {
-    write(level, context, message, details);
-  };
-  const makeLevelLogger = (level) => {
-    return (context, message, details) => {
-      log(level, context, message, details);
-    };
-  };
-  const child = (context) => {
-    const scopedLog = (level, message, details) => {
-      log(level, context, message, details);
-    };
-    const makeScoped = (level) => {
-      return (message, details) => {
-        scopedLog(level, message, details);
-      };
-    };
-    return {
-      context,
-      level: thresholdLevel,
-      isLevelEnabled,
-      log: scopedLog,
-      error: makeScoped("error"),
-      warn: makeScoped("warn"),
-      info: makeScoped("info"),
-      debug: makeScoped("debug"),
-      trace: makeScoped("trace")
-    };
-  };
-  return {
-    level: thresholdLevel,
-    isLevelEnabled,
-    log,
-    error: makeLevelLogger("error"),
-    warn: makeLevelLogger("warn"),
-    info: makeLevelLogger("info"),
-    debug: makeLevelLogger("debug"),
-    trace: makeLevelLogger("trace"),
-    child
-  };
-}
-
-// src/debugStore.ts
-var GLOBAL_KEY2 = Symbol.for("docusaurus-plugin-smartlinker.debug");
-function getDebugConfig() {
-  const store = globalThis;
-  const value = store[GLOBAL_KEY2];
-  if (value && typeof value === "object") return value;
-  return void 0;
-}
-
-// src/index.ts
-path.dirname(url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href))));
 
 // ../remark-smartlinker/src/matcher.ts
 function isWordChar(ch) {
@@ -461,16 +142,16 @@ function normalizeFolderKey(value) {
 }
 function remarkSmartlinker(opts) {
   const options = opts ?? {};
-  const sharedDebug = typeof getDebugConfig === "function" ? getDebugConfig() : void 0;
+  const sharedDebug = typeof docusaurusPluginSmartlinker.getDebugConfig === "function" ? docusaurusPluginSmartlinker.getDebugConfig() : void 0;
   const debugInput = options.debug ?? sharedDebug;
-  const debugResolution = resolveDebugConfig(debugInput);
-  const baseLogger = createLogger({ pluginName: PLUGIN_NAME, debug: debugResolution.config });
+  const debugResolution = docusaurusPluginSmartlinker.resolveDebugConfig(debugInput);
+  const baseLogger = docusaurusPluginSmartlinker.createLogger({ pluginName: docusaurusPluginSmartlinker.PLUGIN_NAME, debug: debugResolution.config });
   const initLogger = baseLogger.child("remark:init");
   const prepareLogger = baseLogger.child("remark:prepare");
   const transformLogger = baseLogger.child("remark:transform");
   if (debugResolution.invalidLevel && typeof console !== "undefined" && typeof console.warn === "function") {
     console.warn(
-      `[${PLUGIN_NAME}] Ignoring DOCUSAURUS_PLUGIN_DEBUG_LEVEL="${debugResolution.invalidLevel}" (expected one of: error, warn, info, debug, trace).`
+      `[${docusaurusPluginSmartlinker.PLUGIN_NAME}] Ignoring DOCUSAURUS_PLUGIN_DEBUG_LEVEL="${debugResolution.invalidLevel}" (expected one of: error, warn, info, debug, trace).`
     );
   }
   const componentName = options.componentName ?? "SmartLink";
@@ -503,7 +184,7 @@ function remarkSmartlinker(opts) {
   let cachedFilterSignature = "";
   let prepared;
   function ensurePreparedIndex() {
-    const provider = options.index ?? getIndexProvider();
+    const provider = options.index ?? docusaurusPluginSmartlinker.getIndexProvider();
     if (!provider) {
       throw new Error(
         "[docusaurus-plugin-smartlinker] No index provider configured. Pass `{ index }` explicitly or make sure the Docusaurus plugin runs before this remark transformer."
@@ -812,7 +493,7 @@ function findCurrentTarget(args) {
 var src_default = remarkSmartlinker;
 
 // src/remark/index.ts
-var attacher = src_default ?? void 0 ?? src_default;
+var attacher = src_default;
 var remark_default = attacher;
 
 exports.buildMatcher = buildMatcher;
