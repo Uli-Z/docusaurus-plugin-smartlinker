@@ -151,3 +151,4 @@ Useful extras:
 ## License
 
 MIT — see [LICENSE](./LICENSE).
+.
