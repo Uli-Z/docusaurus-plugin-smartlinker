@@ -42,8 +42,8 @@ Generated artifacts are emitted to `packages/docusaurus-plugin-smartlinker/dist/
 
 ## Components & Repositories
 
-- [`package.json`](package.json): private workspace root targeting Node `>=18 <25`, configured with pnpm 9. Scripts proxy to the plugin workspace (`build`, `test`, `typecheck`), example site helpers (`site:*`), packaging (`pack:ci` which shells into the plugin workspace), and the tarball smoke harness (`smoke:git-install`).
-- [`packages/docusaurus-plugin-smartlinker`](packages/docusaurus-plugin-smartlinker): publishable package with TypeScript sources, `tsup.config.ts` for dual-format bundling, `scripts/postbuild-verify.mjs` to enforce dist integrity, Vitest configuration, and tracked `dist/` artifacts. The workspace now owns its README and MIT license so the published tarball is self-contained. Its `pack:ci` script performs a clean build and `pnpm pack` so packaging may be driven directly from the workspace (the root script delegates here).
+- [`package.json`](package.json): private workspace root targeting Node `>=18 <25`, configured with pnpm 9. Scripts proxy to the plugin workspace (`build`, `test`, `typecheck`), example site helpers (`site:*`), packaging (`pack:ci` which repacks the plugin tarball into `build-artifacts/`), and the tarball smoke harness (`smoke:git-install`).
+- [`packages/docusaurus-plugin-smartlinker`](packages/docusaurus-plugin-smartlinker): publishable package with TypeScript sources, `tsup.config.ts` for dual-format bundling, `scripts/postbuild-verify.mjs` to enforce dist integrity, Vitest configuration, and tracked `dist/` artifacts. The workspace now owns its README and MIT license so the published tarball is self-contained. Its `pack:ci` script chains `pnpm clean && pnpm build && pnpm pack --silent` to produce a deterministic tarball that the root script can delegate to.
 - [`packages/remark-smartlinker`](packages/remark-smartlinker): legacy workspace retained for tests and TypeScript sources; runtime bundles are emitted from the plugin’s `dist/remark`. Keep until the layout is simplified.
 - [`examples/site`](examples/site): Docusaurus project consuming the plugin via a workspace `link:` dependency. Commands are proxied through root `site:*` scripts.
 - [`scripts`](scripts): currently houses `git-install-smoke.mjs`, which packs the repository, rewrites the example site dependency to the generated tarball, installs, and triggers `docusaurus build`.
@@ -183,9 +183,11 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 ## CI/CD
 
 - **Workflow**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
-  - Triggered on pushes to `main`, pull requests, and manual dispatch.
-  - Runs on Node 20 with pnpm 9.
-  - Steps: checkout → setup pnpm → install (`pnpm install --frozen-lockfile`) → `pnpm typecheck` → `pnpm --filter docusaurus-plugin-smartlinker run test` → `pnpm --filter docusaurus-plugin-smartlinker run build` → `pnpm --filter @examples/site run build`.
+  - Triggered on pushes to `main`, pull requests targeting `main`, and manual dispatch.
+  - Two named jobs expose branch-protection checks on Node 20 with pnpm 9:
+    - `ci / build`: checkout → setup pnpm → install (`pnpm install --frozen-lockfile`) → `pnpm typecheck` → `pnpm --filter docusaurus-plugin-smartlinker run test` → `pnpm --filter docusaurus-plugin-smartlinker run build` → `pnpm --filter @examples/site run build` (link dependency path).
+    - `ci / pack-ci`: depends on `build`, re-installs dependencies, runs `pnpm -C packages/docusaurus-plugin-smartlinker run pack:ci`, asserts the tarball only contains `dist/**`, `README.md`, `LICENSE`, `package.json`, then replaces the example site's dependency with the tarball and rebuilds before resetting manifests.
+  - Both jobs run under Corepack-enabled pnpm 9 with frozen lockfile installs.
 - **Pages Deploy**: [`.github/workflows/deploy-example-site.yml`](.github/workflows/deploy-example-site.yml)
   - Triggered on push to `main` and `work`, plus manual dispatch.
   - Builds packages and example site with pnpm before uploading to GitHub Pages.
