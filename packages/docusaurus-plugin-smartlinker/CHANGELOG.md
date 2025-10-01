@@ -4,7 +4,7 @@
 
 - _Nothing yet._
 
-## 0.2.0-alpha — Dual-format packaging & tooling
+## 0.2.0 — Dual-format packaging & tooling
 
 - Aligned SmartLink tooltip/link styling with Infima tokens and exposed `--lm-*` overrides while documenting bespoke defaults.
 - Switched workspace scripts and integration tests to pnpm, introduced tarball smoke coverage, and aliased the remark helper to the plugin dist.
