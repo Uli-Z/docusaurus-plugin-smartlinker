@@ -28,15 +28,15 @@
     "LICENSE"
   ],
   "scripts": {
-    "clean": "rimraf dist dist-tsc",
-    "build": "pnpm run clean && pnpm run build:tsc && pnpm run build:bundle && pnpm run postbuild",
-    "build:tsc": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "build": "pnpm clean && pnpm run build:tsc && pnpm run build:bundle && pnpm run postbuild",
+    "build:tsc": "rimraf dist-tsc && tsc -p tsconfig.json",
     "build:bundle": "tsup",
     "postbuild": "node ./scripts/postbuild-verify.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "prepack": "pnpm run clean && pnpm run build",
-    "pack:ci": "pnpm run clean && pnpm run build && pnpm pack --silent"
+    "prepack": "pnpm clean && pnpm build",
+    "pack:ci": "pnpm clean && pnpm build && pnpm pack --silent"
   },
   "peerDependencies": {
     "@docusaurus/core": "^3.0.0",

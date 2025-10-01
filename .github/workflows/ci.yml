@@ -1,18 +1,18 @@
-name: CI
+name: ci
 
 on:
   push:
     branches:
       - main
   pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  verify:
+  build:
+    name: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20.x]
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -22,10 +22,10 @@ jobs:
         with:
           version: 9.0.0
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -41,5 +41,52 @@ jobs:
       - name: Build plugin package
         run: pnpm --filter docusaurus-plugin-smartlinker run build
 
-      - name: Build example site
+      - name: Build example site (link dependency)
         run: pnpm --filter @examples/site run build
+
+  pack-ci:
+    name: pack-ci
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run pack:ci
+        run: pnpm -C packages/docusaurus-plugin-smartlinker run pack:ci
+
+      - name: Verify tarball contents
+        run: |
+          TARBALL=$(ls -1t packages/docusaurus-plugin-smartlinker/*.tgz | head -n1)
+          echo "Inspecting $TARBALL"
+          tar -tf "$TARBALL" | tee tar-contents.txt
+          if grep -Ev '^package/(dist(/|$)|README\.md$|LICENSE$|package\.json$)' tar-contents.txt; then
+            echo "Tarball contains unexpected files" >&2
+            exit 1
+          fi
+
+      - name: Build example site from tarball
+        run: |
+          TARBALL=$(ls -1t packages/docusaurus-plugin-smartlinker/*.tgz | head -n1)
+          pnpm -C examples/site remove docusaurus-plugin-smartlinker || true
+          pnpm -C examples/site add "file:../../packages/docusaurus-plugin-smartlinker/$(basename "$TARBALL")"
+          pnpm -C examples/site run build
+
+      - name: Restore workspace manifests
+        run: |
+          git checkout -- pnpm-lock.yaml examples/site/package.json
