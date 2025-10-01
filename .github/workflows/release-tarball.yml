@@ -31,6 +31,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Sync package version with tag
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        working-directory: packages/docusaurus-plugin-smartlinker
+        run: |
+          set -eo pipefail
+          VERSION="$GITHUB_REF_NAME"
+          if [[ "$VERSION" == v* ]]; then
+            VERSION="${VERSION:1}"
+          fi
+          echo "Setting package version to $VERSION"
+          npm version --no-git-tag-version "$VERSION"
+
       - name: Build plugin
         working-directory: packages/docusaurus-plugin-smartlinker
         run: pnpm build
