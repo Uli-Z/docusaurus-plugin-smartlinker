@@ -1,0 +1,1727 @@
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/index.cjs b/packages/docusaurus-plugin-smartlinker/dist/index.cjs
+index 99f4ab793ef8b628e719b1d5b0b245aa1be5e252..0867a6bc322f2794a4e6797350981ad338a94481 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/index.cjs
++++ b/packages/docusaurus-plugin-smartlinker/dist/index.cjs
+@@ -883,50 +883,100 @@ function createLogger(init) {
+     warn: makeLevelLogger("warn"),
+     info: makeLevelLogger("info"),
+     debug: makeLevelLogger("debug"),
+     trace: makeLevelLogger("trace"),
+     child
+   };
+ }
+ 
+ // src/debugStore.ts
+ var GLOBAL_KEY2 = Symbol.for("docusaurus-plugin-smartlinker.debug");
+ function setDebugConfig(config) {
+   const store = globalThis;
+   if (!config) {
+     delete store[GLOBAL_KEY2];
+   } else {
+     store[GLOBAL_KEY2] = config;
+   }
+ }
+ function getDebugConfig() {
+   const store = globalThis;
+   const value = store[GLOBAL_KEY2];
+   if (value && typeof value === "object") return value;
+   return void 0;
+ }
+ 
++// src/metricsStore.ts
++var termProcessingMs = 0;
++var indexBuildMs = 0;
++function normalizeDuration(value) {
++  if (!Number.isFinite(value) || value < 0) {
++    return 0;
++  }
++  return Number(value.toFixed(2));
++}
++function recordTermProcessingMs(durationMs) {
++  const normalized = normalizeDuration(durationMs);
++  if (normalized <= 0) {
++    return;
++  }
++  termProcessingMs += normalized;
++}
++function getTermProcessingMs() {
++  return Number(termProcessingMs.toFixed(2));
++}
++function consumeTermProcessingMs() {
++  const total = getTermProcessingMs();
++  termProcessingMs = 0;
++  return total;
++}
++function resetTermProcessingMs() {
++  termProcessingMs = 0;
++}
++function recordIndexBuildMs(durationMs) {
++  const normalized = normalizeDuration(durationMs);
++  if (normalized <= 0) {
++    return;
++  }
++  indexBuildMs += normalized;
++}
++function getIndexBuildMs() {
++  return Number(indexBuildMs.toFixed(2));
++}
++function consumeIndexBuildMs() {
++  const total = getIndexBuildMs();
++  indexBuildMs = 0;
++  return total;
++}
++function resetIndexBuildMs() {
++  indexBuildMs = 0;
++}
++function resetMetrics() {
++  resetTermProcessingMs();
++  resetIndexBuildMs();
++}
++
+ // src/fsIndexProvider.ts
+ function createFsIndexProvider(opts) {
+   const resolvedRoots = (opts.roots ?? []).map((root) => {
+     const normalized = root.replace(/\\/g, "/").replace(/\/+$/, "");
+     return { path: root, id: normalized || "." };
+   });
+   const files = resolvedRoots.flatMap((root) => {
+     const scanned = scanMdFiles({ roots: [root.path] });
+     return scanned.map((file) => ({ ...file, folderId: root.id }));
+   });
+   const { entries } = loadIndexFromFiles(files);
+   const targets = entries.map((e) => ({
+     id: e.id,
+     slug: e.slug,
+     icon: e.icon,
+     sourcePath: e.sourcePath,
+     terms: e.terms,
+     folderId: e.folderId ?? null
+   }));
+   return {
+     getAllTargets() {
+       return targets;
+     },
+     getCurrentFilePath(file) {
+       return file.path || "";
+@@ -941,71 +991,74 @@ function normalizeFolderId(siteDir, absPath) {
+   const candidate = useRelative ? relPath : absPath;
+   const normalized = candidate.replace(/\\/g, "/").replace(/\/+$/, "");
+   return normalized || ".";
+ }
+ var moduleDir = path.dirname(url.fileURLToPath((typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('index.cjs', document.baseURI).href))));
+ var pluginName = PLUGIN_NAME;
+ function publishGlobalData(actions, opts, entries) {
+   const registryMeta = entries.map(({ id, slug, icon, folderId, docId, permalink }) => ({
+     id,
+     slug,
+     icon: icon ?? null,
+     folderId: folderId ?? null,
+     docId: docId ?? null,
+     permalink: permalink ?? null
+   }));
+   actions.setGlobalData({ options: opts, entries: registryMeta });
+ }
+ function smartlinkerPlugin(_context, optsIn) {
+   const { options: validatedOptions, warnings } = validateOptions(optsIn);
+   const debugResolution = resolveDebugConfig(validatedOptions.debug);
+   const normOpts = {
+     ...validatedOptions,
+     debug: debugResolution.config
+   };
+   setDebugConfig(normOpts.debug);
++  resetMetrics();
+   if (normOpts.folders.length === 0) {
+     throw new Error(
+       `[${pluginName}] Configure at least one folder via the \`folders\` option.`
+     );
+   }
+   const logger = createLogger({ pluginName, debug: normOpts.debug });
+   const initLogger = logger.child("init");
+   const optionsLogger = logger.child("options");
+   const scanLogger = logger.child("scan");
+   const indexLogger = logger.child("index");
+   const loadLogger = logger.child("loadContent");
+   const contentLogger = logger.child("contentLoaded");
+   const webpackLogger = logger.child("configureWebpack");
+   const postBuildLogger = logger.child("postBuild");
+   const stats = {
+     scannedFileCount: 0,
+     entryCount: 0,
+     noteCount: 0,
+     resolvedCount: 0,
+     reusedPrimedFiles: false,
+-    registryBytes: 0
++    registryBytes: 0,
++    indexBuildMs: 0,
++    termProcessingMs: 0
+   };
+   const shouldMeasure = (log, ...levels) => levels.some((level) => log.isLevelEnabled(level));
+   const startTimer = (log, ...levels) => shouldMeasure(log, ...levels) ? perf_hooks.performance.now() : null;
+   const endTimer = (start) => {
+     if (start === null) return void 0;
+     return Number((perf_hooks.performance.now() - start).toFixed(2));
+   };
+   const formatSiteRelativePath = (absPath) => {
+     const relPath = path.relative(_context.siteDir, absPath);
+     const useRel = relPath && !relPath.startsWith("..") && !path.isAbsolute(relPath);
+     const normalized = (useRel ? relPath : absPath).replace(/\\/g, "/");
+     return normalized || ".";
+   };
+   if (debugResolution.invalidLevel && typeof console !== "undefined" && typeof console.warn === "function") {
+     console.warn(
+       `[${pluginName}] Ignoring DOCUSAURUS_PLUGIN_DEBUG_LEVEL="${debugResolution.invalidLevel}" (expected one of: error, warn, info, debug, trace).`
+     );
+   }
+   if (normOpts.debug.enabled && initLogger.isLevelEnabled("info")) {
+     initLogger.info("Debug mode enabled", {
+       level: normOpts.debug.level,
+       source: debugResolution.source
+     });
+   }
+   if (initLogger.isLevelEnabled("debug")) {
+@@ -1061,99 +1114,103 @@ function smartlinkerPlugin(_context, optsIn) {
+     }
+     if (scanLogger.isLevelEnabled("trace") && files.length > 0) {
+       scanLogger.trace("Collected SmartLink files", () => ({
+         files: files.map((file) => formatSiteRelativePath(file.path))
+       }));
+     }
+     return files;
+   };
+   const applyFolderDefaults = (entries) => {
+     for (const entry of entries) {
+       const folder = entry.folderId ? folderById.get(entry.folderId) : void 0;
+       if (!folder) continue;
+       if (!entry.icon && folder.defaultIcon && normOpts.icons[folder.defaultIcon]) {
+         entry.icon = folder.defaultIcon;
+       }
+     }
+   };
+   const computeDocIdForEntry = (entry) => {
+     const folder = entry.folderId ? folderById.get(entry.folderId) : void 0;
+     if (!folder) return void 0;
+     return deriveDocId(folder.absPath, entry.sourcePath);
+   };
+   const primeIndexProvider = () => {
+     const start = startTimer(indexLogger, "debug", "info");
+     primedFiles = collectFiles();
++    const indexBuildStart = perf_hooks.performance.now();
+     const { entries } = loadIndexFromFiles(primedFiles);
+     applyFolderDefaults(entries);
+     setIndexEntries(entries);
+     stats.entryCount = entries.length;
++    recordIndexBuildMs(perf_hooks.performance.now() - indexBuildStart);
+     if (indexLogger.isLevelEnabled("debug")) {
+       indexLogger.debug("Primed SmartLink index provider", {
+         entryCount: entries.length,
+         durationMs: endTimer(start)
+       });
+     }
+     if (indexLogger.isLevelEnabled("trace") && entries.length > 0) {
+       indexLogger.trace("Primed entry identifiers", () => ({
+         entryIds: entries.map((entry) => entry.id)
+       }));
+     }
+   };
+   primeIndexProvider();
+   return {
+     name: pluginName,
+     configureWebpack() {
+       if (webpackLogger.isLevelEnabled("debug")) {
+         webpackLogger.debug("configureWebpack invoked", {
+           tooltipComponentCount: Object.keys(normOpts.tooltipComponents ?? {}).length
+         });
+       }
+       return {};
+     },
+     async loadContent() {
+       const usingPrimed = primedFiles !== null;
+       const start = startTimer(loadLogger, "info", "debug");
+       const files = primedFiles ?? collectFiles();
+       primedFiles = null;
+       stats.reusedPrimedFiles = usingPrimed;
+       stats.scannedFileCount = files.length;
+       if (loadLogger.isLevelEnabled("debug")) {
+         loadLogger.debug("Building SmartLink artifacts", {
+           fileCount: files.length,
+           reusedPrimedFiles: usingPrimed
+         });
+       }
+       if (loadLogger.isLevelEnabled("trace") && files.length > 0) {
+         loadLogger.trace("Processing SmartLink files", () => ({
+           files: files.map((file) => formatSiteRelativePath(file.path))
+         }));
+       }
+       const compileMdx = await createTooltipMdxCompiler(_context);
++      const indexBuildStart = perf_hooks.performance.now();
+       const { entries, notes, registry } = await buildArtifacts(files, {
+         compileMdx
+       });
++      recordIndexBuildMs(perf_hooks.performance.now() - indexBuildStart);
+       stats.entryCount = entries.length;
+       stats.noteCount = notes.length;
+       stats.registryBytes = buffer.Buffer.byteLength(registry.contents, "utf8");
+       applyFolderDefaults(entries);
+       setIndexEntries(entries);
+       if (loadLogger.isLevelEnabled("info")) {
+         loadLogger.info("Completed SmartLink artifact build", {
+           entryCount: entries.length,
+           noteCount: notes.length,
+           durationMs: endTimer(start)
+         });
+       }
+       if (loadLogger.isLevelEnabled("debug")) {
+         loadLogger.debug("Registry artifacts prepared", {
+           registryBytes: stats.registryBytes
+         });
+       }
+       if (loadLogger.isLevelEnabled("trace") && entries.length > 0) {
+         loadLogger.trace("Generated SmartLink entries", () => ({
+           entryIds: entries.map((entry) => entry.id),
+           noteFiles: notes.map((note) => note.filename)
+         }));
+       }
+       return {
+         entries,
+@@ -1186,60 +1243,73 @@ function smartlinkerPlugin(_context, optsIn) {
+       const enrichedEntries = entries.map((entry) => ({
+         ...entry,
+         docId: entry.docId ?? computeDocIdForEntry(entry)
+       }));
+       const docsContent = loadDocsContentFromGenerated(_context.generatedFilesDir);
+       const resolved = resolveEntryPermalinks({
+         siteDir: _context.siteDir,
+         entries: enrichedEntries,
+         docsContent
+       });
+       stats.resolvedCount = resolved.length;
+       publishGlobalData(actions, opts, resolved);
+       if (contentLogger.isLevelEnabled("info")) {
+         contentLogger.info("Published SmartLink global data", {
+           entryCount: resolved.length,
+           durationMs: endTimer(start)
+         });
+       }
+       if (contentLogger.isLevelEnabled("trace") && resolved.length > 0) {
+         contentLogger.trace("Resolved SmartLink permalinks", () => ({
+           permalinks: resolved.map((entry) => entry.permalink ?? null)
+         }));
+       }
+     },
+     async postBuild() {
+-      if (!postBuildLogger.isLevelEnabled("info")) {
+-        return;
++      const termProcessingMs2 = consumeTermProcessingMs();
++      const indexBuildMs2 = consumeIndexBuildMs();
++      stats.termProcessingMs = termProcessingMs2;
++      stats.indexBuildMs = indexBuildMs2;
++      if (postBuildLogger.isLevelEnabled("info")) {
++        postBuildLogger.info("SmartLink build complete", {
++          entryCount: stats.resolvedCount,
++          noteCount: stats.noteCount,
++          filesScanned: stats.scannedFileCount,
++          reusedPrimedFiles: stats.reusedPrimedFiles,
++          registryBytes: stats.registryBytes,
++          indexBuildMs: stats.indexBuildMs,
++          termProcessingMs: stats.termProcessingMs
++        });
++      }
++      if (postBuildLogger.isLevelEnabled("debug")) {
++        postBuildLogger.debug("Term processing duration", {
++          termProcessingMs: termProcessingMs2
++        });
++        postBuildLogger.debug("Index build duration", {
++          indexBuildMs: indexBuildMs2
++        });
+       }
+-      postBuildLogger.info("SmartLink build complete", {
+-        entryCount: stats.resolvedCount,
+-        noteCount: stats.noteCount,
+-        filesScanned: stats.scannedFileCount,
+-        reusedPrimedFiles: stats.reusedPrimedFiles,
+-        registryBytes: stats.registryBytes
+-      });
+     },
+     getThemePath() {
+       return path.join(moduleDir, "theme", "runtime");
+     },
+     getTypeScriptThemePath() {
+       return path.join(moduleDir, "theme");
+     },
+     getClientModules() {
+       return [path.join(moduleDir, "theme/styles.css")];
+     }
+   };
+ }
+ function deriveDocId(folderAbsPath, sourcePath) {
+   if (!sourcePath) return void 0;
+   const rel = path.relative(folderAbsPath, sourcePath);
+   if (!rel || rel.startsWith("..")) return void 0;
+   const normalized = rel.replace(/\\/g, "/");
+   const withoutExt = normalized.replace(/\.[^./]+$/u, "");
+   return withoutExt || void 0;
+ }
+ function loadDocsContentFromGenerated(generatedFilesDir) {
+   const root = path.join(generatedFilesDir, "docusaurus-plugin-content-docs");
+   const result = {};
+   let pluginIds = [];
+   try {
+@@ -1260,34 +1330,43 @@ function loadDocsContentFromGenerated(generatedFilesDir) {
+     for (const file of fs.readdirSync(pluginDir)) {
+       if (!file.endsWith(".json")) continue;
+       if (file.startsWith("__")) continue;
+       const abs = path.join(pluginDir, file);
+       try {
+         const parsed = JSON.parse(fs.readFileSync(abs, "utf8"));
+         if (parsed && typeof parsed === "object" && typeof parsed.permalink === "string") {
+           docs.push(parsed);
+         }
+       } catch {
+         continue;
+       }
+     }
+     result[pluginId] = {
+       loadedVersions: [
+         {
+           docs
+         }
+       ]
+     };
+   }
+   return result;
+ }
+ 
+ exports.PLUGIN_NAME = PLUGIN_NAME;
++exports.consumeIndexBuildMs = consumeIndexBuildMs;
++exports.consumeTermProcessingMs = consumeTermProcessingMs;
+ exports.createFsIndexProvider = createFsIndexProvider;
+ exports.createLogger = createLogger;
+ exports.default = smartlinkerPlugin;
+ exports.getDebugConfig = getDebugConfig;
++exports.getIndexBuildMs = getIndexBuildMs;
+ exports.getIndexProvider = getIndexProvider;
++exports.getTermProcessingMs = getTermProcessingMs;
++exports.recordIndexBuildMs = recordIndexBuildMs;
++exports.recordTermProcessingMs = recordTermProcessingMs;
++exports.resetIndexBuildMs = resetIndexBuildMs;
++exports.resetMetrics = resetMetrics;
++exports.resetTermProcessingMs = resetTermProcessingMs;
+ exports.resolveDebugConfig = resolveDebugConfig;
+ exports.setDebugConfig = setDebugConfig;
+ //# sourceMappingURL=index.cjs.map
+ //# sourceMappingURL=index.cjs.map
+\ No newline at end of file
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/index.cjs.map b/packages/docusaurus-plugin-smartlinker/dist/index.cjs.map
+index 7ca44951f0f0d2213135a1e1a6d7434c3da31d1c..007ea81802021d24dfdcc6e3ac3f34f26d8aafaa 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/index.cjs.map
++++ b/packages/docusaurus-plugin-smartlinker/dist/index.cjs.map
+@@ -1 +1 @@
+-{"version":3,"sources":["../src/pluginName.ts","../src/options.ts","../src/node/fsScan.ts","../src/frontmatter.ts","../src/codegen/notesEmitter.ts","../src/codegen/registryEmitter.ts","../src/node/buildPipeline.ts","../src/codegen/tooltipComponentsEmitter.ts","../src/node/tooltipMdxCompiler.ts","../src/indexProviderStore.ts","../src/frontmatterAdapter.ts","../src/node/permalinkResolver.ts","../src/logger.ts","../src/debugStore.ts","../src/fsIndexProvider.ts","../src/index.ts"],"names":["z","readdirSync","join","statSync","readFileSync","relative","matter","safeId","createProcessorUncached","pluginName","GLOBAL_KEY","isAbsolute","dirname","fileURLToPath","performance","resolve","Buffer"],"mappings":"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
+\ No newline at end of file
++{"version":3,"sources":["../src/pluginName.ts","../src/options.ts","../src/node/fsScan.ts","../src/frontmatter.ts","../src/codegen/notesEmitter.ts","../src/codegen/registryEmitter.ts","../src/node/buildPipeline.ts","../src/codegen/tooltipComponentsEmitter.ts","../src/node/tooltipMdxCompiler.ts","../src/indexProviderStore.ts","../src/frontmatterAdapter.ts","../src/node/permalinkResolver.ts","../src/logger.ts","../src/debugStore.ts","../src/metricsStore.ts","../src/fsIndexProvider.ts","../src/index.ts"],"names":["z","readdirSync","join","statSync","readFileSync","relative","matter","safeId","createProcessorUncached","pluginName","GLOBAL_KEY","isAbsolute","dirname","fileURLToPath","performance","resolve","Buffer","termProcessingMs","indexBuildMs"],"mappings":"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
+\ No newline at end of file
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/index.d.cts b/packages/docusaurus-plugin-smartlinker/dist/index.d.cts
+index 9e8ed21cc7a0254187640ffb4e0ca6a7468f4859..9b89caf4d3d61d37772a5bc875f836d77ffca08d 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/index.d.cts
++++ b/packages/docusaurus-plugin-smartlinker/dist/index.d.cts
+@@ -206,34 +206,44 @@ interface ContextLogger {
+     context: string;
+     level: LogLevel;
+     isLevelEnabled(level: LogLevel): boolean;
+     log(level: LogLevel, message: string, details?: LogDetails): void;
+     error(message: string, details?: LogDetails): void;
+     warn(message: string, details?: LogDetails): void;
+     info(message: string, details?: LogDetails): void;
+     debug(message: string, details?: LogDetails): void;
+     trace(message: string, details?: LogDetails): void;
+ }
+ interface DebugResolution {
+     config: DebugOptions;
+     source: 'config' | 'env';
+     appliedOverrides: {
+         enabled?: boolean;
+         level?: LogLevel;
+     };
+     invalidLevel?: string;
+ }
+ declare function resolveDebugConfig(base: DebugOptions | undefined, env?: NodeJS.ProcessEnv): DebugResolution;
+ declare function createLogger(init: LoggerInit): PluginLogger;
+ 
+ declare function setDebugConfig(config: DebugOptions | undefined): void;
+ declare function getDebugConfig(): DebugOptions | undefined;
+ 
++declare function recordTermProcessingMs(durationMs: number): void;
++declare function getTermProcessingMs(): number;
++declare function consumeTermProcessingMs(): number;
++declare function resetTermProcessingMs(): void;
++declare function recordIndexBuildMs(durationMs: number): void;
++declare function getIndexBuildMs(): number;
++declare function consumeIndexBuildMs(): number;
++declare function resetIndexBuildMs(): void;
++declare function resetMetrics(): void;
++
+ type Content = {
+     entries: IndexRawEntry[];
+     notes: NoteModule[];
+     registry: RegistryModule;
+     opts: NormalizedOptions;
+ };
+ declare function smartlinkerPlugin(_context: LoadContext, optsIn?: PluginOptions): Plugin<Content>;
+ 
+-export { type DebugOptions, type FsIndexProviderOptions, type IndexProvider, type LogLevel, PLUGIN_NAME, type PluginOptions, type TargetInfo, createFsIndexProvider, createLogger, smartlinkerPlugin as default, getDebugConfig, getIndexProvider, resolveDebugConfig, setDebugConfig };
++export { type DebugOptions, type FsIndexProviderOptions, type IndexProvider, type LogLevel, PLUGIN_NAME, type PluginOptions, type TargetInfo, consumeIndexBuildMs, consumeTermProcessingMs, createFsIndexProvider, createLogger, smartlinkerPlugin as default, getDebugConfig, getIndexBuildMs, getIndexProvider, getTermProcessingMs, recordIndexBuildMs, recordTermProcessingMs, resetIndexBuildMs, resetMetrics, resetTermProcessingMs, resolveDebugConfig, setDebugConfig };
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/index.d.ts b/packages/docusaurus-plugin-smartlinker/dist/index.d.ts
+index 9b3fee47c52f979b0b626ca2237b4e35fc54437b..165afdb5486f4a8deb7c5711e8980565265b71fe 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/index.d.ts
++++ b/packages/docusaurus-plugin-smartlinker/dist/index.d.ts
+@@ -1,22 +1,23 @@
+ import type { Plugin } from '@docusaurus/types';
+ import type { LoadContext } from '@docusaurus/types';
+ import { type PluginOptions, type NormalizedOptions } from './options.js';
+ import type { IndexRawEntry } from './types.js';
+ import type { NoteModule } from './codegen/notesEmitter.js';
+ import type { RegistryModule } from './codegen/registryEmitter.js';
+ export type { FsIndexProviderOptions, IndexProvider, TargetInfo, } from './fsIndexProvider.js';
+ export { createFsIndexProvider } from './fsIndexProvider.js';
+ export { PLUGIN_NAME } from './pluginName.js';
+ export { getIndexProvider } from './indexProviderStore.js';
+ export { resolveDebugConfig, createLogger, type LogLevel } from './logger.js';
+ export type { DebugOptions } from './options.js';
+ export { getDebugConfig, setDebugConfig } from './debugStore.js';
++export { recordIndexBuildMs, resetMetrics, resetTermProcessingMs, recordTermProcessingMs, resetIndexBuildMs, consumeIndexBuildMs, consumeTermProcessingMs, getIndexBuildMs, getTermProcessingMs, } from './metricsStore.js';
+ export type { PluginOptions } from './options.js';
+ type Content = {
+     entries: IndexRawEntry[];
+     notes: NoteModule[];
+     registry: RegistryModule;
+     opts: NormalizedOptions;
+ };
+ export default function smartlinkerPlugin(_context: LoadContext, optsIn?: PluginOptions): Plugin<Content>;
+ //# sourceMappingURL=index.d.ts.map
+\ No newline at end of file
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/index.d.ts.map b/packages/docusaurus-plugin-smartlinker/dist/index.d.ts.map
+index a7014f00769a919e7bc98f0dfa9255fdfb3bd41f..59bd18bbc2714e0df24ea33ed50828889ea0220d 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/index.d.ts.map
++++ b/packages/docusaurus-plugin-smartlinker/dist/index.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../src/index.ts"],"names":[],"mappings":"AAKA,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,mBAAmB,CAAC;AAChD,OAAO,KAAK,EAAE,WAAW,EAA8B,MAAM,mBAAmB,CAAC;AACjF,OAAO,EAEL,KAAK,aAAa,EAClB,KAAK,iBAAiB,EAEvB,MAAM,cAAc,CAAC;AAGtB,OAAO,KAAK,EAAE,aAAa,EAAc,MAAM,YAAY,CAAC;AAC5D,OAAO,KAAK,EAAE,UAAU,EAAE,MAAM,2BAA2B,CAAC;AAC5D,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,8BAA8B,CAAC;AAWnE,YAAY,EACV,sBAAsB,EACtB,aAAa,EACb,UAAU,GACX,MAAM,sBAAsB,CAAC;AAC9B,OAAO,EAAE,qBAAqB,EAAE,MAAM,sBAAsB,CAAC;AAC7D,OAAO,EAAE,WAAW,EAAE,MAAM,iBAAiB,CAAC;AAC9C,OAAO,EAAE,gBAAgB,EAAE,MAAM,yBAAyB,CAAC;AAE3D,OAAO,EAAE,kBAAkB,EAAE,YAAY,EAAE,KAAK,QAAQ,EAAE,MAAM,aAAa,CAAC;AAC9E,YAAY,EAAE,YAAY,EAAE,MAAM,cAAc,CAAC;AACjD,OAAO,EAAE,cAAc,EAAE,cAAc,EAAE,MAAM,iBAAiB,CAAC;AAEjE,YAAY,EAAE,aAAa,EAAE,MAAM,cAAc,CAAC;AAElD,KAAK,OAAO,GAAG;IACb,OAAO,EAAE,aAAa,EAAE,CAAC;IACzB,KAAK,EAAE,UAAU,EAAE,CAAC;IACpB,QAAQ,EAAE,cAAc,CAAC;IACzB,IAAI,EAAE,iBAAiB,CAAC;CACzB,CAAC;AAsCF,MAAM,CAAC,OAAO,UAAU,iBAAiB,CACvC,QAAQ,EAAE,WAAW,EACrB,MAAM,CAAC,EAAE,aAAa,GACrB,MAAM,CAAC,OAAO,CAAC,CAmVjB"}
+\ No newline at end of file
++{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../src/index.ts"],"names":[],"mappings":"AAKA,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,mBAAmB,CAAC;AAChD,OAAO,KAAK,EAAE,WAAW,EAA8B,MAAM,mBAAmB,CAAC;AACjF,OAAO,EAEL,KAAK,aAAa,EAClB,KAAK,iBAAiB,EAEvB,MAAM,cAAc,CAAC;AAGtB,OAAO,KAAK,EAAE,aAAa,EAAc,MAAM,YAAY,CAAC;AAC5D,OAAO,KAAK,EAAE,UAAU,EAAE,MAAM,2BAA2B,CAAC;AAC5D,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,8BAA8B,CAAC;AAiBnE,YAAY,EACV,sBAAsB,EACtB,aAAa,EACb,UAAU,GACX,MAAM,sBAAsB,CAAC;AAC9B,OAAO,EAAE,qBAAqB,EAAE,MAAM,sBAAsB,CAAC;AAC7D,OAAO,EAAE,WAAW,EAAE,MAAM,iBAAiB,CAAC;AAC9C,OAAO,EAAE,gBAAgB,EAAE,MAAM,yBAAyB,CAAC;AAE3D,OAAO,EAAE,kBAAkB,EAAE,YAAY,EAAE,KAAK,QAAQ,EAAE,MAAM,aAAa,CAAC;AAC9E,YAAY,EAAE,YAAY,EAAE,MAAM,cAAc,CAAC;AACjD,OAAO,EAAE,cAAc,EAAE,cAAc,EAAE,MAAM,iBAAiB,CAAC;AACjE,OAAO,EACL,kBAAkB,EAClB,YAAY,EACZ,qBAAqB,EACrB,sBAAsB,EACtB,iBAAiB,EACjB,mBAAmB,EACnB,uBAAuB,EACvB,eAAe,EACf,mBAAmB,GACpB,MAAM,mBAAmB,CAAC;AAE3B,YAAY,EAAE,aAAa,EAAE,MAAM,cAAc,CAAC;AAElD,KAAK,OAAO,GAAG;IACb,OAAO,EAAE,aAAa,EAAE,CAAC;IACzB,KAAK,EAAE,UAAU,EAAE,CAAC;IACpB,QAAQ,EAAE,cAAc,CAAC;IACzB,IAAI,EAAE,iBAAiB,CAAC;CACzB,CAAC;AAsCF,MAAM,CAAC,OAAO,UAAU,iBAAiB,CACvC,QAAQ,EAAE,WAAW,EACrB,MAAM,CAAC,EAAE,aAAa,GACrB,MAAM,CAAC,OAAO,CAAC,CAyWjB"}
+\ No newline at end of file
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/index.mjs b/packages/docusaurus-plugin-smartlinker/dist/index.mjs
+index 10b652180dfcf07f6e69df8d4dd5b0fac72b7032..2c3ab7a6f2df1bdab7076571170ddf98b1f88114 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/index.mjs
++++ b/packages/docusaurus-plugin-smartlinker/dist/index.mjs
+@@ -874,50 +874,100 @@ function createLogger(init) {
+     warn: makeLevelLogger("warn"),
+     info: makeLevelLogger("info"),
+     debug: makeLevelLogger("debug"),
+     trace: makeLevelLogger("trace"),
+     child
+   };
+ }
+ 
+ // src/debugStore.ts
+ var GLOBAL_KEY2 = Symbol.for("docusaurus-plugin-smartlinker.debug");
+ function setDebugConfig(config) {
+   const store = globalThis;
+   if (!config) {
+     delete store[GLOBAL_KEY2];
+   } else {
+     store[GLOBAL_KEY2] = config;
+   }
+ }
+ function getDebugConfig() {
+   const store = globalThis;
+   const value = store[GLOBAL_KEY2];
+   if (value && typeof value === "object") return value;
+   return void 0;
+ }
+ 
++// src/metricsStore.ts
++var termProcessingMs = 0;
++var indexBuildMs = 0;
++function normalizeDuration(value) {
++  if (!Number.isFinite(value) || value < 0) {
++    return 0;
++  }
++  return Number(value.toFixed(2));
++}
++function recordTermProcessingMs(durationMs) {
++  const normalized = normalizeDuration(durationMs);
++  if (normalized <= 0) {
++    return;
++  }
++  termProcessingMs += normalized;
++}
++function getTermProcessingMs() {
++  return Number(termProcessingMs.toFixed(2));
++}
++function consumeTermProcessingMs() {
++  const total = getTermProcessingMs();
++  termProcessingMs = 0;
++  return total;
++}
++function resetTermProcessingMs() {
++  termProcessingMs = 0;
++}
++function recordIndexBuildMs(durationMs) {
++  const normalized = normalizeDuration(durationMs);
++  if (normalized <= 0) {
++    return;
++  }
++  indexBuildMs += normalized;
++}
++function getIndexBuildMs() {
++  return Number(indexBuildMs.toFixed(2));
++}
++function consumeIndexBuildMs() {
++  const total = getIndexBuildMs();
++  indexBuildMs = 0;
++  return total;
++}
++function resetIndexBuildMs() {
++  indexBuildMs = 0;
++}
++function resetMetrics() {
++  resetTermProcessingMs();
++  resetIndexBuildMs();
++}
++
+ // src/fsIndexProvider.ts
+ function createFsIndexProvider(opts) {
+   const resolvedRoots = (opts.roots ?? []).map((root) => {
+     const normalized = root.replace(/\\/g, "/").replace(/\/+$/, "");
+     return { path: root, id: normalized || "." };
+   });
+   const files = resolvedRoots.flatMap((root) => {
+     const scanned = scanMdFiles({ roots: [root.path] });
+     return scanned.map((file) => ({ ...file, folderId: root.id }));
+   });
+   const { entries } = loadIndexFromFiles(files);
+   const targets = entries.map((e) => ({
+     id: e.id,
+     slug: e.slug,
+     icon: e.icon,
+     sourcePath: e.sourcePath,
+     terms: e.terms,
+     folderId: e.folderId ?? null
+   }));
+   return {
+     getAllTargets() {
+       return targets;
+     },
+     getCurrentFilePath(file) {
+       return file.path || "";
+@@ -932,71 +982,74 @@ function normalizeFolderId(siteDir, absPath) {
+   const candidate = useRelative ? relPath : absPath;
+   const normalized = candidate.replace(/\\/g, "/").replace(/\/+$/, "");
+   return normalized || ".";
+ }
+ var moduleDir = dirname(fileURLToPath(import.meta.url));
+ var pluginName = PLUGIN_NAME;
+ function publishGlobalData(actions, opts, entries) {
+   const registryMeta = entries.map(({ id, slug, icon, folderId, docId, permalink }) => ({
+     id,
+     slug,
+     icon: icon ?? null,
+     folderId: folderId ?? null,
+     docId: docId ?? null,
+     permalink: permalink ?? null
+   }));
+   actions.setGlobalData({ options: opts, entries: registryMeta });
+ }
+ function smartlinkerPlugin(_context, optsIn) {
+   const { options: validatedOptions, warnings } = validateOptions(optsIn);
+   const debugResolution = resolveDebugConfig(validatedOptions.debug);
+   const normOpts = {
+     ...validatedOptions,
+     debug: debugResolution.config
+   };
+   setDebugConfig(normOpts.debug);
++  resetMetrics();
+   if (normOpts.folders.length === 0) {
+     throw new Error(
+       `[${pluginName}] Configure at least one folder via the \`folders\` option.`
+     );
+   }
+   const logger = createLogger({ pluginName, debug: normOpts.debug });
+   const initLogger = logger.child("init");
+   const optionsLogger = logger.child("options");
+   const scanLogger = logger.child("scan");
+   const indexLogger = logger.child("index");
+   const loadLogger = logger.child("loadContent");
+   const contentLogger = logger.child("contentLoaded");
+   const webpackLogger = logger.child("configureWebpack");
+   const postBuildLogger = logger.child("postBuild");
+   const stats = {
+     scannedFileCount: 0,
+     entryCount: 0,
+     noteCount: 0,
+     resolvedCount: 0,
+     reusedPrimedFiles: false,
+-    registryBytes: 0
++    registryBytes: 0,
++    indexBuildMs: 0,
++    termProcessingMs: 0
+   };
+   const shouldMeasure = (log, ...levels) => levels.some((level) => log.isLevelEnabled(level));
+   const startTimer = (log, ...levels) => shouldMeasure(log, ...levels) ? performance.now() : null;
+   const endTimer = (start) => {
+     if (start === null) return void 0;
+     return Number((performance.now() - start).toFixed(2));
+   };
+   const formatSiteRelativePath = (absPath) => {
+     const relPath = relative(_context.siteDir, absPath);
+     const useRel = relPath && !relPath.startsWith("..") && !isAbsolute(relPath);
+     const normalized = (useRel ? relPath : absPath).replace(/\\/g, "/");
+     return normalized || ".";
+   };
+   if (debugResolution.invalidLevel && typeof console !== "undefined" && typeof console.warn === "function") {
+     console.warn(
+       `[${pluginName}] Ignoring DOCUSAURUS_PLUGIN_DEBUG_LEVEL="${debugResolution.invalidLevel}" (expected one of: error, warn, info, debug, trace).`
+     );
+   }
+   if (normOpts.debug.enabled && initLogger.isLevelEnabled("info")) {
+     initLogger.info("Debug mode enabled", {
+       level: normOpts.debug.level,
+       source: debugResolution.source
+     });
+   }
+   if (initLogger.isLevelEnabled("debug")) {
+@@ -1052,99 +1105,103 @@ function smartlinkerPlugin(_context, optsIn) {
+     }
+     if (scanLogger.isLevelEnabled("trace") && files.length > 0) {
+       scanLogger.trace("Collected SmartLink files", () => ({
+         files: files.map((file) => formatSiteRelativePath(file.path))
+       }));
+     }
+     return files;
+   };
+   const applyFolderDefaults = (entries) => {
+     for (const entry of entries) {
+       const folder = entry.folderId ? folderById.get(entry.folderId) : void 0;
+       if (!folder) continue;
+       if (!entry.icon && folder.defaultIcon && normOpts.icons[folder.defaultIcon]) {
+         entry.icon = folder.defaultIcon;
+       }
+     }
+   };
+   const computeDocIdForEntry = (entry) => {
+     const folder = entry.folderId ? folderById.get(entry.folderId) : void 0;
+     if (!folder) return void 0;
+     return deriveDocId(folder.absPath, entry.sourcePath);
+   };
+   const primeIndexProvider = () => {
+     const start = startTimer(indexLogger, "debug", "info");
+     primedFiles = collectFiles();
++    const indexBuildStart = performance.now();
+     const { entries } = loadIndexFromFiles(primedFiles);
+     applyFolderDefaults(entries);
+     setIndexEntries(entries);
+     stats.entryCount = entries.length;
++    recordIndexBuildMs(performance.now() - indexBuildStart);
+     if (indexLogger.isLevelEnabled("debug")) {
+       indexLogger.debug("Primed SmartLink index provider", {
+         entryCount: entries.length,
+         durationMs: endTimer(start)
+       });
+     }
+     if (indexLogger.isLevelEnabled("trace") && entries.length > 0) {
+       indexLogger.trace("Primed entry identifiers", () => ({
+         entryIds: entries.map((entry) => entry.id)
+       }));
+     }
+   };
+   primeIndexProvider();
+   return {
+     name: pluginName,
+     configureWebpack() {
+       if (webpackLogger.isLevelEnabled("debug")) {
+         webpackLogger.debug("configureWebpack invoked", {
+           tooltipComponentCount: Object.keys(normOpts.tooltipComponents ?? {}).length
+         });
+       }
+       return {};
+     },
+     async loadContent() {
+       const usingPrimed = primedFiles !== null;
+       const start = startTimer(loadLogger, "info", "debug");
+       const files = primedFiles ?? collectFiles();
+       primedFiles = null;
+       stats.reusedPrimedFiles = usingPrimed;
+       stats.scannedFileCount = files.length;
+       if (loadLogger.isLevelEnabled("debug")) {
+         loadLogger.debug("Building SmartLink artifacts", {
+           fileCount: files.length,
+           reusedPrimedFiles: usingPrimed
+         });
+       }
+       if (loadLogger.isLevelEnabled("trace") && files.length > 0) {
+         loadLogger.trace("Processing SmartLink files", () => ({
+           files: files.map((file) => formatSiteRelativePath(file.path))
+         }));
+       }
+       const compileMdx = await createTooltipMdxCompiler(_context);
++      const indexBuildStart = performance.now();
+       const { entries, notes, registry } = await buildArtifacts(files, {
+         compileMdx
+       });
++      recordIndexBuildMs(performance.now() - indexBuildStart);
+       stats.entryCount = entries.length;
+       stats.noteCount = notes.length;
+       stats.registryBytes = Buffer.byteLength(registry.contents, "utf8");
+       applyFolderDefaults(entries);
+       setIndexEntries(entries);
+       if (loadLogger.isLevelEnabled("info")) {
+         loadLogger.info("Completed SmartLink artifact build", {
+           entryCount: entries.length,
+           noteCount: notes.length,
+           durationMs: endTimer(start)
+         });
+       }
+       if (loadLogger.isLevelEnabled("debug")) {
+         loadLogger.debug("Registry artifacts prepared", {
+           registryBytes: stats.registryBytes
+         });
+       }
+       if (loadLogger.isLevelEnabled("trace") && entries.length > 0) {
+         loadLogger.trace("Generated SmartLink entries", () => ({
+           entryIds: entries.map((entry) => entry.id),
+           noteFiles: notes.map((note) => note.filename)
+         }));
+       }
+       return {
+         entries,
+@@ -1177,60 +1234,73 @@ function smartlinkerPlugin(_context, optsIn) {
+       const enrichedEntries = entries.map((entry) => ({
+         ...entry,
+         docId: entry.docId ?? computeDocIdForEntry(entry)
+       }));
+       const docsContent = loadDocsContentFromGenerated(_context.generatedFilesDir);
+       const resolved = resolveEntryPermalinks({
+         siteDir: _context.siteDir,
+         entries: enrichedEntries,
+         docsContent
+       });
+       stats.resolvedCount = resolved.length;
+       publishGlobalData(actions, opts, resolved);
+       if (contentLogger.isLevelEnabled("info")) {
+         contentLogger.info("Published SmartLink global data", {
+           entryCount: resolved.length,
+           durationMs: endTimer(start)
+         });
+       }
+       if (contentLogger.isLevelEnabled("trace") && resolved.length > 0) {
+         contentLogger.trace("Resolved SmartLink permalinks", () => ({
+           permalinks: resolved.map((entry) => entry.permalink ?? null)
+         }));
+       }
+     },
+     async postBuild() {
+-      if (!postBuildLogger.isLevelEnabled("info")) {
+-        return;
++      const termProcessingMs2 = consumeTermProcessingMs();
++      const indexBuildMs2 = consumeIndexBuildMs();
++      stats.termProcessingMs = termProcessingMs2;
++      stats.indexBuildMs = indexBuildMs2;
++      if (postBuildLogger.isLevelEnabled("info")) {
++        postBuildLogger.info("SmartLink build complete", {
++          entryCount: stats.resolvedCount,
++          noteCount: stats.noteCount,
++          filesScanned: stats.scannedFileCount,
++          reusedPrimedFiles: stats.reusedPrimedFiles,
++          registryBytes: stats.registryBytes,
++          indexBuildMs: stats.indexBuildMs,
++          termProcessingMs: stats.termProcessingMs
++        });
++      }
++      if (postBuildLogger.isLevelEnabled("debug")) {
++        postBuildLogger.debug("Term processing duration", {
++          termProcessingMs: termProcessingMs2
++        });
++        postBuildLogger.debug("Index build duration", {
++          indexBuildMs: indexBuildMs2
++        });
+       }
+-      postBuildLogger.info("SmartLink build complete", {
+-        entryCount: stats.resolvedCount,
+-        noteCount: stats.noteCount,
+-        filesScanned: stats.scannedFileCount,
+-        reusedPrimedFiles: stats.reusedPrimedFiles,
+-        registryBytes: stats.registryBytes
+-      });
+     },
+     getThemePath() {
+       return join(moduleDir, "theme", "runtime");
+     },
+     getTypeScriptThemePath() {
+       return join(moduleDir, "theme");
+     },
+     getClientModules() {
+       return [join(moduleDir, "theme/styles.css")];
+     }
+   };
+ }
+ function deriveDocId(folderAbsPath, sourcePath) {
+   if (!sourcePath) return void 0;
+   const rel = relative(folderAbsPath, sourcePath);
+   if (!rel || rel.startsWith("..")) return void 0;
+   const normalized = rel.replace(/\\/g, "/");
+   const withoutExt = normalized.replace(/\.[^./]+$/u, "");
+   return withoutExt || void 0;
+ }
+ function loadDocsContentFromGenerated(generatedFilesDir) {
+   const root = join(generatedFilesDir, "docusaurus-plugin-content-docs");
+   const result = {};
+   let pluginIds = [];
+   try {
+@@ -1250,28 +1320,28 @@ function loadDocsContentFromGenerated(generatedFilesDir) {
+     const docs = [];
+     for (const file of readdirSync(pluginDir)) {
+       if (!file.endsWith(".json")) continue;
+       if (file.startsWith("__")) continue;
+       const abs = join(pluginDir, file);
+       try {
+         const parsed = JSON.parse(readFileSync(abs, "utf8"));
+         if (parsed && typeof parsed === "object" && typeof parsed.permalink === "string") {
+           docs.push(parsed);
+         }
+       } catch {
+         continue;
+       }
+     }
+     result[pluginId] = {
+       loadedVersions: [
+         {
+           docs
+         }
+       ]
+     };
+   }
+   return result;
+ }
+ 
+-export { PLUGIN_NAME, createFsIndexProvider, createLogger, smartlinkerPlugin as default, getDebugConfig, getIndexProvider, resolveDebugConfig, setDebugConfig };
++export { PLUGIN_NAME, consumeIndexBuildMs, consumeTermProcessingMs, createFsIndexProvider, createLogger, smartlinkerPlugin as default, getDebugConfig, getIndexBuildMs, getIndexProvider, getTermProcessingMs, recordIndexBuildMs, recordTermProcessingMs, resetIndexBuildMs, resetMetrics, resetTermProcessingMs, resolveDebugConfig, setDebugConfig };
+ //# sourceMappingURL=index.mjs.map
+ //# sourceMappingURL=index.mjs.map
+\ No newline at end of file
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/index.mjs.map b/packages/docusaurus-plugin-smartlinker/dist/index.mjs.map
+index 232c139ce5d4a3f928036a918d019248b0289973..6a6e09ee93f3a1cf4138edce48d49d6c9841c1e2 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/index.mjs.map
++++ b/packages/docusaurus-plugin-smartlinker/dist/index.mjs.map
+@@ -1 +1 @@
+-{"version":3,"sources":["../src/pluginName.ts","../src/options.ts","../src/node/fsScan.ts","../src/frontmatter.ts","../src/codegen/notesEmitter.ts","../src/codegen/registryEmitter.ts","../src/node/buildPipeline.ts","../src/codegen/tooltipComponentsEmitter.ts","../src/node/tooltipMdxCompiler.ts","../src/indexProviderStore.ts","../src/frontmatterAdapter.ts","../src/node/permalinkResolver.ts","../src/logger.ts","../src/debugStore.ts","../src/fsIndexProvider.ts","../src/index.ts"],"names":["z","safeId","relative","join","pluginName","GLOBAL_KEY","readdirSync","statSync","readFileSync"],"mappings":";;;;;;;;;;;;AAAO,IAAM,WAAA,GAAc;;;ACG3B,IAAM,gBAAgB,CAAA,CACnB,MAAA,EAAO,CACP,SAAA,CAAU,CAAC,KAAA,KAAU,KAAA,CAAM,IAAA,EAAM,EACjC,MAAA,CAAO,CAAC,KAAA,KAAU,KAAA,CAAM,SAAS,CAAA,EAAG;AAAA,EACnC,OAAA,EAAS;AACX,CAAC,CAAA;AAEH,IAAM,sBAAA,GAAyB,EAAE,KAAA,CAAM;AAAA,EACrC,aAAA;AAAA,EACA,EAAE,MAAA,CAAO;AAAA,IACP,IAAA,EAAM,aAAA;AAAA,IACN,MAAA,EAAQ,cAAc,QAAA;AAAS,GAChC;AACH,CAAC,CAAA;AAED,IAAM,gBAAA,GAAmB,EAAE,IAAA,CAAK,CAAC,SAAS,MAAA,EAAQ,MAAA,EAAQ,OAAA,EAAS,OAAO,CAAC,CAAA;AAE3E,IAAM,kBAAA,GAAqB,EACxB,MAAA,CAAO;AAAA,EACN,OAAA,EAAS,CAAA,CAAE,OAAA,EAAQ,CAAE,QAAQ,KAAK,CAAA;AAAA,EAClC,KAAA,EAAO,gBAAA,CAAiB,OAAA,CAAQ,MAAM;AACxC,CAAC,EACA,OAAA,CAAQ,EAAE,SAAS,KAAA,EAAO,KAAA,EAAO,QAAQ,CAAA;AAO5C,IAAM,uBAAA,GAA0B,CAAA,CAC7B,MAAA,CAAO,sBAAsB,CAAA,CAC7B,OAAA,CAAQ,EAAE,CAAA,CACV,SAAA,CAAU,CAAC,KAAA,KAAU;AACpB,EAAA,MAAM,MAA8C,EAAC;AACrD,EAAA,KAAA,MAAW,CAAC,KAAA,EAAO,IAAI,KAAK,MAAA,CAAO,OAAA,CAAQ,KAAK,CAAA,EAAG;AACjD,IAAA,MAAM,GAAA,GAAM,MAAM,IAAA,EAAK;AACvB,IAAA,IAAI,CAAC,GAAA,EAAK;AACV,IAAA,IAAI,OAAO,SAAS,QAAA,EAAU;AAC5B,MAAA,GAAA,CAAI,GAAG,CAAA,GAAI,EAAE,UAAA,EAAY,IAAA,EAAK;AAAA,IAChC,CAAA,MAAO;AACL,MAAA,GAAA,CAAI,GAAG,CAAA,GAAI;AAAA,QACT,YAAY,IAAA,CAAK,IAAA;AAAA,QACjB,UAAA,EAAY,KAAK,MAAA,IAAU;AAAA,OAC7B;AAAA,IACF;AAAA,EACF;AACA,EAAA,OAAO,GAAA;AACT,CAAC,CAAA;AAEH,IAAM,YAAA,GAAe,EAAE,MAAA,CAAO;AAAA,EAC5B,IAAA,EAAM,aAAA;AAAA,EACN,WAAA,EAAa,cAAc,QAAA,EAAS;AAAA,EACpC,iBAAA,EAAmB;AACrB,CAAC,CAAA;AAEM,IAAM,aAAA,GAAgB,EAC1B,MAAA,CAAO;AAAA,EACN,OAAO,CAAA,CAAE,MAAA,CAAO,aAAa,CAAA,CAAE,OAAA,CAAQ,EAAE,CAAA;AAAA,EACzC,aAAA,EAAe,CAAA,CAAE,MAAA,CAAO,aAAa,EAAE,QAAA,EAAS;AAAA,EAChD,WAAW,CAAA,CAAE,MAAA,CAAO,EAAE,OAAA,EAAS,EAAE,QAAA,EAAS;AAAA,EAC1C,SAAS,CAAA,CAAE,KAAA,CAAM,YAAY,CAAA,CAAE,OAAA,CAAQ,EAAE,CAAA;AAAA,EACzC,KAAA,EAAO;AACT,CAAC,CAAA,CACA,SAAA,CAAU,CAAC,KAAA,KAAU;AACpB,EAAA,MAAM,aAAqD,EAAC;AAC5D,EAAA,KAAA,MAAW,MAAA,IAAU,MAAM,OAAA,EAAS;AAClC,IAAA,KAAA,MAAW,CAAC,OAAO,IAAI,CAAA,IAAK,OAAO,OAAA,CAAQ,MAAA,CAAO,iBAAiB,CAAA,EAAG;AACpE,MAAA,IAAI,UAAA,CAAW,KAAK,CAAA,EAAG;AACvB,MAAA,UAAA,CAAW,KAAK,CAAA,GAAI,IAAA;AAAA,IACtB;AAAA,EACF;AACA,EAAA,OAAO,EAAE,GAAG,KAAA,EAAO,iBAAA,EAAmB,UAAA,EAAW;AACnD,CAAC,CAAA;AA8BI,SAAS,gBAAgB,KAAA,EAAoD;AAClF,EAAA,MAAM,MAAA,GAAS,aAAA,CAAc,SAAA,CAAU,KAAA,IAAS,EAAE,CAAA;AAClD,EAAA,IAAI,CAAC,OAAO,OAAA,EAAS;AAEnB,IAAA,OAAO;AAAA,MACL,OAAA,EAAS;AAAA,QACP,OAAO,EAAC;AAAA,QACR,mBAAmB,EAAC;AAAA,QACpB,SAAS,EAAC;AAAA,QACV,KAAA,EAAO,EAAE,OAAA,EAAS,KAAA,EAAO,OAAO,MAAA;AAAO,OACzC;AAAA,MACA,UAAU,CAAC;AAAA,QACT,IAAA,EAAM,oBAAA;AAAA,QACN,OAAA,EAAS,uDAAA;AAAA,QACT,SAAS,EAAE,MAAA,EAAQ,MAAA,CAAO,KAAA,CAAM,OAAO,GAAA,CAAI,CAAA,CAAA,MAAM,EAAE,IAAA,EAAM,EAAE,IAAA,EAAM,OAAA,EAAS,CAAA,CAAE,OAAA,GAAU,CAAA;AAAE,OACzF;AAAA,KACH;AAAA,EACF;AAEA,EAAA,MAAM,UAAU,MAAA,CAAO,IAAA;AACvB,EAAA,MAAM,eAAA,GAA6B,MAAM,OAAA,CAAS,KAAA,EAAe,OAAO,CAAA,GACnE,KAAA,CAAc,UACf,EAAC;AACL,EAAA,MAAM,WAA6B,EAAC;AAGpC,EAAA,IAAI,CAAC,QAAQ,KAAA,IAAS,MAAA,CAAO,KAAK,OAAA,CAAQ,KAAK,CAAA,CAAE,MAAA,KAAW,CAAA,EAAG;AAC7D,IAAA,QAAA,CAAS,IAAA,CAAK;AAAA,MACZ,IAAA,EAAM,oBAAA;AAAA,MACN,OAAA,EAAS;AAAA,KACV,CAAA;AAAA,EACH;AAGA,EAAA,IAAI,QAAQ,aAAA,EAAe;AACzB,IAAA,KAAA,MAAW,EAAA,IAAM,MAAA,CAAO,IAAA,CAAK,OAAA,CAAQ,aAAa,CAAA,EAAG;AACnD,MAAA,IAAI,CAAC,OAAA,CAAQ,KAAA,CAAM,EAAE,CAAA,EAAG;AACtB,QAAA,QAAA,CAAS,IAAA,CAAK;AAAA,UACZ,IAAA,EAAM,wBAAA;AAAA,UACN,OAAA,EAAS,sDAAA;AAAA,UACT,OAAA,EAAS,EAAE,EAAA;AAAG,SACf,CAAA;AAAA,MACH;AAAA,IACF;AAAA,EACF;AAGA,EAAA,KAAA,MAAW,EAAA,IAAM,MAAA,CAAO,IAAA,CAAK,OAAA,CAAQ,KAAK,CAAA,EAAG;AAC3C,IAAA,IAAI,CAAC,EAAA,CAAG,IAAA,EAAK,EAAG;AACd,MAAA,QAAA,CAAS,IAAA,CAAK;AAAA,QACZ,IAAA,EAAM,eAAA;AAAA,QAC
+\ No newline at end of file
++{"version":3,"sources":["../src/pluginName.ts","../src/options.ts","../src/node/fsScan.ts","../src/frontmatter.ts","../src/codegen/notesEmitter.ts","../src/codegen/registryEmitter.ts","../src/node/buildPipeline.ts","../src/codegen/tooltipComponentsEmitter.ts","../src/node/tooltipMdxCompiler.ts","../src/indexProviderStore.ts","../src/frontmatterAdapter.ts","../src/node/permalinkResolver.ts","../src/logger.ts","../src/debugStore.ts","../src/metricsStore.ts","../src/fsIndexProvider.ts","../src/index.ts"],"names":["z","safeId","relative","join","pluginName","GLOBAL_KEY","termProcessingMs","indexBuildMs","readdirSync","statSync","readFileSync"],"mappings":"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
+\ No newline at end of file
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs b/packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs
+index 425817834315c0ca9f7e4ecebc1dbf726a5bf62e..a2598cd4358080e0d42bde2698eba285bf00ebbb 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs
++++ b/packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs
+@@ -1,31 +1,32 @@
+ 'use strict';
+ 
+ Object.defineProperty(exports, '__esModule', { value: true });
+ 
+ var unistUtilVisit = require('unist-util-visit');
+ var path = require('path');
++var perf_hooks = require('perf_hooks');
+ var docusaurusPluginSmartlinker = require('docusaurus-plugin-smartlinker');
+ 
+ // ../remark-smartlinker/src/transform.ts
+ 
+ // ../remark-smartlinker/src/matcher.ts
+ function isWordChar(ch) {
+   return /\p{L}|\p{N}|_/u.test(ch);
+ }
+ function buildTrie(entries) {
+   const root = { children: /* @__PURE__ */ new Map() };
+   for (const e of entries) {
+     if (!e?.literal) continue;
+     const lit = e.literal.toLocaleLowerCase();
+     if (!lit) continue;
+     let node = root;
+     for (const ch of Array.from(lit)) {
+       let next = node.children.get(ch);
+       if (!next) {
+         next = { children: /* @__PURE__ */ new Map() };
+         node.children.set(ch, next);
+       }
+       node = next;
+     }
+     if (!node.terminals) node.terminals = [];
+     node.terminals.push({ literal: e.literal, key: e.key });
+@@ -256,77 +257,80 @@ function remarkSmartlinker(opts) {
+     const filePath = typeof file?.path === "string" ? file.path : void 0;
+     if (transformLogger.isLevelEnabled("info")) {
+       transformLogger.info("Processing file", () => ({
+         filePath: filePath ?? null,
+         currentTargetId: currentTarget?.id ?? null,
+         currentTargetSlug: currentTarget?.slug ?? null
+       }));
+     }
+     const onLinkInserted = (args) => {
+       if (!transformLogger.isLevelEnabled("debug")) return;
+       transformLogger.debug("Smartlink inserted", () => ({
+         filePath: filePath ?? null,
+         text: args.text,
+         to: args.slug,
+         tipKey: args.id,
+         icon: args.icon ?? null
+       }));
+     };
+     const onShortNoteInserted = (args) => {
+       if (!transformLogger.isLevelEnabled("debug")) return;
+       transformLogger.debug("Short-note placeholder replaced", () => ({
+         filePath: filePath ?? null,
+         tipKey: args.id
+       }));
+     };
++    const startTime = perf_hooks.performance.now();
+     unistUtilVisit.visit(tree, (node, _index, parent) => {
+       if (isSkippable(node, mdxComponentNamesToSkip)) return unistUtilVisit.SKIP;
+       if (!parent) return;
+       if (node.type !== "text") return;
+       const textNode = node;
+       const text = textNode.value ?? "";
+       if (!text || !text.trim()) return;
+       const result = transformText({
+         text,
+         matcher,
+         claimMap,
+         componentName,
+         toAttr,
+         tipKeyAttr,
+         matchAttr,
+         iconAttr,
+         shortNoteComponentName,
+         shortNoteTipKeyAttr,
+         shortNotePlaceholder,
+         currentTarget,
+         onLinkInserted,
+         onShortNoteInserted
+       });
+       if (!result || !result.changed) return;
+       const idx = parent.children.indexOf(node);
+       if (idx >= 0) parent.children.splice(idx, 1, ...result.nodes);
+     });
++    const duration = perf_hooks.performance.now() - startTime;
++    docusaurusPluginSmartlinker.recordTermProcessingMs(duration);
+     return tree;
+   };
+ }
+ function normalizePath(value) {
+   if (!value || typeof value !== "string") return null;
+   const trimmed = value.trim();
+   if (!trimmed) return null;
+   try {
+     return path.normalize(trimmed).replace(/\\/g, "/").toLowerCase();
+   } catch {
+     return trimmed.replace(/\\/g, "/").toLowerCase();
+   }
+ }
+ function transformText(args) {
+   const {
+     text,
+     matcher,
+     claimMap,
+     componentName,
+     toAttr,
+     tipKeyAttr,
+     matchAttr,
+     iconAttr,
+     shortNoteComponentName,
+     shortNoteTipKeyAttr,
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs.map b/packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs.map
+index f615a37d0b4593ff5dfd1c68e0369f18bc202714..b25b633aeed83c51d53311983624f03590087474 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs.map
++++ b/packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs.map
+@@ -1 +1 @@
+-{"version":3,"sources":["../../../remark-smartlinker/src/matcher.ts","../../../remark-smartlinker/src/transform.ts","../../../remark-smartlinker/src/index.ts","../../src/remark/index.ts"],"names":["name","getDebugConfig","resolveDebugConfig","createLogger","PLUGIN_NAME","getRegisteredIndexProvider","visit","SKIP","normalize"],"mappings":"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
+\ No newline at end of file
++{"version":3,"sources":["../../../remark-smartlinker/src/matcher.ts","../../../remark-smartlinker/src/transform.ts","../../../remark-smartlinker/src/index.ts","../../src/remark/index.ts"],"names":["name","getDebugConfig","resolveDebugConfig","createLogger","PLUGIN_NAME","getRegisteredIndexProvider","performance","visit","SKIP","recordTermProcessingMs","normalize"],"mappings":"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
+\ No newline at end of file
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs b/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs
+index d6d37e34bb9b876ca4bb25f9e59bc4e9f34f7fd9..b7cb216bc6ec1fa143ca826c9ccc51e69d8d765f 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs
++++ b/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs
+@@ -1,28 +1,29 @@
+ import { visit, SKIP } from 'unist-util-visit';
+ import { normalize } from 'path';
+-import { getDebugConfig, resolveDebugConfig, createLogger, PLUGIN_NAME, getIndexProvider } from 'docusaurus-plugin-smartlinker';
++import { performance } from 'perf_hooks';
++import { getDebugConfig, resolveDebugConfig, createLogger, PLUGIN_NAME, recordTermProcessingMs, getIndexProvider } from 'docusaurus-plugin-smartlinker';
+ 
+ // ../remark-smartlinker/src/transform.ts
+ 
+ // ../remark-smartlinker/src/matcher.ts
+ function isWordChar(ch) {
+   return /\p{L}|\p{N}|_/u.test(ch);
+ }
+ function buildTrie(entries) {
+   const root = { children: /* @__PURE__ */ new Map() };
+   for (const e of entries) {
+     if (!e?.literal) continue;
+     const lit = e.literal.toLocaleLowerCase();
+     if (!lit) continue;
+     let node = root;
+     for (const ch of Array.from(lit)) {
+       let next = node.children.get(ch);
+       if (!next) {
+         next = { children: /* @__PURE__ */ new Map() };
+         node.children.set(ch, next);
+       }
+       node = next;
+     }
+     if (!node.terminals) node.terminals = [];
+     node.terminals.push({ literal: e.literal, key: e.key });
+   }
+@@ -252,77 +253,80 @@ function remarkSmartlinker(opts) {
+     const filePath = typeof file?.path === "string" ? file.path : void 0;
+     if (transformLogger.isLevelEnabled("info")) {
+       transformLogger.info("Processing file", () => ({
+         filePath: filePath ?? null,
+         currentTargetId: currentTarget?.id ?? null,
+         currentTargetSlug: currentTarget?.slug ?? null
+       }));
+     }
+     const onLinkInserted = (args) => {
+       if (!transformLogger.isLevelEnabled("debug")) return;
+       transformLogger.debug("Smartlink inserted", () => ({
+         filePath: filePath ?? null,
+         text: args.text,
+         to: args.slug,
+         tipKey: args.id,
+         icon: args.icon ?? null
+       }));
+     };
+     const onShortNoteInserted = (args) => {
+       if (!transformLogger.isLevelEnabled("debug")) return;
+       transformLogger.debug("Short-note placeholder replaced", () => ({
+         filePath: filePath ?? null,
+         tipKey: args.id
+       }));
+     };
++    const startTime = performance.now();
+     visit(tree, (node, _index, parent) => {
+       if (isSkippable(node, mdxComponentNamesToSkip)) return SKIP;
+       if (!parent) return;
+       if (node.type !== "text") return;
+       const textNode = node;
+       const text = textNode.value ?? "";
+       if (!text || !text.trim()) return;
+       const result = transformText({
+         text,
+         matcher,
+         claimMap,
+         componentName,
+         toAttr,
+         tipKeyAttr,
+         matchAttr,
+         iconAttr,
+         shortNoteComponentName,
+         shortNoteTipKeyAttr,
+         shortNotePlaceholder,
+         currentTarget,
+         onLinkInserted,
+         onShortNoteInserted
+       });
+       if (!result || !result.changed) return;
+       const idx = parent.children.indexOf(node);
+       if (idx >= 0) parent.children.splice(idx, 1, ...result.nodes);
+     });
++    const duration = performance.now() - startTime;
++    recordTermProcessingMs(duration);
+     return tree;
+   };
+ }
+ function normalizePath(value) {
+   if (!value || typeof value !== "string") return null;
+   const trimmed = value.trim();
+   if (!trimmed) return null;
+   try {
+     return normalize(trimmed).replace(/\\/g, "/").toLowerCase();
+   } catch {
+     return trimmed.replace(/\\/g, "/").toLowerCase();
+   }
+ }
+ function transformText(args) {
+   const {
+     text,
+     matcher,
+     claimMap,
+     componentName,
+     toAttr,
+     tipKeyAttr,
+     matchAttr,
+     iconAttr,
+     shortNoteComponentName,
+     shortNoteTipKeyAttr,
+diff --git a/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs.map b/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs.map
+index cc70ba9025a6a9d51d93a00c3389f7e8c4a63a04..fcf6ed3ec6d36b96eae5040b76e22ae6d6d82f25 100644
+--- a/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs.map
++++ b/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs.map
+@@ -1 +1 @@
+-{"version":3,"sources":["../../../remark-smartlinker/src/matcher.ts","../../../remark-smartlinker/src/transform.ts","../../../remark-smartlinker/src/index.ts","../../src/remark/index.ts"],"names":["name","getRegisteredIndexProvider"],"mappings":"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
+\ No newline at end of file
++{"version":3,"sources":["../../../remark-smartlinker/src/matcher.ts","../../../remark-smartlinker/src/transform.ts","../../../remark-smartlinker/src/index.ts","../../src/remark/index.ts"],"names":["name","getRegisteredIndexProvider"],"mappings":"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
+\ No newline at end of file
+diff --git a/packages/docusaurus-plugin-smartlinker/src/index.ts b/packages/docusaurus-plugin-smartlinker/src/index.ts
+index 98929da237ba8e367b65222e1b6c8bb9bbc4e420..79c7007512b5c4e411c04fe2523f69d594075a9f 100644
+--- a/packages/docusaurus-plugin-smartlinker/src/index.ts
++++ b/packages/docusaurus-plugin-smartlinker/src/index.ts
+@@ -3,63 +3,80 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
+ import { Buffer } from 'node:buffer';
+ import { fileURLToPath } from 'node:url';
+ import { performance } from 'node:perf_hooks';
+ import type { Plugin } from '@docusaurus/types';
+ import type { LoadContext, PluginContentLoadedActions } from '@docusaurus/types';
+ import {
+   validateOptions,
+   type PluginOptions,
+   type NormalizedOptions,
+   type NormalizedFolderOption,
+ } from './options.js';
+ import { scanMdFiles } from './node/fsScan.js';
+ import { buildArtifacts } from './node/buildPipeline.js';
+ import type { IndexRawEntry, RawDocFile } from './types.js';
+ import type { NoteModule } from './codegen/notesEmitter.js';
+ import type { RegistryModule } from './codegen/registryEmitter.js';
+ import { emitTooltipComponentsModule } from './codegen/tooltipComponentsEmitter.js';
+ import { PLUGIN_NAME } from './pluginName.js';
+ import { createTooltipMdxCompiler } from './node/tooltipMdxCompiler.js';
+ import { setIndexEntries } from './indexProviderStore.js';
+ import { loadIndexFromFiles } from './frontmatterAdapter.js';
+ import { resolveEntryPermalinks, type EntryWithResolvedUrl } from './node/permalinkResolver.js';
+ import type { LoadedContent as DocsLoadedContent } from '@docusaurus/plugin-content-docs';
+ import { resolveDebugConfig, createLogger, type LogLevel } from './logger.js';
+ import { setDebugConfig } from './debugStore.js';
++import {
++  recordIndexBuildMs,
++  resetMetrics,
++  consumeIndexBuildMs,
++  consumeTermProcessingMs,
++} from './metricsStore.js';
+ 
+ export type {
+   FsIndexProviderOptions,
+   IndexProvider,
+   TargetInfo,
+ } from './fsIndexProvider.js';
+ export { createFsIndexProvider } from './fsIndexProvider.js';
+ export { PLUGIN_NAME } from './pluginName.js';
+ export { getIndexProvider } from './indexProviderStore.js';
+ // Re-export logger utilities for reuse by the remark package
+ export { resolveDebugConfig, createLogger, type LogLevel } from './logger.js';
+ export type { DebugOptions } from './options.js';
+ export { getDebugConfig, setDebugConfig } from './debugStore.js';
++export {
++  recordIndexBuildMs,
++  resetMetrics,
++  resetTermProcessingMs,
++  recordTermProcessingMs,
++  resetIndexBuildMs,
++  consumeIndexBuildMs,
++  consumeTermProcessingMs,
++  getIndexBuildMs,
++  getTermProcessingMs,
++} from './metricsStore.js';
+ 
+ export type { PluginOptions } from './options.js';
+ 
+ type Content = {
+   entries: IndexRawEntry[];
+   notes: NoteModule[];
+   registry: RegistryModule;
+   opts: NormalizedOptions;
+ };
+ 
+ type ResolvedFolder = NormalizedFolderOption & {
+   absPath: string;
+   id: string;
+ };
+ 
+ function normalizeFolderId(siteDir: string, absPath: string): string {
+   const relPath = relative(siteDir, absPath);
+   const useRelative =
+     relPath &&
+     !relPath.startsWith('..') &&
+     !isAbsolute(relPath);
+   const candidate = useRelative ? relPath : absPath;
+   const normalized = candidate.replace(/\\/g, '/').replace(/\/+$/, '');
+   return normalized || '.';
+ }
+@@ -76,74 +93,77 @@ function publishGlobalData(
+     id,
+     slug,
+     icon: icon ?? null,
+     folderId: folderId ?? null,
+     docId: docId ?? null,
+     permalink: permalink ?? null,
+   }));
+ 
+   actions.setGlobalData({ options: opts, entries: registryMeta });
+ }
+ 
+ export default function smartlinkerPlugin(
+   _context: LoadContext,
+   optsIn?: PluginOptions
+ ): Plugin<Content> {
+   const { options: validatedOptions, warnings } = validateOptions(optsIn);
+   const debugResolution = resolveDebugConfig(validatedOptions.debug);
+   const normOpts: NormalizedOptions = {
+     ...validatedOptions,
+     debug: debugResolution.config,
+   };
+ 
+   // Make debug configuration available globally so the remark transformer
+   // can mirror the same logging behavior without separate config.
+   setDebugConfig(normOpts.debug);
++  resetMetrics();
+ 
+   if (normOpts.folders.length === 0) {
+     throw new Error(
+       `[${pluginName}] Configure at least one folder via the \`folders\` option.`
+     );
+   }
+ 
+   const logger = createLogger({ pluginName, debug: normOpts.debug });
+   const initLogger = logger.child('init');
+   const optionsLogger = logger.child('options');
+   const scanLogger = logger.child('scan');
+   const indexLogger = logger.child('index');
+   const loadLogger = logger.child('loadContent');
+   const contentLogger = logger.child('contentLoaded');
+   const webpackLogger = logger.child('configureWebpack');
+   const postBuildLogger = logger.child('postBuild');
+ 
+   const stats = {
+     scannedFileCount: 0,
+     entryCount: 0,
+     noteCount: 0,
+     resolvedCount: 0,
+     reusedPrimedFiles: false,
+     registryBytes: 0,
++    indexBuildMs: 0,
++    termProcessingMs: 0,
+   };
+ 
+   const shouldMeasure = (
+     log: { isLevelEnabled(level: LogLevel): boolean },
+     ...levels: LogLevel[]
+   ): boolean => levels.some((level) => log.isLevelEnabled(level));
+ 
+   const startTimer = (
+     log: { isLevelEnabled(level: LogLevel): boolean },
+     ...levels: LogLevel[]
+   ): number | null => (shouldMeasure(log, ...levels) ? performance.now() : null);
+ 
+   const endTimer = (start: number | null): number | undefined => {
+     if (start === null) return undefined;
+     return Number((performance.now() - start).toFixed(2));
+   };
+ 
+   const formatSiteRelativePath = (absPath: string): string => {
+     const relPath = relative(_context.siteDir, absPath);
+     const useRel = relPath && !relPath.startsWith('..') && !isAbsolute(relPath);
+     const normalized = (useRel ? relPath : absPath).replace(/\\/g, '/');
+     return normalized || '.';
+   };
+ 
+   if (
+@@ -228,54 +248,56 @@ export default function smartlinkerPlugin(
+       }));
+     }
+ 
+     return files;
+   };
+ 
+   const applyFolderDefaults = (entries: IndexRawEntry[]) => {
+     for (const entry of entries) {
+       const folder = entry.folderId ? folderById.get(entry.folderId) : undefined;
+       if (!folder) continue;
+       if (!entry.icon && folder.defaultIcon && normOpts.icons[folder.defaultIcon]) {
+         entry.icon = folder.defaultIcon;
+       }
+     }
+   };
+ 
+   const computeDocIdForEntry = (entry: IndexRawEntry): string | undefined => {
+     const folder = entry.folderId ? folderById.get(entry.folderId) : undefined;
+     if (!folder) return undefined;
+     return deriveDocId(folder.absPath, entry.sourcePath);
+   };
+ 
+   const primeIndexProvider = () => {
+     const start = startTimer(indexLogger, 'debug', 'info');
+     primedFiles = collectFiles();
++    const indexBuildStart = performance.now();
+     const { entries } = loadIndexFromFiles(primedFiles);
+     applyFolderDefaults(entries);
+     setIndexEntries(entries);
+     stats.entryCount = entries.length;
++    recordIndexBuildMs(performance.now() - indexBuildStart);
+ 
+     if (indexLogger.isLevelEnabled('debug')) {
+       indexLogger.debug('Primed SmartLink index provider', {
+         entryCount: entries.length,
+         durationMs: endTimer(start),
+       });
+     }
+ 
+     if (indexLogger.isLevelEnabled('trace') && entries.length > 0) {
+       indexLogger.trace('Primed entry identifiers', () => ({
+         entryIds: entries.map((entry) => entry.id),
+       }));
+     }
+   };
+ 
+   primeIndexProvider();
+ 
+   return {
+     name: pluginName,
+ 
+     configureWebpack() {
+       if (webpackLogger.isLevelEnabled('debug')) {
+         webpackLogger.debug('configureWebpack invoked', {
+           tooltipComponentCount: Object.keys(normOpts.tooltipComponents ?? {}).length,
+         });
+@@ -283,53 +305,55 @@ export default function smartlinkerPlugin(
+       return {};
+     },
+ 
+     async loadContent() {
+       const usingPrimed = primedFiles !== null;
+       const start = startTimer(loadLogger, 'info', 'debug');
+       const files = primedFiles ?? collectFiles();
+       primedFiles = null;
+       stats.reusedPrimedFiles = usingPrimed;
+       stats.scannedFileCount = files.length;
+ 
+       if (loadLogger.isLevelEnabled('debug')) {
+         loadLogger.debug('Building SmartLink artifacts', {
+           fileCount: files.length,
+           reusedPrimedFiles: usingPrimed,
+         });
+       }
+ 
+       if (loadLogger.isLevelEnabled('trace') && files.length > 0) {
+         loadLogger.trace('Processing SmartLink files', () => ({
+           files: files.map((file) => formatSiteRelativePath(file.path)),
+         }));
+       }
+ 
+       const compileMdx = await createTooltipMdxCompiler(_context);
++      const indexBuildStart = performance.now();
+       const { entries, notes, registry } = await buildArtifacts(files, {
+         compileMdx,
+       });
++      recordIndexBuildMs(performance.now() - indexBuildStart);
+ 
+       stats.entryCount = entries.length;
+       stats.noteCount = notes.length;
+       stats.registryBytes = Buffer.byteLength(registry.contents, 'utf8');
+ 
+       applyFolderDefaults(entries);
+       setIndexEntries(entries);
+ 
+       if (loadLogger.isLevelEnabled('info')) {
+         loadLogger.info('Completed SmartLink artifact build', {
+           entryCount: entries.length,
+           noteCount: notes.length,
+           durationMs: endTimer(start),
+         });
+       }
+ 
+       if (loadLogger.isLevelEnabled('debug')) {
+         loadLogger.debug('Registry artifacts prepared', {
+           registryBytes: stats.registryBytes,
+         });
+       }
+ 
+       if (loadLogger.isLevelEnabled('trace') && entries.length > 0) {
+         loadLogger.trace('Generated SmartLink entries', () => ({
+           entryIds: entries.map((entry) => entry.id),
+@@ -380,60 +404,75 @@ export default function smartlinkerPlugin(
+       const resolved = resolveEntryPermalinks({
+         siteDir: _context.siteDir,
+         entries: enrichedEntries,
+         docsContent,
+       });
+ 
+       stats.resolvedCount = resolved.length;
+ 
+       publishGlobalData(actions, opts, resolved);
+ 
+       if (contentLogger.isLevelEnabled('info')) {
+         contentLogger.info('Published SmartLink global data', {
+           entryCount: resolved.length,
+           durationMs: endTimer(start),
+         });
+       }
+ 
+       if (contentLogger.isLevelEnabled('trace') && resolved.length > 0) {
+         contentLogger.trace('Resolved SmartLink permalinks', () => ({
+           permalinks: resolved.map((entry) => entry.permalink ?? null),
+         }));
+       }
+     },
+ 
+     async postBuild() {
+-      if (!postBuildLogger.isLevelEnabled('info')) {
+-        return;
++      const termProcessingMs = consumeTermProcessingMs();
++      const indexBuildMs = consumeIndexBuildMs();
++      stats.termProcessingMs = termProcessingMs;
++      stats.indexBuildMs = indexBuildMs;
++
++      if (postBuildLogger.isLevelEnabled('info')) {
++        postBuildLogger.info('SmartLink build complete', {
++          entryCount: stats.resolvedCount,
++          noteCount: stats.noteCount,
++          filesScanned: stats.scannedFileCount,
++          reusedPrimedFiles: stats.reusedPrimedFiles,
++          registryBytes: stats.registryBytes,
++          indexBuildMs: stats.indexBuildMs,
++          termProcessingMs: stats.termProcessingMs,
++        });
++      }
++
++      if (postBuildLogger.isLevelEnabled('debug')) {
++        postBuildLogger.debug('Term processing duration', {
++          termProcessingMs,
++        });
++        postBuildLogger.debug('Index build duration', {
++          indexBuildMs,
++        });
+       }
+-      postBuildLogger.info('SmartLink build complete', {
+-        entryCount: stats.resolvedCount,
+-        noteCount: stats.noteCount,
+-        filesScanned: stats.scannedFileCount,
+-        reusedPrimedFiles: stats.reusedPrimedFiles,
+-        registryBytes: stats.registryBytes,
+-      });
+     },
+ 
+     getThemePath() {
+       return join(moduleDir, 'theme', 'runtime');
+     },
+ 
+     getTypeScriptThemePath() {
+       return join(moduleDir, 'theme');
+     },
+ 
+     getClientModules() {
+       return [join(moduleDir, 'theme/styles.css')];
+     },
+   };
+ }
+ 
+ function deriveDocId(folderAbsPath: string, sourcePath: string | undefined): string | undefined {
+   if (!sourcePath) return undefined;
+   const rel = relative(folderAbsPath, sourcePath);
+   if (!rel || rel.startsWith('..')) return undefined;
+   const normalized = rel.replace(/\\/g, '/');
+   const withoutExt = normalized.replace(/\.[^./]+$/u, '');
+   return withoutExt || undefined;
+ }
+ 
+diff --git a/packages/docusaurus-plugin-smartlinker/src/metricsStore.ts b/packages/docusaurus-plugin-smartlinker/src/metricsStore.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..4d5b897fc1a158b9870bf4f1279741572d9a7581
+--- /dev/null
++++ b/packages/docusaurus-plugin-smartlinker/src/metricsStore.ts
+@@ -0,0 +1,58 @@
++let termProcessingMs = 0;
++let indexBuildMs = 0;
++
++function normalizeDuration(value: number): number {
++  if (!Number.isFinite(value) || value < 0) {
++    return 0;
++  }
++  return Number(value.toFixed(2));
++}
++
++export function recordTermProcessingMs(durationMs: number): void {
++  const normalized = normalizeDuration(durationMs);
++  if (normalized <= 0) {
++    return;
++  }
++  termProcessingMs += normalized;
++}
++
++export function getTermProcessingMs(): number {
++  return Number(termProcessingMs.toFixed(2));
++}
++
++export function consumeTermProcessingMs(): number {
++  const total = getTermProcessingMs();
++  termProcessingMs = 0;
++  return total;
++}
++
++export function resetTermProcessingMs(): void {
++  termProcessingMs = 0;
++}
++
++export function recordIndexBuildMs(durationMs: number): void {
++  const normalized = normalizeDuration(durationMs);
++  if (normalized <= 0) {
++    return;
++  }
++  indexBuildMs += normalized;
++}
++
++export function getIndexBuildMs(): number {
++  return Number(indexBuildMs.toFixed(2));
++}
++
++export function consumeIndexBuildMs(): number {
++  const total = getIndexBuildMs();
++  indexBuildMs = 0;
++  return total;
++}
++
++export function resetIndexBuildMs(): void {
++  indexBuildMs = 0;
++}
++
++export function resetMetrics(): void {
++  resetTermProcessingMs();
++  resetIndexBuildMs();
++}
+diff --git a/packages/remark-smartlinker/src/transform.ts b/packages/remark-smartlinker/src/transform.ts
+index 6acbf0fb63765edef24b3fa817176b7f8bdac9f8..2a12e4869018b38309104824cd88f08877741b7a 100644
+--- a/packages/remark-smartlinker/src/transform.ts
++++ b/packages/remark-smartlinker/src/transform.ts
+@@ -1,37 +1,39 @@
+ import type { Transformer } from 'unified';
+ import { visit, SKIP } from 'unist-util-visit';
+ import { normalize } from 'node:path';
++import { performance } from 'node:perf_hooks';
+ import type { Parent } from 'unist';
+ import type { Content, Root, Text, PhrasingContent } from 'mdast';
+ import {
+   getIndexProvider as getRegisteredIndexProvider,
+   PLUGIN_NAME,
+   resolveDebugConfig,
+   createLogger,
+   type DebugOptions,
+   getDebugConfig,
++  recordTermProcessingMs,
+ } from 'docusaurus-plugin-smartlinker';
+ import { buildMatcher, type AutoLinkEntry } from './matcher.js';
+ 
+ export interface TargetInfo {
+   id: string;
+   slug: string;
+   icon?: string;
+   sourcePath: string;
+   terms: string[];
+   folderId?: string | null;
+ }
+ 
+ export interface IndexProvider {
+   getAllTargets(): TargetInfo[];
+   getCurrentFilePath(file: import('vfile').VFile): string;
+ }
+ 
+ export interface RemarkSmartlinkerOptions {
+   index?: IndexProvider;
+   componentName?: string;
+   toAttr?: string;
+   iconAttr?: string;
+   tipKeyAttr?: string;
+   matchAttr?: string;
+   shortNoteComponentName?: string;
+@@ -254,82 +256,87 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
+       transformLogger.info('Processing file', () => ({
+         filePath: filePath ?? null,
+         currentTargetId: currentTarget?.id ?? null,
+         currentTargetSlug: currentTarget?.slug ?? null,
+       }));
+     }
+ 
+     const onLinkInserted = (args: { text: string; slug: string; id: string; icon?: string }) => {
+       if (!transformLogger.isLevelEnabled('debug')) return;
+       transformLogger.debug('Smartlink inserted', () => ({
+         filePath: filePath ?? null,
+         text: args.text,
+         to: args.slug,
+         tipKey: args.id,
+         icon: args.icon ?? null,
+       }));
+     };
+     const onShortNoteInserted = (args: { id: string }) => {
+       if (!transformLogger.isLevelEnabled('debug')) return;
+       transformLogger.debug('Short-note placeholder replaced', () => ({
+         filePath: filePath ?? null,
+         tipKey: args.id,
+       }));
+     };
+ 
++    const startTime = performance.now();
++
+     visit(tree, (node, _index, parent: Parent | undefined) => {
+       if (isSkippable(node as any, mdxComponentNamesToSkip)) return SKIP as any;
+       if (!parent) return;
+       if ((node as any).type !== 'text') return;
+ 
+       const textNode = node as Text;
+       const text = textNode.value ?? '';
+       if (!text || !text.trim()) return;
+ 
+       const result = transformText({
+         text,
+         matcher,
+         claimMap,
+         componentName,
+         toAttr,
+         tipKeyAttr,
+         matchAttr,
+         iconAttr,
+         shortNoteComponentName,
+         shortNoteTipKeyAttr,
+         shortNotePlaceholder,
+         currentTarget,
+         onLinkInserted,
+         onShortNoteInserted,
+       });
+       if (!result || !result.changed) return;
+ 
+       const idx = (parent.children as Content[]).indexOf(node as any);
+       if (idx >= 0) (parent.children as Content[]).splice(idx, 1, ...result.nodes);
+ 
+     });
+ 
++    const duration = performance.now() - startTime;
++    recordTermProcessingMs(duration);
++
+     // No extra summary logs to avoid noise; per-insertion debug logs above
+ 
+     return tree;
+   };
+ }
+ 
+ function normalizePath(value: string | null | undefined): string | null {
+   if (!value || typeof value !== 'string') return null;
+   const trimmed = value.trim();
+   if (!trimmed) return null;
+   try {
+     return normalize(trimmed).replace(/\\/g, '/').toLowerCase();
+   } catch {
+     return trimmed.replace(/\\/g, '/').toLowerCase();
+   }
+ }
+ 
+ interface TransformArgs {
+   text: string;
+   matcher: ReturnType<typeof buildMatcher>;
+   claimMap: Map<string, { id: string; slug: string; icon?: string }[]>;
+   componentName: string;
+   toAttr: string;
+   tipKeyAttr: string;
+   matchAttr: string;

@@ -905,6 +905,56 @@ function getDebugConfig() {
   return void 0;
 }
 
+// src/metricsStore.ts
+var termProcessingMs = 0;
+var indexBuildMs = 0;
+function normalizeDuration(value) {
+  if (!Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+  return Number(value.toFixed(2));
+}
+function recordTermProcessingMs(durationMs) {
+  const normalized = normalizeDuration(durationMs);
+  if (normalized <= 0) {
+    return;
+  }
+  termProcessingMs += normalized;
+}
+function getTermProcessingMs() {
+  return Number(termProcessingMs.toFixed(2));
+}
+function consumeTermProcessingMs() {
+  const total = getTermProcessingMs();
+  termProcessingMs = 0;
+  return total;
+}
+function resetTermProcessingMs() {
+  termProcessingMs = 0;
+}
+function recordIndexBuildMs(durationMs) {
+  const normalized = normalizeDuration(durationMs);
+  if (normalized <= 0) {
+    return;
+  }
+  indexBuildMs += normalized;
+}
+function getIndexBuildMs() {
+  return Number(indexBuildMs.toFixed(2));
+}
+function consumeIndexBuildMs() {
+  const total = getIndexBuildMs();
+  indexBuildMs = 0;
+  return total;
+}
+function resetIndexBuildMs() {
+  indexBuildMs = 0;
+}
+function resetMetrics() {
+  resetTermProcessingMs();
+  resetIndexBuildMs();
+}
+
 // src/fsIndexProvider.ts
 function createFsIndexProvider(opts) {
   const resolvedRoots = (opts.roots ?? []).map((root) => {
@@ -963,6 +1013,7 @@ function smartlinkerPlugin(_context, optsIn) {
     debug: debugResolution.config
   };
   setDebugConfig(normOpts.debug);
+  resetMetrics();
   if (normOpts.folders.length === 0) {
     throw new Error(
       `[${pluginName}] Configure at least one folder via the \`folders\` option.`
@@ -983,7 +1034,9 @@ function smartlinkerPlugin(_context, optsIn) {
     noteCount: 0,
     resolvedCount: 0,
     reusedPrimedFiles: false,
-    registryBytes: 0
+    registryBytes: 0,
+    indexBuildMs: 0,
+    termProcessingMs: 0
   };
   const shouldMeasure = (log, ...levels) => levels.some((level) => log.isLevelEnabled(level));
   const startTimer = (log, ...levels) => shouldMeasure(log, ...levels) ? perf_hooks.performance.now() : null;
@@ -1083,10 +1136,12 @@ function smartlinkerPlugin(_context, optsIn) {
   const primeIndexProvider = () => {
     const start = startTimer(indexLogger, "debug", "info");
     primedFiles = collectFiles();
+    const indexBuildStart = perf_hooks.performance.now();
     const { entries } = loadIndexFromFiles(primedFiles);
     applyFolderDefaults(entries);
     setIndexEntries(entries);
     stats.entryCount = entries.length;
+    recordIndexBuildMs(perf_hooks.performance.now() - indexBuildStart);
     if (indexLogger.isLevelEnabled("debug")) {
       indexLogger.debug("Primed SmartLink index provider", {
         entryCount: entries.length,
@@ -1129,9 +1184,11 @@ function smartlinkerPlugin(_context, optsIn) {
         }));
       }
       const compileMdx = await createTooltipMdxCompiler(_context);
+      const indexBuildStart = perf_hooks.performance.now();
       const { entries, notes, registry } = await buildArtifacts(files, {
         compileMdx
       });
+      recordIndexBuildMs(perf_hooks.performance.now() - indexBuildStart);
       stats.entryCount = entries.length;
       stats.noteCount = notes.length;
       stats.registryBytes = buffer.Buffer.byteLength(registry.contents, "utf8");
@@ -1208,16 +1265,29 @@ function smartlinkerPlugin(_context, optsIn) {
       }
     },
     async postBuild() {
-      if (!postBuildLogger.isLevelEnabled("info")) {
-        return;
+      const termProcessingMs2 = consumeTermProcessingMs();
+      const indexBuildMs2 = consumeIndexBuildMs();
+      stats.termProcessingMs = termProcessingMs2;
+      stats.indexBuildMs = indexBuildMs2;
+      if (postBuildLogger.isLevelEnabled("info")) {
+        postBuildLogger.info("SmartLink build complete", {
+          entryCount: stats.resolvedCount,
+          noteCount: stats.noteCount,
+          filesScanned: stats.scannedFileCount,
+          reusedPrimedFiles: stats.reusedPrimedFiles,
+          registryBytes: stats.registryBytes,
+          indexBuildMs: stats.indexBuildMs,
+          termProcessingMs: stats.termProcessingMs
+        });
       }
-      postBuildLogger.info("SmartLink build complete", {
-        entryCount: stats.resolvedCount,
-        noteCount: stats.noteCount,
-        filesScanned: stats.scannedFileCount,
-        reusedPrimedFiles: stats.reusedPrimedFiles,
-        registryBytes: stats.registryBytes
-      });
+      if (postBuildLogger.isLevelEnabled("debug")) {
+        postBuildLogger.debug("Term processing duration", {
+          termProcessingMs: termProcessingMs2
+        });
+        postBuildLogger.debug("Index build duration", {
+          indexBuildMs: indexBuildMs2
+        });
+      }
     },
     getThemePath() {
       return path.join(moduleDir, "theme", "runtime");
@@ -1282,11 +1352,20 @@ function loadDocsContentFromGenerated(generatedFilesDir) {
 }
 
 exports.PLUGIN_NAME = PLUGIN_NAME;
+exports.consumeIndexBuildMs = consumeIndexBuildMs;
+exports.consumeTermProcessingMs = consumeTermProcessingMs;
 exports.createFsIndexProvider = createFsIndexProvider;
 exports.createLogger = createLogger;
 exports.default = smartlinkerPlugin;
 exports.getDebugConfig = getDebugConfig;
+exports.getIndexBuildMs = getIndexBuildMs;
 exports.getIndexProvider = getIndexProvider;
+exports.getTermProcessingMs = getTermProcessingMs;
+exports.recordIndexBuildMs = recordIndexBuildMs;
+exports.recordTermProcessingMs = recordTermProcessingMs;
+exports.resetIndexBuildMs = resetIndexBuildMs;
+exports.resetMetrics = resetMetrics;
+exports.resetTermProcessingMs = resetTermProcessingMs;
 exports.resolveDebugConfig = resolveDebugConfig;
 exports.setDebugConfig = setDebugConfig;
 //# sourceMappingURL=index.cjs.map

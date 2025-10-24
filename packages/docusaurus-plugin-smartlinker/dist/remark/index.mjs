@@ -1,6 +1,7 @@
 import { visit, SKIP } from 'unist-util-visit';
 import { normalize } from 'path';
-import { getDebugConfig, resolveDebugConfig, createLogger, PLUGIN_NAME, getIndexProvider } from 'docusaurus-plugin-smartlinker';
+import { performance } from 'perf_hooks';
+import { getDebugConfig, resolveDebugConfig, createLogger, PLUGIN_NAME, recordTermProcessingMs, getIndexProvider } from 'docusaurus-plugin-smartlinker';
 
 // ../remark-smartlinker/src/transform.ts
 
@@ -274,6 +275,7 @@ function remarkSmartlinker(opts) {
         tipKey: args.id
       }));
     };
+    const startTime = performance.now();
     visit(tree, (node, _index, parent) => {
       if (isSkippable(node, mdxComponentNamesToSkip)) return SKIP;
       if (!parent) return;
@@ -301,6 +303,8 @@ function remarkSmartlinker(opts) {
       const idx = parent.children.indexOf(node);
       if (idx >= 0) parent.children.splice(idx, 1, ...result.nodes);
     });
+    const duration = performance.now() - startTime;
+    recordTermProcessingMs(duration);
     return tree;
   };
 }

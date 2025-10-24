@@ -25,6 +25,12 @@ import { resolveEntryPermalinks, type EntryWithResolvedUrl } from './node/permal
 import type { LoadedContent as DocsLoadedContent } from '@docusaurus/plugin-content-docs';
 import { resolveDebugConfig, createLogger, type LogLevel } from './logger.js';
 import { setDebugConfig } from './debugStore.js';
+import {
+  recordIndexBuildMs,
+  resetMetrics,
+  consumeIndexBuildMs,
+  consumeTermProcessingMs,
+} from './metricsStore.js';
 
 export type {
   FsIndexProviderOptions,
@@ -38,6 +44,17 @@ export { getIndexProvider } from './indexProviderStore.js';
 export { resolveDebugConfig, createLogger, type LogLevel } from './logger.js';
 export type { DebugOptions } from './options.js';
 export { getDebugConfig, setDebugConfig } from './debugStore.js';
+export {
+  recordIndexBuildMs,
+  resetMetrics,
+  resetTermProcessingMs,
+  recordTermProcessingMs,
+  resetIndexBuildMs,
+  consumeIndexBuildMs,
+  consumeTermProcessingMs,
+  getIndexBuildMs,
+  getTermProcessingMs,
+} from './metricsStore.js';
 
 export type { PluginOptions } from './options.js';
 
@@ -98,6 +115,7 @@ export default function smartlinkerPlugin(
   // Make debug configuration available globally so the remark transformer
   // can mirror the same logging behavior without separate config.
   setDebugConfig(normOpts.debug);
+  resetMetrics();
 
   if (normOpts.folders.length === 0) {
     throw new Error(
@@ -122,6 +140,8 @@ export default function smartlinkerPlugin(
     resolvedCount: 0,
     reusedPrimedFiles: false,
     registryBytes: 0,
+    indexBuildMs: 0,
+    termProcessingMs: 0,
   };
 
   const shouldMeasure = (
@@ -250,10 +270,12 @@ export default function smartlinkerPlugin(
   const primeIndexProvider = () => {
     const start = startTimer(indexLogger, 'debug', 'info');
     primedFiles = collectFiles();
+    const indexBuildStart = performance.now();
     const { entries } = loadIndexFromFiles(primedFiles);
     applyFolderDefaults(entries);
     setIndexEntries(entries);
     stats.entryCount = entries.length;
+    recordIndexBuildMs(performance.now() - indexBuildStart);
 
     if (indexLogger.isLevelEnabled('debug')) {
       indexLogger.debug('Primed SmartLink index provider', {
@@ -305,9 +327,11 @@ export default function smartlinkerPlugin(
       }
 
       const compileMdx = await createTooltipMdxCompiler(_context);
+      const indexBuildStart = performance.now();
       const { entries, notes, registry } = await buildArtifacts(files, {
         compileMdx,
       });
+      recordIndexBuildMs(performance.now() - indexBuildStart);
 
       stats.entryCount = entries.length;
       stats.noteCount = notes.length;
@@ -402,16 +426,31 @@ export default function smartlinkerPlugin(
     },
 
     async postBuild() {
-      if (!postBuildLogger.isLevelEnabled('info')) {
-        return;
+      const termProcessingMs = consumeTermProcessingMs();
+      const indexBuildMs = consumeIndexBuildMs();
+      stats.termProcessingMs = termProcessingMs;
+      stats.indexBuildMs = indexBuildMs;
+
+      if (postBuildLogger.isLevelEnabled('info')) {
+        postBuildLogger.info('SmartLink build complete', {
+          entryCount: stats.resolvedCount,
+          noteCount: stats.noteCount,
+          filesScanned: stats.scannedFileCount,
+          reusedPrimedFiles: stats.reusedPrimedFiles,
+          registryBytes: stats.registryBytes,
+          indexBuildMs: stats.indexBuildMs,
+          termProcessingMs: stats.termProcessingMs,
+        });
       }
-      postBuildLogger.info('SmartLink build complete', {
-        entryCount: stats.resolvedCount,
-        noteCount: stats.noteCount,
-        filesScanned: stats.scannedFileCount,
-        reusedPrimedFiles: stats.reusedPrimedFiles,
-        registryBytes: stats.registryBytes,
-      });
+
+      if (postBuildLogger.isLevelEnabled('debug')) {
+        postBuildLogger.debug('Term processing duration', {
+          termProcessingMs,
+        });
+        postBuildLogger.debug('Index build duration', {
+          indexBuildMs,
+        });
+      }
     },
 
     getThemePath() {

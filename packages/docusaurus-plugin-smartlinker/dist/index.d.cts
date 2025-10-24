@@ -228,6 +228,16 @@ declare function createLogger(init: LoggerInit): PluginLogger;
 declare function setDebugConfig(config: DebugOptions | undefined): void;
 declare function getDebugConfig(): DebugOptions | undefined;
 
+declare function recordTermProcessingMs(durationMs: number): void;
+declare function getTermProcessingMs(): number;
+declare function consumeTermProcessingMs(): number;
+declare function resetTermProcessingMs(): void;
+declare function recordIndexBuildMs(durationMs: number): void;
+declare function getIndexBuildMs(): number;
+declare function consumeIndexBuildMs(): number;
+declare function resetIndexBuildMs(): void;
+declare function resetMetrics(): void;
+
 type Content = {
     entries: IndexRawEntry[];
     notes: NoteModule[];
@@ -236,4 +246,4 @@ type Content = {
 };
 declare function smartlinkerPlugin(_context: LoadContext, optsIn?: PluginOptions): Plugin<Content>;
 
-export { type DebugOptions, type FsIndexProviderOptions, type IndexProvider, type LogLevel, PLUGIN_NAME, type PluginOptions, type TargetInfo, createFsIndexProvider, createLogger, smartlinkerPlugin as default, getDebugConfig, getIndexProvider, resolveDebugConfig, setDebugConfig };
+export { type DebugOptions, type FsIndexProviderOptions, type IndexProvider, type LogLevel, PLUGIN_NAME, type PluginOptions, type TargetInfo, consumeIndexBuildMs, consumeTermProcessingMs, createFsIndexProvider, createLogger, smartlinkerPlugin as default, getDebugConfig, getIndexBuildMs, getIndexProvider, getTermProcessingMs, recordIndexBuildMs, recordTermProcessingMs, resetIndexBuildMs, resetMetrics, resetTermProcessingMs, resolveDebugConfig, setDebugConfig };

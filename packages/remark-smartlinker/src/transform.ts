@@ -1,6 +1,7 @@
 import type { Transformer } from 'unified';
 import { visit, SKIP } from 'unist-util-visit';
 import { normalize } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import type { Parent } from 'unist';
 import type { Content, Root, Text, PhrasingContent } from 'mdast';
 import {
@@ -10,6 +11,7 @@ import {
   createLogger,
   type DebugOptions,
   getDebugConfig,
+  recordTermProcessingMs,
 } from 'docusaurus-plugin-smartlinker';
 import { buildMatcher, type AutoLinkEntry } from './matcher.js';
 
@@ -276,6 +278,8 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
       }));
     };
 
+    const startTime = performance.now();
+
     visit(tree, (node, _index, parent: Parent | undefined) => {
       if (isSkippable(node as any, mdxComponentNamesToSkip)) return SKIP as any;
       if (!parent) return;
@@ -307,6 +311,9 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
       if (idx >= 0) (parent.children as Content[]).splice(idx, 1, ...result.nodes);
 
     });
+
+    const duration = performance.now() - startTime;
+    recordTermProcessingMs(duration);
 
     // No extra summary logs to avoid noise; per-insertion debug logs above
 

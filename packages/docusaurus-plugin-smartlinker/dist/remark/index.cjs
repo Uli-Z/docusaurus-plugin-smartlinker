@@ -4,6 +4,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 var unistUtilVisit = require('unist-util-visit');
 var path = require('path');
+var perf_hooks = require('perf_hooks');
 var docusaurusPluginSmartlinker = require('docusaurus-plugin-smartlinker');
 
 // ../remark-smartlinker/src/transform.ts
@@ -278,6 +279,7 @@ function remarkSmartlinker(opts) {
         tipKey: args.id
       }));
     };
+    const startTime = perf_hooks.performance.now();
     unistUtilVisit.visit(tree, (node, _index, parent) => {
       if (isSkippable(node, mdxComponentNamesToSkip)) return unistUtilVisit.SKIP;
       if (!parent) return;
@@ -305,6 +307,8 @@ function remarkSmartlinker(opts) {
       const idx = parent.children.indexOf(node);
       if (idx >= 0) parent.children.splice(idx, 1, ...result.nodes);
     });
+    const duration = perf_hooks.performance.now() - startTime;
+    docusaurusPluginSmartlinker.recordTermProcessingMs(duration);
     return tree;
   };
 }
