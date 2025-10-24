@@ -4,6 +4,12 @@
 
 - _Nothing yet._
 
+## 0.2.1 — Shared metrics instrumentation
+
+- Added a shared metrics store to accumulate SmartLink term processing durations and expose helper functions to other modules.
+- Reset metric tracking during plugin init and emit aggregated duration stats from the `postBuild` hook, including debug-level logs.
+- Instrumented the remark transformer to measure its visit pass and contribute timings to the shared metrics store.
+
 ## 0.2.0 — Dual-format packaging & tooling
 
 - Aligned SmartLink tooltip/link styling with Infima tokens and exposed `--lm-*` overrides while documenting bespoke defaults.

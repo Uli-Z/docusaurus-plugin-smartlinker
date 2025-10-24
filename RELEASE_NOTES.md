@@ -1,3 +1,11 @@
+# Release Notes — v0.2.1
+
+Smartlinker 0.2.1 introduces shared metrics instrumentation:
+
+- New metrics store aggregates SmartLink term processing durations for reuse across modules.
+- Plugin initialization resets timing data and `postBuild` now emits aggregated timing (info + debug scope).
+- Remark transformer visit pass is instrumented to report elapsed time into the common store.
+
 # Release Notes — v0.2.0
 
 Smartlinker 0.2.0 focuses on packaging and automation:
