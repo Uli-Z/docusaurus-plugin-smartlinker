@@ -238,6 +238,10 @@ declare function consumeIndexBuildMs(): number;
 declare function resetIndexBuildMs(): void;
 declare function resetMetrics(): void;
 
+declare function updateDocTermUsage(docPath: string | null | undefined, termIds: Iterable<string>): void;
+declare function removeDocTermUsage(docPath: string | null | undefined): void;
+declare function resetTermUsage(): void;
+
 type Content = {
     entries: IndexRawEntry[];
     notes: NoteModule[];
@@ -246,4 +250,4 @@ type Content = {
 };
 declare function smartlinkerPlugin(_context: LoadContext, optsIn?: PluginOptions): Plugin<Content>;
 
-export { type DebugOptions, type FsIndexProviderOptions, type IndexProvider, type LogLevel, PLUGIN_NAME, type PluginOptions, type TargetInfo, consumeIndexBuildMs, consumeTermProcessingMs, createFsIndexProvider, createLogger, smartlinkerPlugin as default, getDebugConfig, getIndexBuildMs, getIndexProvider, getTermProcessingMs, recordIndexBuildMs, recordTermProcessingMs, resetIndexBuildMs, resetMetrics, resetTermProcessingMs, resolveDebugConfig, setDebugConfig };
+export { type DebugOptions, type FsIndexProviderOptions, type IndexProvider, type LogLevel, PLUGIN_NAME, type PluginOptions, type TargetInfo, consumeIndexBuildMs, consumeTermProcessingMs, createFsIndexProvider, createLogger, smartlinkerPlugin as default, getDebugConfig, getIndexBuildMs, getIndexProvider, getTermProcessingMs, recordIndexBuildMs, recordTermProcessingMs, removeDocTermUsage, resetIndexBuildMs, resetMetrics, resetTermProcessingMs, resetTermUsage, resolveDebugConfig, setDebugConfig, updateDocTermUsage };

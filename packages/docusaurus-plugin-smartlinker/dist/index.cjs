@@ -954,6 +954,93 @@ function resetMetrics() {
   resetTermProcessingMs();
   resetIndexBuildMs();
 }
+var GLOBAL_KEY3 = Symbol.for("docusaurus-plugin-smartlinker.termUsage");
+function getState() {
+  const store = globalThis;
+  const existing = store[GLOBAL_KEY3];
+  if (existing && typeof existing === "object" && existing instanceof Object && "byTerm" in existing && "byDoc" in existing) {
+    const candidate = existing;
+    if (candidate.byTerm instanceof Map && candidate.byDoc instanceof Map) {
+      return candidate;
+    }
+  }
+  const fresh = {
+    byTerm: /* @__PURE__ */ new Map(),
+    byDoc: /* @__PURE__ */ new Map()
+  };
+  store[GLOBAL_KEY3] = fresh;
+  return fresh;
+}
+function normalizeDocPath(docPath) {
+  if (!docPath || typeof docPath !== "string") return null;
+  const trimmed = docPath.trim();
+  if (!trimmed) return null;
+  const abs = path.isAbsolute(trimmed) ? trimmed : path.resolve(trimmed);
+  try {
+    return path.normalize(abs).replace(/\\/g, "/");
+  } catch {
+    return abs.replace(/\\/g, "/");
+  }
+}
+function updateTermBindings(state, docPath, nextTerms) {
+  const prevTerms = state.byDoc.get(docPath);
+  if (prevTerms) {
+    for (const term of prevTerms) {
+      const docs = state.byTerm.get(term);
+      if (!docs) continue;
+      docs.delete(docPath);
+      if (docs.size === 0) {
+        state.byTerm.delete(term);
+      }
+    }
+  }
+  if (nextTerms.size === 0) {
+    state.byDoc.delete(docPath);
+    return;
+  }
+  state.byDoc.set(docPath, nextTerms);
+  for (const term of nextTerms) {
+    const docs = state.byTerm.get(term) ?? /* @__PURE__ */ new Set();
+    docs.add(docPath);
+    state.byTerm.set(term, docs);
+  }
+}
+function updateDocTermUsage(docPath, termIds) {
+  const normalizedPath = normalizeDocPath(docPath);
+  if (!normalizedPath) return;
+  const terms = /* @__PURE__ */ new Set();
+  for (const id of termIds) {
+    if (!id) continue;
+    const trimmed = `${id}`.trim();
+    if (!trimmed) continue;
+    terms.add(trimmed);
+  }
+  const state = getState();
+  updateTermBindings(state, normalizedPath, terms);
+}
+function removeDocTermUsage(docPath) {
+  updateDocTermUsage(docPath, []);
+}
+function getDocsReferencingTerms(termIds) {
+  const state = getState();
+  const docs = /* @__PURE__ */ new Set();
+  for (const id of termIds) {
+    if (!id) continue;
+    const trimmed = `${id}`.trim();
+    if (!trimmed) continue;
+    const registered = state.byTerm.get(trimmed);
+    if (!registered) continue;
+    for (const doc of registered) {
+      docs.add(doc);
+    }
+  }
+  return Array.from(docs);
+}
+function resetTermUsage() {
+  const state = getState();
+  state.byTerm.clear();
+  state.byDoc.clear();
+}
 
 // src/fsIndexProvider.ts
 function createFsIndexProvider(opts) {
@@ -1028,6 +1115,7 @@ function smartlinkerPlugin(_context, optsIn) {
   const contentLogger = logger.child("contentLoaded");
   const webpackLogger = logger.child("configureWebpack");
   const postBuildLogger = logger.child("postBuild");
+  const watchLogger = logger.child("watch");
   const stats = {
     scannedFileCount: 0,
     entryCount: 0,
@@ -1095,6 +1183,20 @@ function smartlinkerPlugin(_context, optsIn) {
     }
   }
   let primedFiles = null;
+  let cachedEntrySignatures = /* @__PURE__ */ new Map();
+  let cachedEntriesBySource = /* @__PURE__ */ new Map();
+  const toAbsolutePath = (filePath) => path.isAbsolute(filePath) ? filePath : path.resolve(_context.siteDir, filePath);
+  const normalizeFsPath = (filePath) => {
+    if (!filePath) {
+      return _context.siteDir.replace(/\\/g, "/");
+    }
+    const abs = toAbsolutePath(filePath);
+    return abs.replace(/\\/g, "/");
+  };
+  const buildWatchPattern = (absPath) => {
+    const normalized = normalizeFsPath(absPath).replace(/\/+$/, "");
+    return `${normalized}/**/*.{md,mdx}`;
+  };
   const collectFiles = () => {
     const start = startTimer(scanLogger, "debug", "info");
     const files = [];
@@ -1119,6 +1221,99 @@ function smartlinkerPlugin(_context, optsIn) {
     }
     return files;
   };
+  const computeEntrySignature = (entry) => JSON.stringify({
+    slug: entry.slug,
+    terms: [...entry.terms],
+    icon: entry.icon ?? null,
+    shortNote: entry.shortNote ?? null,
+    folderId: entry.folderId ?? null,
+    sourcePath: normalizeFsPath(entry.sourcePath ?? "")
+  });
+  const refreshEntryCaches = (entries) => {
+    entries.map((entry) => ({ ...entry }));
+    const signatures = /* @__PURE__ */ new Map();
+    const bySource = /* @__PURE__ */ new Map();
+    for (const entry of entries) {
+      signatures.set(entry.id, computeEntrySignature(entry));
+      const key = normalizeFsPath(entry.sourcePath ?? "");
+      const list = bySource.get(key);
+      if (list) {
+        list.push(entry);
+      } else {
+        bySource.set(key, [entry]);
+      }
+    }
+    cachedEntrySignatures = signatures;
+    cachedEntriesBySource = bySource;
+  };
+  const isPathWithinFolder = (absPath) => {
+    for (const folder of resolvedFolders) {
+      const relPath = path.relative(folder.absPath, absPath);
+      if (!relPath || !relPath.startsWith("..") && !path.isAbsolute(relPath)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const filterRelevantPaths = (paths) => {
+    const relevant = /* @__PURE__ */ new Set();
+    for (const candidate of paths) {
+      if (!candidate) continue;
+      const absPath = normalizeFsPath(candidate);
+      if (isPathWithinFolder(absPath)) {
+        relevant.add(absPath);
+      }
+    }
+    return relevant;
+  };
+  const diffEntryState = (nextEntries, impactedPaths) => {
+    const impactedTermIds = /* @__PURE__ */ new Set();
+    const nextBySource = /* @__PURE__ */ new Map();
+    const nextSignatures = /* @__PURE__ */ new Map();
+    for (const entry of nextEntries) {
+      const sourceKey = normalizeFsPath(entry.sourcePath ?? "");
+      const arr = nextBySource.get(sourceKey);
+      if (arr) {
+        arr.push(entry);
+      } else {
+        nextBySource.set(sourceKey, [entry]);
+      }
+      nextSignatures.set(entry.id, computeEntrySignature(entry));
+    }
+    for (const path of impactedPaths) {
+      const prevEntries = cachedEntriesBySource.get(path);
+      if (prevEntries) {
+        for (const entry of prevEntries) {
+          impactedTermIds.add(entry.id);
+        }
+      }
+      const nextEntriesForPath = nextBySource.get(path);
+      if (nextEntriesForPath) {
+        for (const entry of nextEntriesForPath) {
+          impactedTermIds.add(entry.id);
+        }
+      }
+    }
+    const addedTermIds = /* @__PURE__ */ new Set();
+    const removedTermIds = /* @__PURE__ */ new Set();
+    const changedTermIds = /* @__PURE__ */ new Set();
+    for (const [id, signature] of nextSignatures) {
+      const previous = cachedEntrySignatures.get(id);
+      if (previous === void 0) {
+        addedTermIds.add(id);
+        changedTermIds.add(id);
+      } else if (previous !== signature) {
+        changedTermIds.add(id);
+      }
+    }
+    for (const [id] of cachedEntrySignatures) {
+      if (!nextSignatures.has(id)) {
+        removedTermIds.add(id);
+        changedTermIds.add(id);
+      }
+    }
+    return { impactedTermIds, addedTermIds, removedTermIds, changedTermIds };
+  };
   const applyFolderDefaults = (entries) => {
     for (const entry of entries) {
       const folder = entry.folderId ? folderById.get(entry.folderId) : void 0;
@@ -1140,6 +1335,7 @@ function smartlinkerPlugin(_context, optsIn) {
     const { entries } = loadIndexFromFiles(primedFiles);
     applyFolderDefaults(entries);
     setIndexEntries(entries);
+    refreshEntryCaches(entries);
     stats.entryCount = entries.length;
     recordIndexBuildMs(perf_hooks.performance.now() - indexBuildStart);
     if (indexLogger.isLevelEnabled("debug")) {
@@ -1155,8 +1351,15 @@ function smartlinkerPlugin(_context, optsIn) {
     }
   };
   primeIndexProvider();
-  return {
+  const plugin = {
     name: pluginName,
+    getPathsToWatch() {
+      const patterns = /* @__PURE__ */ new Set();
+      for (const folder of resolvedFolders) {
+        patterns.add(buildWatchPattern(folder.absPath));
+      }
+      return Array.from(patterns);
+    },
     configureWebpack() {
       if (webpackLogger.isLevelEnabled("debug")) {
         webpackLogger.debug("configureWebpack invoked", {
@@ -1194,6 +1397,62 @@ function smartlinkerPlugin(_context, optsIn) {
       stats.registryBytes = buffer.Buffer.byteLength(registry.contents, "utf8");
       applyFolderDefaults(entries);
       setIndexEntries(entries);
+      try {
+        const { changedTermIds, addedTermIds, removedTermIds } = diffEntryState(
+          entries,
+          /* @__PURE__ */ new Set()
+        );
+        if (changedTermIds.size > 0) {
+          const docsForReload = new Set(
+            getDocsReferencingTerms(changedTermIds)
+          );
+          const touchedDocs = [];
+          if (docsForReload.size > 0) {
+            const now = /* @__PURE__ */ new Date();
+            for (const docPath of docsForReload) {
+              const absDocPath = normalizeFsPath(docPath);
+              if (!fs.existsSync(absDocPath)) continue;
+              try {
+                fs.utimesSync(absDocPath, now, now);
+                touchedDocs.push(absDocPath);
+              } catch (error) {
+                if (watchLogger.isLevelEnabled("warn")) {
+                  watchLogger.warn(
+                    "Failed to mark SmartLink consumer for rebuild",
+                    () => ({
+                      file: formatSiteRelativePath(absDocPath),
+                      error: error instanceof Error ? error.message : String(error)
+                    })
+                  );
+                }
+              }
+            }
+          }
+          if (watchLogger.isLevelEnabled("info")) {
+            watchLogger.info("Detected SmartLink term changes", {
+              changedTermCount: changedTermIds.size,
+              addedTermCount: addedTermIds.size,
+              removedTermCount: removedTermIds.size,
+              rebuiltDocCount: touchedDocs.length
+            });
+          }
+          if (watchLogger.isLevelEnabled("debug")) {
+            watchLogger.debug("SmartLink change details", () => ({
+              changedTermIds: Array.from(changedTermIds),
+              addedTermIds: Array.from(addedTermIds),
+              removedTermIds: Array.from(removedTermIds),
+              rebuiltDocs: touchedDocs.map((p) => formatSiteRelativePath(p))
+            }));
+          }
+        }
+      } catch (err) {
+        if (watchLogger.isLevelEnabled("warn")) {
+          watchLogger.warn("SmartLink change detection failed", () => ({
+            error: err instanceof Error ? err.message : String(err)
+          }));
+        }
+      }
+      refreshEntryCaches(entries);
       if (loadLogger.isLevelEnabled("info")) {
         loadLogger.info("Completed SmartLink artifact build", {
           entryCount: entries.length,
@@ -1218,6 +1477,74 @@ function smartlinkerPlugin(_context, optsIn) {
         registry,
         opts: normOpts
       };
+    },
+    async onFilesChange({ changedFiles, deletedFiles }) {
+      const candidates = [...changedFiles ?? [], ...deletedFiles ?? []];
+      const relevantPaths = filterRelevantPaths(candidates);
+      if (relevantPaths.size === 0) {
+        if (watchLogger.isLevelEnabled("trace")) {
+          watchLogger.trace("No SmartLink folders affected by file change", () => ({
+            changedFiles: changedFiles ?? [],
+            deletedFiles: deletedFiles ?? []
+          }));
+        }
+        return;
+      }
+      const start = startTimer(watchLogger, "info", "debug");
+      const files = collectFiles();
+      primedFiles = files;
+      stats.scannedFileCount = files.length;
+      const indexBuildStart = perf_hooks.performance.now();
+      const { entries } = loadIndexFromFiles(files);
+      applyFolderDefaults(entries);
+      recordIndexBuildMs(perf_hooks.performance.now() - indexBuildStart);
+      const { impactedTermIds, addedTermIds, removedTermIds, changedTermIds } = diffEntryState(
+        entries,
+        relevantPaths
+      );
+      setIndexEntries(entries);
+      refreshEntryCaches(entries);
+      stats.entryCount = entries.length;
+      const docsForReload = new Set(getDocsReferencingTerms(changedTermIds));
+      const touchedDocs = [];
+      if (docsForReload.size > 0) {
+        const now = /* @__PURE__ */ new Date();
+        for (const docPath of docsForReload) {
+          const absDocPath = normalizeFsPath(docPath);
+          if (!fs.existsSync(absDocPath)) continue;
+          try {
+            fs.utimesSync(absDocPath, now, now);
+            touchedDocs.push(absDocPath);
+          } catch (error) {
+            if (watchLogger.isLevelEnabled("warn")) {
+              watchLogger.warn("Failed to mark SmartLink consumer for rebuild", () => ({
+                file: formatSiteRelativePath(absDocPath),
+                error: error instanceof Error ? error.message : String(error)
+              }));
+            }
+          }
+        }
+      }
+      if (watchLogger.isLevelEnabled("info")) {
+        watchLogger.info("SmartLink watch rebuild complete", {
+          scannedFileCount: files.length,
+          changedTermCount: changedTermIds.size,
+          addedTermCount: addedTermIds.size,
+          removedTermCount: removedTermIds.size,
+          rebuiltDocCount: touchedDocs.length,
+          durationMs: endTimer(start)
+        });
+      }
+      if (watchLogger.isLevelEnabled("debug")) {
+        watchLogger.debug("SmartLink watch diff", () => ({
+          triggeredBy: Array.from(relevantPaths).map((p) => formatSiteRelativePath(p)),
+          impactedTermIds: Array.from(impactedTermIds),
+          changedTermIds: Array.from(changedTermIds),
+          addedTermIds: Array.from(addedTermIds),
+          removedTermIds: Array.from(removedTermIds),
+          rebuiltDocs: touchedDocs.map((p) => formatSiteRelativePath(p))
+        }));
+      }
     },
     async contentLoaded({ content, actions }) {
       if (!content) return;
@@ -1299,6 +1626,7 @@ function smartlinkerPlugin(_context, optsIn) {
       return [path.join(moduleDir, "theme/styles.css")];
     }
   };
+  return plugin;
 }
 function deriveDocId(folderAbsPath, sourcePath) {
   if (!sourcePath) return void 0;
@@ -1363,10 +1691,13 @@ exports.getIndexProvider = getIndexProvider;
 exports.getTermProcessingMs = getTermProcessingMs;
 exports.recordIndexBuildMs = recordIndexBuildMs;
 exports.recordTermProcessingMs = recordTermProcessingMs;
+exports.removeDocTermUsage = removeDocTermUsage;
 exports.resetIndexBuildMs = resetIndexBuildMs;
 exports.resetMetrics = resetMetrics;
 exports.resetTermProcessingMs = resetTermProcessingMs;
+exports.resetTermUsage = resetTermUsage;
 exports.resolveDebugConfig = resolveDebugConfig;
 exports.setDebugConfig = setDebugConfig;
+exports.updateDocTermUsage = updateDocTermUsage;
 //# sourceMappingURL=index.cjs.map
 //# sourceMappingURL=index.cjs.map

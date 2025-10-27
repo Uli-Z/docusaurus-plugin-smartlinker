@@ -1,7 +1,7 @@
 import { visit, SKIP } from 'unist-util-visit';
 import { normalize } from 'path';
 import { performance } from 'perf_hooks';
-import { getDebugConfig, resolveDebugConfig, createLogger, PLUGIN_NAME, recordTermProcessingMs, getIndexProvider } from 'docusaurus-plugin-smartlinker';
+import { getDebugConfig, resolveDebugConfig, createLogger, PLUGIN_NAME, recordTermProcessingMs, updateDocTermUsage, getIndexProvider } from 'docusaurus-plugin-smartlinker';
 
 // ../remark-smartlinker/src/transform.ts
 
@@ -251,6 +251,7 @@ function remarkSmartlinker(opts) {
       targetBySlug
     });
     const filePath = typeof file?.path === "string" ? file.path : void 0;
+    const observedTermIds = /* @__PURE__ */ new Set();
     if (transformLogger.isLevelEnabled("info")) {
       transformLogger.info("Processing file", () => ({
         filePath: filePath ?? null,
@@ -259,6 +260,9 @@ function remarkSmartlinker(opts) {
       }));
     }
     const onLinkInserted = (args) => {
+      if (args.id) {
+        observedTermIds.add(args.id);
+      }
       if (!transformLogger.isLevelEnabled("debug")) return;
       transformLogger.debug("Smartlink inserted", () => ({
         filePath: filePath ?? null,
@@ -305,6 +309,7 @@ function remarkSmartlinker(opts) {
     });
     const duration = performance.now() - startTime;
     recordTermProcessingMs(duration);
+    updateDocTermUsage(filePath, observedTermIds);
     return tree;
   };
 }

@@ -12,6 +12,7 @@ import {
   type DebugOptions,
   getDebugConfig,
   recordTermProcessingMs,
+  updateDocTermUsage,
 } from 'docusaurus-plugin-smartlinker';
 import { buildMatcher, type AutoLinkEntry } from './matcher.js';
 
@@ -252,6 +253,7 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
     });
 
     const filePath = typeof file?.path === 'string' ? file.path : undefined;
+    const observedTermIds = new Set<string>();
     if (transformLogger.isLevelEnabled('info')) {
       transformLogger.info('Processing file', () => ({
         filePath: filePath ?? null,
@@ -261,6 +263,9 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
     }
 
     const onLinkInserted = (args: { text: string; slug: string; id: string; icon?: string }) => {
+      if (args.id) {
+        observedTermIds.add(args.id);
+      }
       if (!transformLogger.isLevelEnabled('debug')) return;
       transformLogger.debug('Smartlink inserted', () => ({
         filePath: filePath ?? null,
@@ -314,6 +319,8 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
 
     const duration = performance.now() - startTime;
     recordTermProcessingMs(duration);
+
+    updateDocTermUsage(filePath, observedTermIds);
 
     // No extra summary logs to avoid noise; per-insertion debug logs above
 

@@ -1,5 +1,5 @@
 import { dirname, join, resolve, relative, isAbsolute } from 'node:path';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, existsSync, utimesSync } from 'node:fs';
 import { Buffer } from 'node:buffer';
 import { fileURLToPath } from 'node:url';
 import { performance } from 'node:perf_hooks';
@@ -31,6 +31,7 @@ import {
   consumeIndexBuildMs,
   consumeTermProcessingMs,
 } from './metricsStore.js';
+import { getDocsReferencingTerms } from './termUsageStore.js';
 
 export type {
   FsIndexProviderOptions,
@@ -55,6 +56,7 @@ export {
   getIndexBuildMs,
   getTermProcessingMs,
 } from './metricsStore.js';
+export { updateDocTermUsage, removeDocTermUsage, resetTermUsage } from './termUsageStore.js';
 
 export type { PluginOptions } from './options.js';
 
@@ -68,6 +70,15 @@ type Content = {
 type ResolvedFolder = NormalizedFolderOption & {
   absPath: string;
   id: string;
+};
+
+type OnFilesChangeParams = {
+  changedFiles: string[];
+  deletedFiles: string[];
+};
+
+type WatchCapablePlugin<Content> = Plugin<Content> & {
+  onFilesChange?: (params: OnFilesChangeParams) => Promise<void> | void;
 };
 
 function normalizeFolderId(siteDir: string, absPath: string): string {
@@ -132,6 +143,7 @@ export default function smartlinkerPlugin(
   const contentLogger = logger.child('contentLoaded');
   const webpackLogger = logger.child('configureWebpack');
   const postBuildLogger = logger.child('postBuild');
+  const watchLogger = logger.child('watch');
 
   const stats = {
     scannedFileCount: 0,
@@ -222,6 +234,25 @@ export default function smartlinkerPlugin(
   }
 
   let primedFiles: RawDocFile[] | null = null;
+  let cachedEntries: IndexRawEntry[] = [];
+  let cachedEntrySignatures = new Map<string, string>();
+  let cachedEntriesBySource = new Map<string, IndexRawEntry[]>();
+
+  const toAbsolutePath = (filePath: string): string =>
+    isAbsolute(filePath) ? filePath : resolve(_context.siteDir, filePath);
+
+  const normalizeFsPath = (filePath: string): string => {
+    if (!filePath) {
+      return _context.siteDir.replace(/\\/g, '/');
+    }
+    const abs = toAbsolutePath(filePath);
+    return abs.replace(/\\/g, '/');
+  };
+
+  const buildWatchPattern = (absPath: string): string => {
+    const normalized = normalizeFsPath(absPath).replace(/\/+$/, '');
+    return `${normalized}/**/*.{md,mdx}`;
+  };
 
   const collectFiles = (): RawDocFile[] => {
     const start = startTimer(scanLogger, 'debug', 'info');
@@ -251,6 +282,119 @@ export default function smartlinkerPlugin(
     return files;
   };
 
+  const computeEntrySignature = (entry: IndexRawEntry): string =>
+    JSON.stringify({
+      slug: entry.slug,
+      terms: [...entry.terms],
+      icon: entry.icon ?? null,
+      shortNote: entry.shortNote ?? null,
+      folderId: entry.folderId ?? null,
+      sourcePath: normalizeFsPath(entry.sourcePath ?? ''),
+    });
+
+  const refreshEntryCaches = (entries: IndexRawEntry[]) => {
+    cachedEntries = entries.map((entry) => ({ ...entry }));
+    const signatures = new Map<string, string>();
+    const bySource = new Map<string, IndexRawEntry[]>();
+    for (const entry of entries) {
+      signatures.set(entry.id, computeEntrySignature(entry));
+      const key = normalizeFsPath(entry.sourcePath ?? '');
+      const list = bySource.get(key);
+      if (list) {
+        list.push(entry);
+      } else {
+        bySource.set(key, [entry]);
+      }
+    }
+    cachedEntrySignatures = signatures;
+    cachedEntriesBySource = bySource;
+  };
+
+  const isPathWithinFolder = (absPath: string): boolean => {
+    for (const folder of resolvedFolders) {
+      const relPath = relative(folder.absPath, absPath);
+      if (!relPath || (!relPath.startsWith('..') && !isAbsolute(relPath))) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const filterRelevantPaths = (paths: string[]): Set<string> => {
+    const relevant = new Set<string>();
+    for (const candidate of paths) {
+      if (!candidate) continue;
+      const absPath = normalizeFsPath(candidate);
+      if (isPathWithinFolder(absPath)) {
+        relevant.add(absPath);
+      }
+    }
+    return relevant;
+  };
+
+  const diffEntryState = (
+    nextEntries: IndexRawEntry[],
+    impactedPaths: Set<string>,
+  ): {
+    impactedTermIds: Set<string>;
+    addedTermIds: Set<string>;
+    removedTermIds: Set<string>;
+    changedTermIds: Set<string>;
+  } => {
+    const impactedTermIds = new Set<string>();
+    const nextBySource = new Map<string, IndexRawEntry[]>();
+    const nextSignatures = new Map<string, string>();
+
+    for (const entry of nextEntries) {
+      const sourceKey = normalizeFsPath(entry.sourcePath ?? '');
+      const arr = nextBySource.get(sourceKey);
+      if (arr) {
+        arr.push(entry);
+      } else {
+        nextBySource.set(sourceKey, [entry]);
+      }
+      nextSignatures.set(entry.id, computeEntrySignature(entry));
+    }
+
+    for (const path of impactedPaths) {
+      const prevEntries = cachedEntriesBySource.get(path);
+      if (prevEntries) {
+        for (const entry of prevEntries) {
+          impactedTermIds.add(entry.id);
+        }
+      }
+      const nextEntriesForPath = nextBySource.get(path);
+      if (nextEntriesForPath) {
+        for (const entry of nextEntriesForPath) {
+          impactedTermIds.add(entry.id);
+        }
+      }
+    }
+
+    const addedTermIds = new Set<string>();
+    const removedTermIds = new Set<string>();
+    const changedTermIds = new Set<string>();
+
+    for (const [id, signature] of nextSignatures) {
+      const previous = cachedEntrySignatures.get(id);
+      if (previous === undefined) {
+        addedTermIds.add(id);
+        changedTermIds.add(id);
+      } else if (previous !== signature) {
+        changedTermIds.add(id);
+      }
+    }
+
+    for (const [id] of cachedEntrySignatures) {
+      if (!nextSignatures.has(id)) {
+        removedTermIds.add(id);
+        changedTermIds.add(id);
+      }
+    }
+
+    return { impactedTermIds, addedTermIds, removedTermIds, changedTermIds };
+  };
+
   const applyFolderDefaults = (entries: IndexRawEntry[]) => {
     for (const entry of entries) {
       const folder = entry.folderId ? folderById.get(entry.folderId) : undefined;
@@ -274,6 +418,7 @@ export default function smartlinkerPlugin(
     const { entries } = loadIndexFromFiles(primedFiles);
     applyFolderDefaults(entries);
     setIndexEntries(entries);
+    refreshEntryCaches(entries);
     stats.entryCount = entries.length;
     recordIndexBuildMs(performance.now() - indexBuildStart);
 
@@ -293,8 +438,16 @@ export default function smartlinkerPlugin(
 
   primeIndexProvider();
 
-  return {
+  const plugin: WatchCapablePlugin<Content> = {
     name: pluginName,
+
+    getPathsToWatch() {
+      const patterns = new Set<string>();
+      for (const folder of resolvedFolders) {
+        patterns.add(buildWatchPattern(folder.absPath));
+      }
+      return Array.from(patterns);
+    },
 
     configureWebpack() {
       if (webpackLogger.isLevelEnabled('debug')) {
@@ -338,7 +491,75 @@ export default function smartlinkerPlugin(
       stats.registryBytes = Buffer.byteLength(registry.contents, 'utf8');
 
       applyFolderDefaults(entries);
+      // Update in-memory index for remark consumers first
       setIndexEntries(entries);
+
+      // Detect term changes compared to previous cache and proactively
+      // trigger rebuild of docs that reference affected term IDs.
+      // This covers dev watch scenarios where Docusaurus does not call a
+      // dedicated onFilesChange hook.
+      try {
+        const { changedTermIds, addedTermIds, removedTermIds } = diffEntryState(
+          entries,
+          new Set<string>(),
+        );
+        if (changedTermIds.size > 0) {
+          const docsForReload = new Set<string>(
+            getDocsReferencingTerms(changedTermIds)
+          );
+          const touchedDocs: string[] = [];
+          if (docsForReload.size > 0) {
+            const now = new Date();
+            for (const docPath of docsForReload) {
+              const absDocPath = normalizeFsPath(docPath);
+              if (!existsSync(absDocPath)) continue;
+              try {
+                utimesSync(absDocPath, now, now);
+                touchedDocs.push(absDocPath);
+              } catch (error) {
+                if (watchLogger.isLevelEnabled('warn')) {
+                  watchLogger.warn(
+                    'Failed to mark SmartLink consumer for rebuild',
+                    () => ({
+                      file: formatSiteRelativePath(absDocPath),
+                      error:
+                        error instanceof Error ? error.message : String(error),
+                    })
+                  );
+                }
+              }
+            }
+          }
+
+          if (watchLogger.isLevelEnabled('info')) {
+            watchLogger.info('Detected SmartLink term changes', {
+              changedTermCount: changedTermIds.size,
+              addedTermCount: addedTermIds.size,
+              removedTermCount: removedTermIds.size,
+              rebuiltDocCount: touchedDocs.length,
+            });
+          }
+
+          if (watchLogger.isLevelEnabled('debug')) {
+            watchLogger.debug('SmartLink change details', () => ({
+              changedTermIds: Array.from(changedTermIds),
+              addedTermIds: Array.from(addedTermIds),
+              removedTermIds: Array.from(removedTermIds),
+              rebuiltDocs: touchedDocs.map((p) => formatSiteRelativePath(p)),
+            }));
+          }
+        }
+      } catch (err) {
+        if (watchLogger.isLevelEnabled('warn')) {
+          watchLogger.warn('SmartLink change detection failed', () => ({
+            error: err instanceof Error ? err.message : String(err),
+          }));
+        }
+      }
+
+      // Refresh caches after change detection so subsequent diffs compare
+      // against the latest state.
+      refreshEntryCaches(entries);
 
       if (loadLogger.isLevelEnabled('info')) {
         loadLogger.info('Completed SmartLink artifact build', {
@@ -367,6 +588,83 @@ export default function smartlinkerPlugin(
         registry,
         opts: normOpts,
       } satisfies Content;
+    },
+
+    async onFilesChange({ changedFiles, deletedFiles }: OnFilesChangeParams) {
+      const candidates = [...(changedFiles ?? []), ...(deletedFiles ?? [])];
+      const relevantPaths = filterRelevantPaths(candidates);
+
+      if (relevantPaths.size === 0) {
+        if (watchLogger.isLevelEnabled('trace')) {
+          watchLogger.trace('No SmartLink folders affected by file change', () => ({
+            changedFiles: changedFiles ?? [],
+            deletedFiles: deletedFiles ?? [],
+          }));
+        }
+        return;
+      }
+
+      const start = startTimer(watchLogger, 'info', 'debug');
+      const files = collectFiles();
+      primedFiles = files;
+      stats.scannedFileCount = files.length;
+
+      const indexBuildStart = performance.now();
+      const { entries } = loadIndexFromFiles(files);
+      applyFolderDefaults(entries);
+      recordIndexBuildMs(performance.now() - indexBuildStart);
+
+      const { impactedTermIds, addedTermIds, removedTermIds, changedTermIds } = diffEntryState(
+        entries,
+        relevantPaths,
+      );
+
+      setIndexEntries(entries);
+      refreshEntryCaches(entries);
+      stats.entryCount = entries.length;
+
+      const docsForReload = new Set<string>(getDocsReferencingTerms(changedTermIds));
+      const touchedDocs: string[] = [];
+      if (docsForReload.size > 0) {
+        const now = new Date();
+        for (const docPath of docsForReload) {
+          const absDocPath = normalizeFsPath(docPath);
+          if (!existsSync(absDocPath)) continue;
+          try {
+            utimesSync(absDocPath, now, now);
+            touchedDocs.push(absDocPath);
+          } catch (error) {
+            if (watchLogger.isLevelEnabled('warn')) {
+              watchLogger.warn('Failed to mark SmartLink consumer for rebuild', () => ({
+                file: formatSiteRelativePath(absDocPath),
+                error: error instanceof Error ? error.message : String(error),
+              }));
+            }
+          }
+        }
+      }
+
+      if (watchLogger.isLevelEnabled('info')) {
+        watchLogger.info('SmartLink watch rebuild complete', {
+          scannedFileCount: files.length,
+          changedTermCount: changedTermIds.size,
+          addedTermCount: addedTermIds.size,
+          removedTermCount: removedTermIds.size,
+          rebuiltDocCount: touchedDocs.length,
+          durationMs: endTimer(start),
+        });
+      }
+
+      if (watchLogger.isLevelEnabled('debug')) {
+        watchLogger.debug('SmartLink watch diff', () => ({
+          triggeredBy: Array.from(relevantPaths).map((p) => formatSiteRelativePath(p)),
+          impactedTermIds: Array.from(impactedTermIds),
+          changedTermIds: Array.from(changedTermIds),
+          addedTermIds: Array.from(addedTermIds),
+          removedTermIds: Array.from(removedTermIds),
+          rebuiltDocs: touchedDocs.map((p) => formatSiteRelativePath(p)),
+        }));
+      }
     },
 
     async contentLoaded({ content, actions }: { content: Content; actions: PluginContentLoadedActions }) {
@@ -465,6 +763,7 @@ export default function smartlinkerPlugin(
       return [join(moduleDir, 'theme/styles.css')];
     },
   };
+  return plugin;
 }
 
 function deriveDocId(folderAbsPath: string, sourcePath: string | undefined): string | undefined {
