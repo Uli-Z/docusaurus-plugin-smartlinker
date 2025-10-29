@@ -1,41 +1,22 @@
-# agent_plan.md — Tooltip tap handling regression analysis
+# Build-Prozess Vereinfachung für `remark-smartlinker`
 
-## Problem Statement
-When testing the SmartLink tooltip on touch-only/mobile devices, the outer SmartLink behaves as expected (first tap opens the tooltip, second tap follows the SmartLink target). However, any additional links that are rendered **inside the tooltip content itself** (e.g., the MDX "Short Note" links) cannot be activated—the tap closes the tooltip instead of navigating.
+**Ziel:** Den Build-Prozess des internen Pakets `remark-smartlinker` vereinfachen und an den des Haupt-Pakets `docusaurus-plugin-smartlinker` angleichen.
 
-## Observations
-* Tooltip rendering is driven by `packages/docusaurus-plugin-smartlinker/src/theme/runtime/Tooltip.tsx`. It wraps the trigger in a Radix `RT.Root`/`RT.Trigger` pair, with the portalized `RT.Content` that hosts the MDX-rendered Short Note.
-* Mobile-specific state lives in `packages/docusaurus-plugin-smartlinker/src/theme/runtime/SmartLink.tsx`. The component tracks whether hover is supported and, when hover is absent, manually controls the tooltip using `open`/`setOpen`.
-* To emulate "tap once to open, tap again to navigate" semantics on touch devices, the component installs a `pointerdown`/`touchstart` capture listener on `document` whenever the tooltip is open:
-  ```ts
-  React.useEffect(() => {
-    if (isHoverCapable || !open) {
-      return;
-    }
+## Bisherige Schritte
 
-    const handlePointerDown = (event: PointerEvent | MouseEvent | TouchEvent) => {
-      const node = triggerRef.current;
-      if (!node) return;
-      if (event.target instanceof Node && node.contains(event.target)) {
-        return;
-      }
-      close();
-    };
+1.  **Analyse:** Es wurde festgestellt, dass `remark-smartlinker` ein manuelles Skript (`scripts/build-cjs.js`) verwendet, um eine CJS-Version zu erstellen, während das Haupt-Projekt `tsup` nutzt.
+2.  **`tsup` Konfiguration:** Eine `tsup.config.ts` wurde für `remark-smartlinker` erstellt, um den Build-Prozess zu standardisieren.
+3.  **`package.json` Aktualisierung:** Die `package.json` von `remark-smartlinker` wurde um ein `build`-Skript, `devDependencies` und die notwendigen `exports`-Einträge für CJS/ESM erweitert.
+4.  **Skript-Entfernung:** Das veraltete Skript `scripts/build-cjs.js` wurde gelöscht.
 
-    document.addEventListener('pointerdown', handlePointerDown, true);
-    document.addEventListener('touchstart', handlePointerDown, true);
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown, true);
-      document.removeEventListener('touchstart', handlePointerDown, true);
-    };
-  }, [isHoverCapable, open, close]);
-  ```
-* Because Radix renders the tooltip content inside a portal, taps on the Short Note links **do not satisfy** `node.contains(event.target)`. The capture-phase handler therefore calls `close()` before the tap propagates to the tooltip link.
-* `close()` not only collapses the tooltip (`setOpen(false)`), it also resets the `readyToNavigateRef`. Unmounting the tooltip during the capture phase prevents the subsequent `click` event from finding the link, which matches the observed "link is not clickable" behavior.
+## Aktueller Stand & Problem
 
-## Suspected Root Cause
-The global capture handler treats any pointer/touch interaction outside the SmartLink trigger span as an "outside click" and immediately closes the tooltip. Since the tooltip content is portalized outside the trigger DOM tree, taps on its internal links are misidentified as outside interactions. Closing the tooltip during the capture phase removes the target element before the browser can emit the `click`, so the navigation never occurs.
+Beim Testen der Änderungen schlug der Build-Prozess für `remark-smartlinker` fehl.
 
-## Next Steps for Fixing
-* Revisit the outside-click detection so that taps within the tooltip content are exempt.
-* Options could include checking `event.composedPath()` for the tooltip content, scoping the listener to exclude portal nodes, or delegating to Radix's built-in dismissal controls. (Implementation TBD by the follow-up task.)
+- **Fehler:** `error TS2688: Cannot find type definition file for 'vitest/globals'.`
+- **Ursache:** Die `tsconfig.base.json` im Root-Verzeichnis erzwingt das globale Einbinden von `vitest/globals` Typen. Dies stört den Produktions-Build (`d.ts`-Generierung) mit `tsup`, da die Test-Typen nicht Teil des Produktions-Codes sein sollten.
+
+## Nächste Schritte
+
+1.  **TypeScript-Konfiguration korrigieren:** Die `tsconfig.base.json` muss so angepasst werden, dass die `vitest`-Typen nicht mehr global geladen werden. Stattdessen sollten sie nur in den `tsconfig.json`-Dateien der Pakete referenziert werden, die tatsächlich Tests enthalten.
+2.  **Erneuter Test:** Nach der Korrektur wird der Build- und Test-Prozess erneut ausgeführt, um die erfolgreiche Vereinfachung zu verifizieren.

@@ -1,13 +1,11 @@
-'use strict';
+import { visit, SKIP } from 'unist-util-visit';
+import { normalize } from 'path';
+import { performance } from 'perf_hooks';
+import { getDebugConfig, resolveDebugConfig, createLogger, PLUGIN_NAME, recordTermProcessingMs, updateDocTermUsage, getIndexProvider } from 'docusaurus-plugin-smartlinker';
 
-var unistUtilVisit = require('unist-util-visit');
-var path = require('path');
-var perf_hooks = require('perf_hooks');
-var docusaurusPluginSmartlinker = require('docusaurus-plugin-smartlinker');
+// src/transform.ts
 
-// ../remark-smartlinker/src/transform.ts
-
-// ../remark-smartlinker/src/matcher.ts
+// src/matcher.ts
 function isWordChar(ch) {
   return /\p{L}|\p{N}|_/u.test(ch);
 }
@@ -99,7 +97,7 @@ function buildMatcher(entries) {
   return { findAll };
 }
 
-// ../remark-smartlinker/src/transform.ts
+// src/transform.ts
 function isSkippable(node, mdxComponentNamesToSkip) {
   const t = node.type;
   if (t === "code" || t === "inlineCode") return true;
@@ -141,16 +139,16 @@ function normalizeFolderKey(value) {
 }
 function remarkSmartlinker(opts) {
   const options = opts ?? {};
-  const sharedDebug = typeof docusaurusPluginSmartlinker.getDebugConfig === "function" ? docusaurusPluginSmartlinker.getDebugConfig() : void 0;
+  const sharedDebug = typeof getDebugConfig === "function" ? getDebugConfig() : void 0;
   const debugInput = options.debug ?? sharedDebug;
-  const debugResolution = docusaurusPluginSmartlinker.resolveDebugConfig(debugInput);
-  const baseLogger = docusaurusPluginSmartlinker.createLogger({ pluginName: docusaurusPluginSmartlinker.PLUGIN_NAME, debug: debugResolution.config });
+  const debugResolution = resolveDebugConfig(debugInput);
+  const baseLogger = createLogger({ pluginName: PLUGIN_NAME, debug: debugResolution.config });
   const initLogger = baseLogger.child("remark:init");
   const prepareLogger = baseLogger.child("remark:prepare");
   const transformLogger = baseLogger.child("remark:transform");
   if (debugResolution.invalidLevel && typeof console !== "undefined" && typeof console.warn === "function") {
     console.warn(
-      `[${docusaurusPluginSmartlinker.PLUGIN_NAME}] Ignoring DOCUSAURUS_PLUGIN_DEBUG_LEVEL="${debugResolution.invalidLevel}" (expected one of: error, warn, info, debug, trace).`
+      `[${PLUGIN_NAME}] Ignoring DOCUSAURUS_PLUGIN_DEBUG_LEVEL="${debugResolution.invalidLevel}" (expected one of: error, warn, info, debug, trace).`
     );
   }
   const componentName = options.componentName ?? "SmartLink";
@@ -183,7 +181,7 @@ function remarkSmartlinker(opts) {
   let cachedFilterSignature = "";
   let prepared;
   function ensurePreparedIndex() {
-    const provider = options.index ?? docusaurusPluginSmartlinker.getIndexProvider();
+    const provider = options.index ?? getIndexProvider();
     if (!provider) {
       throw new Error(
         "[docusaurus-plugin-smartlinker] No index provider configured. Pass `{ index }` explicitly or make sure the Docusaurus plugin runs before this remark transformer."
@@ -281,9 +279,9 @@ function remarkSmartlinker(opts) {
         tipKey: args.id
       }));
     };
-    const startTime = perf_hooks.performance.now();
-    unistUtilVisit.visit(tree, (node, _index, parent) => {
-      if (isSkippable(node, mdxComponentNamesToSkip)) return unistUtilVisit.SKIP;
+    const startTime = performance.now();
+    visit(tree, (node, _index, parent) => {
+      if (isSkippable(node, mdxComponentNamesToSkip)) return SKIP;
       if (!parent) return;
       if (node.type !== "text") return;
       const textNode = node;
@@ -309,9 +307,9 @@ function remarkSmartlinker(opts) {
       const idx = parent.children.indexOf(node);
       if (idx >= 0) parent.children.splice(idx, 1, ...result.nodes);
     });
-    const duration = perf_hooks.performance.now() - startTime;
-    docusaurusPluginSmartlinker.recordTermProcessingMs(duration);
-    docusaurusPluginSmartlinker.updateDocTermUsage(filePath, observedTermIds);
+    const duration = performance.now() - startTime;
+    recordTermProcessingMs(duration);
+    updateDocTermUsage(filePath, observedTermIds);
     return tree;
   };
 }
@@ -320,7 +318,7 @@ function normalizePath(value) {
   const trimmed = value.trim();
   if (!trimmed) return null;
   try {
-    return path.normalize(trimmed).replace(/\\/g, "/").toLowerCase();
+    return normalize(trimmed).replace(/\\/g, "/").toLowerCase();
   } catch {
     return trimmed.replace(/\\/g, "/").toLowerCase();
   }
@@ -496,13 +494,9 @@ function findCurrentTarget(args) {
   return void 0;
 }
 
-// ../remark-smartlinker/src/index.ts
-var src_default = remarkSmartlinker;
+// src/index.ts
+var index_default = remarkSmartlinker;
 
-// src/remark/index.ts
-var attacher = src_default;
-var remark_default = attacher;
-
-module.exports = remark_default;
-//# sourceMappingURL=index.cjs.map
-//# sourceMappingURL=index.cjs.map
+export { index_default as default };
+//# sourceMappingURL=index.mjs.map
+//# sourceMappingURL=index.mjs.map

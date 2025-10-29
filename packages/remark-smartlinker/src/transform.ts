@@ -177,7 +177,7 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
     if (provider !== cachedProvider || filterSignature !== cachedFilterSignature) {
       const allTargets = provider.getAllTargets();
       const targets = folderFilter.size
-        ? allTargets.filter((target) => {
+        ? allTargets.filter((target: TargetInfo) => {
             const id = typeof target.folderId === 'string' ? normalizeFolderKey(target.folderId) : null;
             if (!id) return false;
             return folderFilter.has(id);

@@ -5,9 +5,9 @@ var path = require('path');
 var perf_hooks = require('perf_hooks');
 var docusaurusPluginSmartlinker = require('docusaurus-plugin-smartlinker');
 
-// ../remark-smartlinker/src/transform.ts
+// src/transform.ts
 
-// ../remark-smartlinker/src/matcher.ts
+// src/matcher.ts
 function isWordChar(ch) {
   return /\p{L}|\p{N}|_/u.test(ch);
 }
@@ -99,7 +99,7 @@ function buildMatcher(entries) {
   return { findAll };
 }
 
-// ../remark-smartlinker/src/transform.ts
+// src/transform.ts
 function isSkippable(node, mdxComponentNamesToSkip) {
   const t = node.type;
   if (t === "code" || t === "inlineCode") return true;
@@ -496,13 +496,9 @@ function findCurrentTarget(args) {
   return void 0;
 }
 
-// ../remark-smartlinker/src/index.ts
-var src_default = remarkSmartlinker;
+// src/index.ts
+var index_default = remarkSmartlinker;
 
-// src/remark/index.ts
-var attacher = src_default;
-var remark_default = attacher;
-
-module.exports = remark_default;
+module.exports = index_default;
 //# sourceMappingURL=index.cjs.map
 //# sourceMappingURL=index.cjs.map

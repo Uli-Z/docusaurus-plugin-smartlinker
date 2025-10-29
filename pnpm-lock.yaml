@@ -176,9 +176,31 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ^2.0.5
-        version: 2.1.9(@types/node@24.3.3)(jsdom@24.1.3)(terser@5.44.0)
+        version: 2.1.9(@types/node@20.19.24)(jsdom@24.1.3)(terser@5.44.0)
 
-  packages/remark-smartlinker: {}
+  packages/remark-smartlinker:
+    devDependencies:
+      '@types/mdast':
+        specifier: ^4.0.4
+        version: 4.0.4
+      '@types/node':
+        specifier: ^20.14.10
+        version: 20.19.24
+      '@types/unist':
+        specifier: ^3.0.2
+        version: 3.0.3
+      '@types/vfile':
+        specifier: ^4.0.0
+        version: 4.0.0
+      rimraf:
+        specifier: ^5.0.0
+        version: 5.0.10
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.0(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.2)
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.2
 
 packages:
 
@@ -2239,8 +2261,8 @@ packages:
   '@types/node@17.0.45':
     resolution: {integrity: sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw==}
 
-  '@types/node@24.3.3':
-    resolution: {integrity: sha512-GKBNHjoNw3Kra1Qg5UXttsY5kiWMEfoHq2TmXb+b1rcm6N7B3wTrFYIf/oSZ1xNQ+hVVijgLkiDZh7jRRsh+Gw==}
+  '@types/node@20.19.24':
+    resolution: {integrity: sha512-FE5u0ezmi6y9OZEzlJfg37mqqf6ZDSF2V/NLjUyGrR9uTZ7Sb9F7bLNZ03S4XVUNRWGA7Ck4c1kK+YnuWjl+DA==}
 
   '@types/prismjs@1.26.5':
     resolution: {integrity: sha512-AUZTa7hQ2KY5L7AmtSiqxlhWxb4ina0yd8hNbl4TWuqnv/pFP0nDMb3YrfSBf4hJVGLh2YEIBfKaBW/9UEl6IQ==}
@@ -5809,8 +5831,8 @@ packages:
   ufo@1.6.1:
     resolution: {integrity: sha512-9a4/uxlTWJ4+a5i0ooc1rU7C7YOw3wT+UGqdeNNHWnOF9qcMBgLRS+4IYUqbczewFx4mLEig6gawh7X6mFlEkA==}
 
-  undici-types@7.10.0:
-    resolution: {integrity: sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag==}
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
     resolution: {integrity: sha512-dA8WbNeb2a6oQzAQ55YlT5vQAWGV9WXOsi3SskE3bcCdM0P4SDd+24zS/OCacdRq5BkdsRj9q3Pg6YyQoxIGqg==}
@@ -8621,7 +8643,7 @@ snapshots:
       '@jest/schemas': 29.6.3
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
       '@types/yargs': 17.0.33
       chalk: 4.1.2
 
@@ -9123,20 +9145,20 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
 
   '@types/bonjour@3.5.13':
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
 
   '@types/connect-history-api-fallback@1.5.4':
     dependencies:
       '@types/express-serve-static-core': 5.0.7
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
 
   '@types/debug@4.1.12':
     dependencies:
@@ -9160,14 +9182,14 @@ snapshots:
 
   '@types/express-serve-static-core@4.19.6':
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
       '@types/qs': 6.14.0
       '@types/range-parser': 1.2.7
       '@types/send': 0.17.5
 
   '@types/express-serve-static-core@5.0.7':
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
       '@types/qs': 6.14.0
       '@types/range-parser': 1.2.7
       '@types/send': 0.17.5
@@ -9195,7 +9217,7 @@ snapshots:
 
   '@types/http-proxy@1.17.16':
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
 
   '@types/istanbul-lib-coverage@2.0.6': {}
 
@@ -9221,13 +9243,13 @@ snapshots:
 
   '@types/node-forge@1.3.14':
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
 
   '@types/node@17.0.45': {}
 
-  '@types/node@24.3.3':
+  '@types/node@20.19.24':
     dependencies:
-      undici-types: 7.10.0
+      undici-types: 6.21.0
 
   '@types/prismjs@1.26.5': {}
 
@@ -9264,12 +9286,12 @@ snapshots:
 
   '@types/sax@1.2.7':
     dependencies:
-      '@types/node': 17.0.45
+      '@types/node': 20.19.24
 
   '@types/send@0.17.5':
     dependencies:
       '@types/mime': 1.3.5
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
 
   '@types/serve-index@1.9.4':
     dependencies:
@@ -9278,12 +9300,12 @@ snapshots:
   '@types/serve-static@1.15.8':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
       '@types/send': 0.17.5
 
   '@types/sockjs@0.3.36':
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
 
   '@types/unist@2.0.11': {}
 
@@ -9295,7 +9317,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
 
   '@types/yargs-parser@21.0.3': {}
 
@@ -9312,13 +9334,13 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.9(vite@5.4.20(@types/node@24.3.3)(terser@5.44.0))':
+  '@vitest/mocker@2.1.9(vite@5.4.20(@types/node@20.19.24)(terser@5.44.0))':
     dependencies:
       '@vitest/spy': 2.1.9
       estree-walker: 3.0.3
       magic-string: 0.30.19
     optionalDependencies:
-      vite: 5.4.20(@types/node@24.3.3)(terser@5.44.0)
+      vite: 5.4.20(@types/node@20.19.24)(terser@5.44.0)
 
   '@vitest/pretty-format@2.1.9':
     dependencies:
@@ -10479,7 +10501,7 @@ snapshots:
 
   eval@0.1.8:
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
       require-like: 0.1.2
 
   eventemitter3@4.0.7: {}
@@ -11181,7 +11203,7 @@ snapshots:
   jest-util@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
       chalk: 4.1.2
       ci-info: 3.9.0
       graceful-fs: 4.2.11
@@ -11189,13 +11211,13 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
   jest-worker@29.7.0:
     dependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
       jest-util: 29.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
@@ -13527,7 +13549,7 @@ snapshots:
 
   ufo@1.6.1: {}
 
-  undici-types@7.10.0: {}
+  undici-types@6.21.0: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 
@@ -13670,13 +13692,13 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite-node@2.1.9(@types/node@24.3.3)(terser@5.44.0):
+  vite-node@2.1.9(@types/node@20.19.24)(terser@5.44.0):
     dependencies:
       cac: 6.7.14
       debug: 4.4.1
       es-module-lexer: 1.7.0
       pathe: 1.1.2
-      vite: 5.4.20(@types/node@24.3.3)(terser@5.44.0)
+      vite: 5.4.20(@types/node@20.19.24)(terser@5.44.0)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -13688,20 +13710,20 @@ snapshots:
       - supports-color
       - terser
 
-  vite@5.4.20(@types/node@24.3.3)(terser@5.44.0):
+  vite@5.4.20(@types/node@20.19.24)(terser@5.44.0):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.5.6
       rollup: 4.50.1
     optionalDependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
       fsevents: 2.3.3
       terser: 5.44.0
 
-  vitest@2.1.9(@types/node@24.3.3)(jsdom@24.1.3)(terser@5.44.0):
+  vitest@2.1.9(@types/node@20.19.24)(jsdom@24.1.3)(terser@5.44.0):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.20(@types/node@24.3.3)(terser@5.44.0))
+      '@vitest/mocker': 2.1.9(vite@5.4.20(@types/node@20.19.24)(terser@5.44.0))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9
@@ -13717,11 +13739,11 @@ snapshots:
       tinyexec: 0.3.2
       tinypool: 1.1.1
       tinyrainbow: 1.2.0
-      vite: 5.4.20(@types/node@24.3.3)(terser@5.44.0)
-      vite-node: 2.1.9(@types/node@24.3.3)(terser@5.44.0)
+      vite: 5.4.20(@types/node@20.19.24)(terser@5.44.0)
+      vite-node: 2.1.9(@types/node@20.19.24)(terser@5.44.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 24.3.3
+      '@types/node': 20.19.24
       jsdom: 24.1.3
     transitivePeerDependencies:
       - less

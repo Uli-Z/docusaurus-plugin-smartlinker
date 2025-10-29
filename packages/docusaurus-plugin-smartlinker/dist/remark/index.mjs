@@ -501,6 +501,6 @@ var src_default = remarkSmartlinker;
 var attacher = src_default;
 var remark_default = attacher;
 
-export { buildMatcher, remark_default as default };
+export { remark_default as default };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

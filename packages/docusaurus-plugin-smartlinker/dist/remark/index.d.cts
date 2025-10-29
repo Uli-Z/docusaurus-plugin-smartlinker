@@ -57,26 +57,8 @@ interface RemarkSmartlinkerOptions {
 }
 declare function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Transformer;
 
-interface AutoLinkEntry {
-    /** Original casing as authored in config/frontmatter */
-    literal: string;
-    /** Canonical grouping key (e.g., target id) */
-    key: string;
-}
-interface Match {
-    start: number;
-    end: number;
-    text: string;
-    key: string;
-    term: string;
-}
-interface Matcher {
-    findAll(text: string): Match[];
-}
-declare function buildMatcher(entries: AutoLinkEntry[]): Matcher;
-
 type MaybeFunction = typeof remarkSmartlinker extends (...args: any[]) => any ? typeof remarkSmartlinker : never;
 type ResolvedAttacher = MaybeFunction extends never ? typeof remarkSmartlinker : MaybeFunction;
 declare const attacher: ResolvedAttacher;
 
-export { type AutoLinkEntry, type Match, type Matcher, buildMatcher, attacher as default };
+export { attacher as default };
