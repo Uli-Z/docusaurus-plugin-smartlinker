@@ -82,4 +82,100 @@ describe('resolveEntryPermalinks', () => {
       expect.objectContaining({ docId: 'bacteria/cdiff', permalink: '/docs/bacteria/cdiff' }),
     ]);
   });
+
+  it('matches entries by frontmatter id when docId/source/slug do not match', () => {
+    const entries: Array<IndexRawEntry & { docId?: string | null }> = [
+      {
+        id: 'front-id',
+        slug: '/unrelated/slug',
+        terms: ['Front'],
+        linkify: true,
+        icon: undefined,
+        shortNote: undefined,
+        sourcePath: '/site/docs/some/other.mdx',
+        folderId: 'docs',
+      },
+    ];
+
+    const docsContent = {
+      default: {
+        loadedVersions: [
+          {
+            docs: [
+              {
+                id: 'topic/front-id-doc',
+                source: '@site/docs/topic/front-id-doc.mdx',
+                permalink: '/docs/topic/front-id-doc',
+                slug: '/topic/front-id-doc',
+                frontMatter: { id: 'front-id' },
+              },
+            ],
+          },
+        ],
+      },
+    } as any;
+
+    const resolved = resolveEntryPermalinks({ siteDir: '/site', entries, docsContent });
+    expect(resolved).toEqual([
+      expect.objectContaining({ docId: 'topic/front-id-doc', permalink: '/docs/topic/front-id-doc' }),
+    ]);
+  });
+
+  it('matches by permalink when entry slug equals permalink value', () => {
+    const entries: Array<IndexRawEntry & { docId?: string | null }> = [
+      {
+        id: 'pip-tazo',
+        slug: '/docs/antibiotics/piperacillin-tazobactam',
+        terms: ['Pip-tazo'],
+        linkify: true,
+        icon: 'pill',
+        shortNote: undefined,
+        sourcePath: '/site/docs/antibiotics/pip-tazo.mdx',
+        folderId: 'docs',
+      },
+    ];
+
+    const docsContent = {
+      default: {
+        loadedVersions: [
+          {
+            docs: [
+              {
+                id: 'antibiotics/pip-tazo',
+                source: '@site/docs/antibiotics/pip-tazo.mdx',
+                permalink: '/docs/antibiotics/piperacillin-tazobactam',
+                slug: '/antibiotics/piperacillin-tazobactam',
+                frontMatter: { id: 'pip-tazo' },
+              },
+            ],
+          },
+        ],
+      },
+    } as any;
+
+    const resolved = resolveEntryPermalinks({ siteDir: '/site', entries, docsContent });
+    expect(resolved).toEqual([
+      expect.objectContaining({ docId: 'antibiotics/pip-tazo', permalink: '/docs/antibiotics/piperacillin-tazobactam' }),
+    ]);
+  });
+
+  it('does not throw and returns undefined permalinks when no docs metadata available', () => {
+    const entries: Array<IndexRawEntry & { docId?: string | null }> = [
+      {
+        id: 'amoxicillin',
+        slug: '/antibiotics/amoxicillin',
+        terms: ['Amoxi'],
+        linkify: true,
+        icon: 'pill',
+        shortNote: undefined,
+        sourcePath: '/site/docs/antibiotics/amoxicillin.mdx',
+        folderId: 'docs',
+      },
+    ];
+
+    const resolved = resolveEntryPermalinks({ siteDir: '/site', entries, docsContent: {} as any });
+    expect(resolved).toEqual([
+      expect.objectContaining({ permalink: undefined }),
+    ]);
+  });
 });

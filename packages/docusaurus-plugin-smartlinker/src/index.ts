@@ -121,6 +121,7 @@ export default function smartlinkerPlugin(
   const webpackLogger = logger.child('configureWebpack');
   const postBuildLogger = logger.child('postBuild');
   const watchLogger = logger.child('watch');
+  const permalinkLogger = logger.child('permalink');
 
   const stats = {
     scannedFileCount: 0,
@@ -361,6 +362,7 @@ export default function smartlinkerPlugin(
         contentLogger,
         endTimer,
         startTime: start,
+        permalinkLogger,
       });
     },
 

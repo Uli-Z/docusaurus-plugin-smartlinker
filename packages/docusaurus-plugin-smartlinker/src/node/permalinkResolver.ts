@@ -5,6 +5,7 @@ import type {
   DocMetadata as DocsDocMetadata,
 } from '@docusaurus/plugin-content-docs';
 import type { IndexRawEntry } from '../types.js';
+import type { ContextLogger } from '../logger.js';
 
 export interface EntryWithResolvedUrl {
   id: string;
@@ -80,9 +81,82 @@ function buildDocLookups(
   return { byDocId, bySource, byFrontmatterId, bySlug, byPermalink };
 }
 
+/**
+ * Pluggable lookup provider for docs metadata.
+ * Implementation A: load from generated JSON (current behavior).
+ * Implementation B: consume injected metadata (e.g., from another plugin).
+ */
+export interface DocsLookupProvider {
+  getLookups(): DocLookups;
+}
+
+export function createContentLookupProvider(
+  docsContent: Record<string, DocsLoadedContent | undefined> | undefined,
+): DocsLookupProvider {
+  return {
+    getLookups() {
+      return buildDocLookups(docsContent);
+    },
+  };
+}
+
 export function resolveEntryPermalinks(options: ResolvePermalinkOptions): EntryWithResolvedUrl[] {
   const { entries, siteDir, docsContent } = options;
   const lookups = buildDocLookups(docsContent);
+
+  return entries.map((entry) => {
+    const alias = toAliasedSitePath(siteDir, entry.sourcePath);
+
+    let doc: DocsDocMetadata | undefined;
+
+    if (entry.docId) {
+      doc = lookups.byDocId.get(entry.docId);
+    }
+
+    if (!doc && alias) {
+      doc = lookups.bySource.get(alias);
+    }
+
+    if (!doc) {
+      doc = lookups.byFrontmatterId.get(entry.id);
+    }
+
+    if (!doc && entry.slug) {
+      doc = lookups.bySlug.get(entry.slug) ?? lookups.byPermalink.get(entry.slug);
+    }
+
+    const permalink = doc?.permalink ? doc.permalink.trim() : undefined;
+    const docId = entry.docId ?? doc?.id ?? null;
+
+    return {
+      id: entry.id,
+      slug: entry.slug,
+      icon: entry.icon,
+      folderId: entry.folderId,
+      docId,
+      permalink,
+    } satisfies EntryWithResolvedUrl;
+  });
+}
+
+export function resolveEntryPermalinksUsingProvider(args: {
+  siteDir: string;
+  entries: Array<IndexRawEntry & { docId?: string | null }>;
+  provider: DocsLookupProvider;
+  permalinkLogger?: ContextLogger;
+}): EntryWithResolvedUrl[] {
+  const { siteDir, entries, provider, permalinkLogger } = args;
+  const lookups = provider.getLookups();
+  const hasAnyLookupData =
+    lookups.byDocId.size > 0 ||
+    lookups.bySource.size > 0 ||
+    lookups.byFrontmatterId.size > 0 ||
+    lookups.bySlug.size > 0 ||
+    lookups.byPermalink.size > 0;
+
+  if (!hasAnyLookupData && permalinkLogger?.isLevelEnabled('warn')) {
+    permalinkLogger.warn('No docs metadata available for permalink resolution');
+  }
 
   return entries.map((entry) => {
     const alias = toAliasedSitePath(siteDir, entry.sourcePath);

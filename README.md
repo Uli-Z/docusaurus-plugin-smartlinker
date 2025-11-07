@@ -108,6 +108,12 @@ This only renders on the page whose `id` matches the current document.
 - `folders[{ path, defaultIcon, tooltipComponents }]`: scan root(s), optional default icon, and mapping of custom tooltip components.
 - `debug`: optional logging; can also be enabled via env: `DOCUSAURUS_PLUGIN_DEBUG=1`, level via `DOCUSAURUS_PLUGIN_DEBUG_LEVEL=trace|debug|…`.
 
+### Permalink resolution
+- Smartlinker resolves permalinks against your docs metadata using a provider-based lookup.
+- Primary source: the docs plugin metadata under `.docusaurus/docusaurus-plugin-content-docs/**.json`.
+- Optional injection: if another plugin provides equivalent docs metadata, Smartlinker can consume it via an injected provider (internal API).
+- Fallback: if no metadata is available, Smartlinker logs a warning (when debug is enabled) and skips resolving permalinks without throwing.
+
 ## Styling
 
 The plugin ships CSS (`theme/styles.css`) that now leans on Infima design tokens:

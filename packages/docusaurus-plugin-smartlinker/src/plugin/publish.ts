@@ -3,8 +3,9 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import type { PluginContentLoadedActions } from '@docusaurus/types';
 import type { NormalizedOptions } from '../options.js';
 import type { EntryWithResolvedUrl } from '../node/permalinkResolver.js';
-import { resolveEntryPermalinks } from '../node/permalinkResolver.js';
+import { resolveEntryPermalinks, resolveEntryPermalinksUsingProvider, createContentLookupProvider } from '../node/permalinkResolver.js';
 import type { LoadedContent as DocsLoadedContent } from '@docusaurus/plugin-content-docs';
+import type { ContextLogger } from '../logger.js';
 
 export function publishGlobalData(
   actions: PluginContentLoadedActions,
@@ -83,18 +84,21 @@ export async function resolveAndPublish(args: {
   contentLogger: { isLevelEnabled(level: string): boolean; info: Function; trace: Function };
   endTimer: (start: number | null) => number | undefined;
   startTime: number | null;
+  permalinkLogger?: ContextLogger;
 }) {
-  const { context, actions, opts, entries, computeDocIdForEntry, stats, contentLogger, endTimer, startTime } = args;
+  const { context, actions, opts, entries, computeDocIdForEntry, stats, contentLogger, endTimer, startTime, permalinkLogger } = args;
   const enrichedEntries = entries.map((entry) => ({
     ...entry,
     docId: entry.docId ?? computeDocIdForEntry(entry),
   }));
 
   const docsContent = loadDocsContentFromGenerated(context.generatedFilesDir);
-  const resolved = resolveEntryPermalinks({
+  const provider = createContentLookupProvider(docsContent);
+  const resolved = resolveEntryPermalinksUsingProvider({
     siteDir: context.siteDir,
     entries: enrichedEntries,
-    docsContent,
+    provider,
+    permalinkLogger,
   });
 
   stats.resolvedCount = resolved.length;
