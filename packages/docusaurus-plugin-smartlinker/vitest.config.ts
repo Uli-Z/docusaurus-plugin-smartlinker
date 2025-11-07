@@ -11,6 +11,9 @@ const mdxProcessorEntry = require.resolve(
 
 export default defineConfig({
   test: {
+    // Avoid tinypool crashes on Node 22 by switching to process forks
+    // (Known issue tracked upstream; Node 20 remains the primary CI target.)
+    pool: Number(process.versions.node.split('.')[0]) >= 22 ? 'forks' : 'threads',
     environment: 'jsdom',
     setupFiles: ['tests/setup.ts'],
   },
