@@ -75,7 +75,21 @@ export function ShortNote(props) {
 
     const filename = `notes/${safeId(id)}.js`;
     return { filename, contents: mod };
-  } catch {
+  } catch (err: any) {
+    // Surface a helpful warning when MDX compilation fails; include a small snippet
+    // of the note content only when debug logging is enabled.
+    try {
+      const debug = getDebugConfig();
+      const showDetail = Boolean(debug?.enabled);
+      const snippet = sn.length > 180 ? `${sn.slice(0, 177)}…` : sn;
+      const base = `${new Date().toISOString()} [WARN] [${PLUGIN_NAME}] [notes] MDX short note compilation failed; falling back to ReactMarkdown`;
+      const details = ` id=${JSON.stringify(id)} error=${JSON.stringify(String(err?.message ?? err))}`;
+      const extra = showDetail ? ` snippet=${JSON.stringify(snippet)}` : '';
+      // Use console.warn to avoid requiring the plugin logger here.
+      if (typeof console?.warn === 'function') {
+        console.warn(`${base}${details}${extra}`);
+      }
+    } catch {}
     // If MDX compilation fails (e.g., due to ESM loader issues), fall back to ReactMarkdown
     const text = JSON.stringify(sn);
     const mod = `
@@ -96,3 +110,5 @@ export function ShortNote(props) {
     return { filename, contents: mod };
   }
 }
+import { getDebugConfig } from '../debugStore.js';
+import { PLUGIN_NAME } from '../pluginName.js';
