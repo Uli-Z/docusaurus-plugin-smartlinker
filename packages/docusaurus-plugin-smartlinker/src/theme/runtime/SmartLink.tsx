@@ -104,6 +104,9 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
   // Tooltip content: render ShortNote if available; otherwise no tooltip
   const content = Short ? <Short components={mdxComponents} /> : undefined;
 
+  // Accessibility: stable id for tooltip content and ARIA wiring
+  const tooltipId = React.useId();
+
   // Anchors share the same click handling so mobile taps open first, then navigate
   const textNode = (
     <a
@@ -148,12 +151,23 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
     }
   }, [isHoverCapable, close]);
 
+  const onTriggerKeyDown = React.useCallback<React.KeyboardEventHandler<HTMLSpanElement>>((e) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      close();
+    }
+  }, [close]);
+
   const trigger = (
     <span
       className="lm-smartlink"
       data-tipkey={tipKey ?? undefined}
       role="group"
+      aria-describedby={content ? tooltipId : undefined}
+      aria-controls={content ? tooltipId : undefined}
+      aria-expanded={!isHoverCapable && hasTooltip ? open : undefined}
       onBlur={handleTriggerBlur}
+      onKeyDown={onTriggerKeyDown}
       ref={triggerRef}
     >
       {textNode}
@@ -169,6 +183,7 @@ export default function SmartLink({ to, children, tipKey, icon, match }: SmartLi
       delayDuration={150}
       maxWidth={360}
       onContentNode={handleContentNode}
+      contentId={tooltipId}
     >
       {trigger}
     </Tooltip>

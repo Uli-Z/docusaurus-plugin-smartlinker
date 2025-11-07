@@ -19,6 +19,8 @@ export interface TooltipProps {
   maxWidth?: number;
   /** expose the tooltip content node to callers (e.g. SmartLink outside-click checks) */
   onContentNode?: (node: HTMLElement | null) => void;
+  /** optional id for the tooltip content (used for aria-describedby/controls) */
+  contentId?: string;
 }
 
 export default function Tooltip({
@@ -29,6 +31,7 @@ export default function Tooltip({
   delayDuration = 150,
   maxWidth = 360,
   onContentNode,
+  contentId,
 }: TooltipProps) {
   if (!content) {
     return <>{children}</>;
@@ -45,7 +48,12 @@ export default function Tooltip({
   return (
     <>
       {!isBrowser && (
-        <div className="lm-tooltip-content" data-ssr-hidden="true" style={{ display: 'none' }}>
+        <div
+          id={contentId}
+          className="lm-tooltip-content"
+          data-ssr-hidden="true"
+          style={{ display: 'none' }}
+        >
           {content}
         </div>
       )}
@@ -63,6 +71,8 @@ export default function Tooltip({
               sideOffset={8}
               collisionPadding={8}
               ref={setContentNode}
+              id={contentId}
+              role="tooltip"
               style={{
                 '--lm-tooltip-max-width': `${maxWidth}px`,
               } as React.CSSProperties}
