@@ -24,10 +24,11 @@ export interface Matcher {
 }
 
 function isWordChar(ch: string): boolean {
-  // Word = Unicode letter or number or underscore
-  // NOTE: requires /u support; Node 18+ supports Unicode property escapes.
-  // Fallback if needed: custom range checks; but we stick to \p classes for clarity.
-  return /\p{L}|\p{N}|_/u.test(ch);
+  // Word = Unicode letter/number/mark or connector punctuation (e.g., underscore)
+  // - Include \p{M} to handle combining marks so decomposed diacritics don't break words
+  // - Exclude dashes (\p{Pd}) and quotes/apostrophes so hyphens and elisions form boundaries
+  // - Keep ASCII underscore via \p{Pc}
+  return /\p{L}|\p{N}|\p{M}|\p{Pc}/u.test(ch);
 }
 
 function buildTrie(entries: AutoLinkEntry[]): TrieNode {
@@ -133,4 +134,3 @@ export function buildMatcher(entries: AutoLinkEntry[]): Matcher {
 
   return { findAll };
 }
-
