@@ -104,7 +104,6 @@ Helpful utilities:
    pnpm test                 # rebuilds and executes the plugin Vitest suite
    pnpm --filter docusaurus-plugin-smartlinker run test   # run tests without the root pre-build if needed
    ```
-   **Note:** Vitest still crashes under Node 22 due to tinypool worker errors. Use Node 20 until upstream fixes land.
 
 ## Build & Packaging
 
@@ -205,7 +204,6 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 - **Smoke artifacts**: `pnpm run smoke:git-install` logs the temporary workspace paths during execution; capture the console output if you need to inspect the generated site.
 - **CI logs**: GitHub Actions logs capture pnpm output. Re-run jobs with debug logging enabled if necessary (`ACTIONS_STEP_DEBUG=true`).
 - **Common failures**:
-  - Vitest tinypool crash on Node 22 (`pnpm test`); workaround: use Node 20.
   - Example site build failing with missing `dist` assets: run `pnpm run build` before invoking `pnpm run site:build`.
   - Tarball verification issues: ensure `pnpm run pack:ci` completed after a fresh build so the bundle includes the remark helper and theme assets.
   - Mobile tooltip: SmartLink listens for bubble-phase `pointerdown` events and ignores taps that land inside the trigger or the portal content node exposed via `Tooltip`'s `onContentNode` prop. Regressions usually stem from removing that ref wiring or reinstating capture-phase listeners that close before Radix links can fire.
@@ -236,7 +234,7 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 2. Verify CI is green or replicate locally:
    ```bash
    pnpm run build
-   pnpm test        # prefer Node 20 until tinypool issue resolved
+   pnpm test
    pnpm run pack:ci
    pnpm run smoke:git-install
    pnpm run site:build
@@ -249,7 +247,6 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 
 ## Known Issues & Limitations
 
-- `pnpm test` fails under Node 22 due to tinypool worker crashes. Workaround: switch to Node 20 (`nvm use 20`) until upstream fix lands.
 - Vitest suites still emit verbose Docusaurus debug output; consider toggling `DOCUSAURUS_PLUGIN_DEBUG=0` inside tests when stabilizing.
 - `packages/remark-smartlinker` has been consolidated into the main plugin workspace; tests and sources now live under `packages/docusaurus-plugin-smartlinker`. The legacy workspace has been removed.
 - No automated link checker exists for this documentation; review links manually during updates.
