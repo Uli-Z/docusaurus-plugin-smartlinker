@@ -148,11 +148,13 @@ Useful extras:
 
 ## Continuous integration
 
-- `.github/workflows/ci.yml` runs type-checking, builds/tests every workspace, packs the repository, and uploads the resulting
-  artifacts.
-- `.github/workflows/publish-dist.yml` rebuilds the plugin and remark helper after every push to `main` (and on demand) and
-  commits the generated `packages/*/dist` output back to the repository via GitHub Actions so Git-based installs always receive
-  compiled code. The workflow is responsible for publishing the `dist` directories on `main` after the source changes merge.
+- `.github/workflows/ci.yml` runs type-checking, builds/tests the plugin, builds the example site, and validates pack/rehydration in a separate job.
+- CI targets Node 20 for full validation and includes Node 22 for build/typecheck to prepare migration once Vitest becomes stable on Node 22.
+
+## Security
+
+- Short notes are MDX/JSX that compile to React. Only include trusted content. Do not ingest or compile untrusted user input into `smartlink-short-note`.
+- Tooltip components are loaded from your site (via `tooltipComponents`). Ensure those component modules are trusted and do not execute side effects on import.
 
 ## License
 

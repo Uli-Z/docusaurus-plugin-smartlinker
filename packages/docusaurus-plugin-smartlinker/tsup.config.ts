@@ -17,8 +17,7 @@ export default defineConfig({
     '@docusaurus/core',
     '@docusaurus/types',
     'react',
-    'react-dom',
-    'docusaurus-plugin-smartlinker'
+    'react-dom'
   ],
   treeshake: true,
   minify: false,

@@ -3,9 +3,9 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import remarkMdx from 'remark-mdx';
-import plugin, { type TargetInfo, type IndexProvider, type RemarkSmartlinkerOptions } from '../src/transform.js';
-import { setIndexEntries, clearIndexProvider } from '../../docusaurus-plugin-smartlinker/src/indexProviderStore.js';
-import type { IndexRawEntry } from '../../docusaurus-plugin-smartlinker/src/types.js';
+import plugin, { type TargetInfo, type IndexProvider, type RemarkSmartlinkerOptions } from '../src/remark/transform.js';
+import { setIndexEntries, clearIndexProvider } from '../src/indexProviderStore.js';
+import type { IndexRawEntry } from '../src/types.js';
 
 function makeIndex(targets: TargetInfo[]): IndexProvider {
   return {
@@ -65,17 +65,12 @@ Some text with Amoxi.
 #### H4 Amoxi (should transform here)
 `;
     const out = run(md, targets);
-    // H1 must not contain SmartLink (ensure only single-# heading is checked)
     expect(out).not.toMatch(/(^|\n)# [^\n]*<SmartLink/);
-    // paragraph should transform
     expect(out).toMatch(/Some text with <SmartLink[^>]*>Amoxi<\/SmartLink>\./);
-    // inline code & code block untouched
     expect(out).toMatch(/`Amoxi`/);
     expect(out).toMatch(/```ts[\s\S]*Amoxi[\s\S]*```/);
-    // link and image untouched
     expect(out).toMatch(/\[A link Amoxi]\(https:\/\/example\.com\)/);
     expect(out).toMatch(/!\[alt Amoxi]\(\/x\.png\)/);
-    // H4 should transform
     expect(out).toMatch(/#### H4 <SmartLink[^>]*>Amoxi<\/SmartLink> \(should transform here\)/);
   });
 
@@ -83,20 +78,17 @@ Some text with Amoxi.
     const out = run('Amoxicillin vs Amoxi vs Amoxicillin', targets);
     const matches = out.match(/<SmartLink[^>]*>(Amoxi|Amoxicillin)<\/SmartLink>/g) || [];
     expect(matches.length).toBe(3);
-    const first = matches[0];
-    expect(first).toMatch(/>Amoxicillin</);
+    expect(matches[0]).toMatch(/>Amoxicillin</);
   });
 
   it('is Unicode-aware (umlauts, ß) with boundaries', () => {
-    const t2: TargetInfo[] = [
-      { id: 'beta-lactam', slug: '/abx/beta', sourcePath: '/b.mdx', terms: ['ß-Laktam'] }
-    ];
+    const t2: TargetInfo[] = [ { id: 'beta-lactam', slug: '/abx/beta', sourcePath: '/b.mdx', terms: ['ß-Laktam'] } ];
     const out = run('kein ß-Laktamase, aber ß-Laktam.', t2);
     expect(out).toContain('<SmartLink to="/abx/beta" tipKey="beta-lactam" match="ß-Laktam">ß-Laktam</SmartLink>');
     expect(out).toMatch(/kein ß-Laktamase, aber <SmartLink/);
   });
 
-  it('deterministically picks smallest id when a term is shared (Milestone 8 tie rule)', () => {
+  it('deterministically picks smallest id when a term is shared (tie rule)', () => {
     const t3: TargetInfo[] = [
       { id: 'a-amox', slug: '/a', sourcePath: '/a.mdx', terms: ['Amoxi'], folderId: 'a' },
       { id: 'z-amox', slug: '/z', sourcePath: '/z.mdx', terms: ['Amoxi'], folderId: 'z' },
@@ -132,18 +124,16 @@ Some text with Amoxi.
   });
 
   it('replaces short note placeholder with LinkifyShortNote', () => {
-    const tSelf: TargetInfo[] = [
-      { id: 'self', slug: '/docs/self', sourcePath: '/docs/current.mdx', terms: ['Self'], folderId: 'docs' },
-    ];
+    const tSelf: TargetInfo[] = [ { id: 'self', slug: '/docs/self', sourcePath: '/docs/current.mdx', terms: ['Self'], folderId: 'docs' } ];
     const out = run('Intro %%SHORT_NOTICE%% outro.', tSelf);
     expect(out).toContain('Intro <LinkifyShortNote tipKey="self" /> outro.');
   });
+
   it('filters targets when restrictToFolders is provided', () => {
     const mixed: TargetInfo[] = [
       { id: 'doc-entry', slug: '/docs/doc-entry', sourcePath: '/docs/doc-entry.mdx', terms: ['DocEntry'], folderId: 'docs' },
       { id: 'other-entry', slug: '/guides/other-entry', sourcePath: '/guides/other-entry.mdx', terms: ['OtherEntry'], folderId: 'guides' },
     ];
-
     const out = run('DocEntry and OtherEntry.', mixed, { restrictToFolders: ['docs'] });
     expect(out).toContain('<SmartLink to="/docs/doc-entry" tipKey="doc-entry" match="DocEntry">DocEntry</SmartLink>');
     expect(out).toContain('OtherEntry.');
@@ -153,26 +143,8 @@ Some text with Amoxi.
 
 describe('remark-smartlinker transform (plugin-managed index)', () => {
   const pluginEntries: IndexRawEntry[] = [
-    {
-      id: 'amoxicillin',
-      slug: '/docs/antibiotics/amoxicillin',
-      terms: ['Amoxi', 'Amoxicillin'],
-      linkify: true,
-      icon: 'pill',
-      shortNote: undefined,
-      sourcePath: '/docs/antibiotics/amoxicillin.mdx',
-      folderId: 'docs',
-    },
-    {
-      id: 'vancomycin',
-      slug: '/docs/antibiotics/vancomycin',
-      terms: ['Vanco'],
-      linkify: true,
-      icon: undefined,
-      shortNote: undefined,
-      sourcePath: '/docs/antibiotics/vancomycin.mdx',
-      folderId: 'docs',
-    },
+    { id: 'amoxicillin', slug: '/docs/antibiotics/amoxicillin', terms: ['Amoxi', 'Amoxicillin'], linkify: true, icon: 'pill', shortNote: undefined, sourcePath: '/docs/antibiotics/amoxicillin.mdx', folderId: 'docs' },
+    { id: 'vancomycin', slug: '/docs/antibiotics/vancomycin', terms: ['Vanco'], linkify: true, icon: undefined, shortNote: undefined, sourcePath: '/docs/antibiotics/vancomycin.mdx', folderId: 'docs' },
   ];
 
   it('links terms using the plugin-registered index provider', () => {
@@ -190,18 +162,8 @@ describe('remark-smartlinker transform (plugin-managed index)', () => {
   it('honors restrictToFolders when using the plugin-managed index', () => {
     const extendedEntries: IndexRawEntry[] = [
       ...pluginEntries,
-      {
-        id: 'guides-entry',
-        slug: '/guides/guides-entry',
-        terms: ['GuidesEntry'],
-        linkify: true,
-        icon: undefined,
-        shortNote: undefined,
-        sourcePath: '/guides/guides-entry.mdx',
-        folderId: 'guides',
-      },
+      { id: 'guides-entry', slug: '/guides/guides-entry', terms: ['GuidesEntry'], linkify: true, icon: undefined, shortNote: undefined, sourcePath: '/guides/guides-entry.mdx', folderId: 'guides' },
     ];
-
     const out = runWithPluginIndex('GuidesEntry and Vanco', extendedEntries, '/docs/overview.mdx', 'docs');
     expect(out).toContain('<SmartLink to="/docs/antibiotics/vancomycin"');
     expect(out).not.toContain('to="/guides/guides-entry"');
@@ -209,19 +171,10 @@ describe('remark-smartlinker transform (plugin-managed index)', () => {
 
   it('throws when no index provider has been registered', () => {
     clearIndexProvider();
-
-    const proc = unified()
-      .use(remarkParse)
-      .use(remarkMdx)
-      .use(plugin)
-      .use(remarkStringify, { fences: true, bullet: '-', rule: '-' });
-
-    expect(() => proc.processSync({ value: 'Plain text', path: '/docs/some.mdx' })).toThrow(
-      /No index provider configured/
-    );
+    const proc = unified().use(remarkParse).use(remarkMdx).use(plugin).use(remarkStringify, { fences: true, bullet: '-', rule: '-' });
+    expect(() => proc.processSync({ value: 'Plain text', path: '/docs/some.mdx' })).toThrow(/No index provider configured/);
   });
 
-  afterAll(() => {
-    clearIndexProvider();
-  });
+  afterAll(() => { clearIndexProvider(); });
 });
+

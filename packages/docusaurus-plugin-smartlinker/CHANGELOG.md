@@ -4,6 +4,16 @@
 
 - _Nothing yet._
 
+## 0.3.0 — Remark consolidation, cleaner repo, Node 22 prep
+
+- Consolidated the remark helper into the plugin workspace under `src/remark` and migrated tests; removed the legacy `packages/remark-smartlinker` workspace.
+- Stopped committing `dist/**` artifacts to git. CI builds artifacts and release tarballs include the dual-format bundles; `.gitignore` updated accordingly.
+- Added a GitHub Actions matrix: Node 20 runs full checks (typecheck, tests, plugin + example builds), Node 22 runs typecheck + build to prepare migration while Vitest stabilizes.
+- Improved watch flow without touching file mtimes: the plugin writes a small marker file when terms change to invalidate downstream consumers.
+- Faster scanning: defer file reads to the frontmatter parser; the scanner collects only paths and filters by extension early.
+- Accessibility: tooltip ARIA wiring (`role="tooltip"`, `aria-expanded`, `aria-controls`, Escape to close) and better keyboard/touch behavior.
+- Permalink resolution: provider-based lookup with clearer fallbacks and warnings when docs metadata is unavailable.
+
 ## 0.2.1 — Shared metrics instrumentation
 
 - Added a shared metrics store to accumulate SmartLink term processing durations and expose helper functions to other modules.

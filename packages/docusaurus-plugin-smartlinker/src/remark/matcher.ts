@@ -91,9 +91,7 @@ export function buildMatcher(entries: AutoLinkEntry[]): Matcher {
         node = node.children.get(ch);
         if (!node) break;
         if (node.terminals && node.terminals.length) {
-          // Any terminal here; pick the terminal that has the longest literal by codepoints
-          // Since all terminals end at the same j, picking any is fine, but
-          // we keep the first; to be safe, prefer the longest literal to preserve original selection
+          // Pick the longest terminal literal at this end position
           let t = node.terminals[0];
           for (const cand of node.terminals) {
             if (Array.from(cand.literal).length > Array.from(t.literal).length) {
@@ -108,19 +106,13 @@ export function buildMatcher(entries: AutoLinkEntry[]): Matcher {
 
       if (bestEnd !== -1 && bestTerminal) {
         // Word boundary check around [i, bestEnd)
-        const leftOk = (i === 0) || !isWordChar(orig[i - 1] ?? '');
-        const rightOk = (bestEnd === chars.length) || !isWordChar(orig[bestEnd] ?? '');
+        const leftOk = i === 0 || !isWordChar(orig[i - 1] ?? '');
+        const rightOk = bestEnd === chars.length || !isWordChar(orig[bestEnd] ?? '');
         if (leftOk && rightOk) {
           const start = i;
           const end = bestEnd;
           const textSlice = orig.slice(start, end).join('');
-          out.push({
-            start,
-            end,
-            text: textSlice,
-            key: bestTerminal.key,
-            term: bestTerminal.literal
-          });
+          out.push({ start, end, text: textSlice, key: bestTerminal.key, term: bestTerminal.literal });
           i = end; // non-overlapping
           continue;
         }
@@ -134,3 +126,4 @@ export function buildMatcher(entries: AutoLinkEntry[]): Matcher {
 
   return { findAll };
 }
+

@@ -6,14 +6,13 @@ import type { Parent } from 'unist';
 import type { Content, Root, Text, PhrasingContent } from 'mdast';
 import {
   getIndexProvider as getRegisteredIndexProvider,
-  PLUGIN_NAME,
-  resolveDebugConfig,
-  createLogger,
-  type DebugOptions,
-  getDebugConfig,
-  recordTermProcessingMs,
-  updateDocTermUsage,
-} from 'docusaurus-plugin-smartlinker';
+} from '../indexProviderStore.js';
+import { PLUGIN_NAME } from '../pluginName.js';
+import { resolveDebugConfig, createLogger } from '../logger.js';
+import type { DebugOptions } from '../options.js';
+import { getDebugConfig } from '../debugStore.js';
+import { recordTermProcessingMs } from '../metricsStore.js';
+import { updateDocTermUsage } from '../termUsageStore.js';
 import { buildMatcher, type AutoLinkEntry } from './matcher.js';
 
 export interface TargetInfo {
@@ -67,26 +66,14 @@ function toMdxJsxTextElement(
 ): any {
   const attributes = Object.entries(attrs)
     .filter(([, v]) => typeof v === 'string' && v.length > 0)
-    .map(([name, value]) => ({
-      type: 'mdxJsxAttribute',
-      name,
-      value
-    }));
+    .map(([name, value]) => ({ type: 'mdxJsxAttribute', name, value }));
 
   const children: PhrasingContent[] = [];
   if (typeof text === 'string' && text.length > 0) {
-    children.push({
-      type: 'text',
-      value: text
-    } as Text);
+    children.push({ type: 'text', value: text } as Text);
   }
 
-  return {
-    type: 'mdxJsxTextElement',
-    name,
-    attributes,
-    children
-  };
+  return { type: 'mdxJsxTextElement', name, attributes, children };
 }
 
 function normalizeFolderKey(value: string): string {
@@ -128,129 +115,83 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
     : restrictInput
     ? [restrictInput]
     : [];
-  const folderFilter = new Set(
-    restrictArray
-      .map((value) => (typeof value === 'string' ? normalizeFolderKey(value) : null))
-      .filter((value): value is string => !!value)
-  );
-  type PreparedIndex = {
-    targets: TargetInfo[];
-    matcher: ReturnType<typeof buildMatcher>;
-    claimMap: Map<string, { id: string; slug: string; icon?: string }[]>;
-    targetByPath: Map<string, TargetInfo>;
-    targetById: Map<string, TargetInfo>;
-    targetBySlug: Map<string, TargetInfo>;
-  };
-
-  const mdxComponentNamesToSkip = new Set<string>([
-    componentName,
-    shortNoteComponentName,
-  ]);
+  const folderFilter = new Set(restrictArray.map(normalizeFolderKey));
+  const mdxComponentNamesToSkip = new Set(['SmartLink', 'LinkifyShortNote']);
 
   if (initLogger.isLevelEnabled('debug')) {
-    initLogger.debug('Remark transformer initialized', () => ({
-      componentName,
-      shortNoteComponentName,
-      restrictFilterCount: folderFilter.size,
-      debugLevel: debugResolution.config.level,
-      debugEnabled: debugResolution.config.enabled,
-    }));
+    initLogger.debug('remark-smartlinker initialized', {
+      restrictToFolders: restrictArray.length > 0 ? restrictArray : undefined,
+    });
   }
 
-  let cachedProvider: IndexProvider | undefined;
-  let cachedFilterSignature = '';
-  let prepared: PreparedIndex | undefined;
-
-  function ensurePreparedIndex(): { index: IndexProvider } & PreparedIndex {
+  function ensurePreparedIndex() {
     const provider = options.index ?? getRegisteredIndexProvider();
-
     if (!provider) {
-      throw new Error(
-        '[docusaurus-plugin-smartlinker] No index provider configured. Pass `{ index }` explicitly or make sure the Docusaurus plugin runs before this remark transformer.'
-      );
+      throw new Error('No index provider configured. Did the Docusaurus plugin run and register entries?');
     }
 
-    const filterSignature = folderFilter.size
-      ? Array.from(folderFilter).sort().join('|')
-      : 'ALL';
+    const targetsAll = provider.getAllTargets();
+    const targets = folderFilter.size === 0
+      ? targetsAll
+      : targetsAll.filter((t) => t.folderId && folderFilter.has(normalizeFolderKey(String(t.folderId))));
 
-    if (provider !== cachedProvider || filterSignature !== cachedFilterSignature) {
-      const allTargets = provider.getAllTargets();
-      const targets = folderFilter.size
-        ? allTargets.filter((target: TargetInfo) => {
-            const id = typeof target.folderId === 'string' ? normalizeFolderKey(target.folderId) : null;
-            if (!id) return false;
-            return folderFilter.has(id);
-          })
-        : allTargets;
+    const termEntries: AutoLinkEntry[] = [];
+    const claimMap = new Map<string, { id: string; slug: string; icon?: string }[]>();
 
-      const termEntries: AutoLinkEntry[] = [];
-      const claimMap = new Map<string, { id: string; slug: string; icon?: string }[]>();
+    for (const t of targets) {
+      for (const literal of t.terms ?? []) {
+        if (!literal) continue;
+        termEntries.push({ literal, key: `${t.id}::${t.slug}::${t.icon ?? ''}` });
 
-      for (const t of targets) {
-        for (const lit of t.terms) {
-          const literal = String(lit ?? '').trim();
-          if (!literal) continue;
-          termEntries.push({ literal, key: `${t.id}::${t.slug}::${t.icon ?? ''}` });
-
-          const ll = literal.toLocaleLowerCase();
-          const arr = claimMap.get(ll) ?? [];
-          arr.push({ id: t.id, slug: t.slug, icon: t.icon });
-          claimMap.set(ll, arr);
-        }
-      }
-
-      termEntries.sort((a, b) => b.literal.length - a.literal.length);
-      for (const [, arr] of claimMap) arr.sort((a, b) => a.id.localeCompare(b.id));
-
-      const matcher = buildMatcher(termEntries);
-
-      const targetByPath = new Map<string, TargetInfo>();
-      const targetById = new Map<string, TargetInfo>();
-      const targetBySlug = new Map<string, TargetInfo>();
-
-      for (const t of targets) {
-        if (t.sourcePath) {
-          const key = normalizePath(t.sourcePath);
-          if (key) targetByPath.set(key, t);
-        }
-        if (t.id) targetById.set(t.id, t);
-        if (t.slug) targetBySlug.set(t.slug, t);
-      }
-
-      prepared = { targets, matcher, claimMap, targetByPath, targetById, targetBySlug };
-      cachedProvider = provider;
-      cachedFilterSignature = filterSignature;
-
-      if (prepareLogger.isLevelEnabled('debug')) {
-        prepareLogger.debug('Prepared SmartLink term matcher', {
-          targetCount: targets.length,
-          termCount: termEntries.length,
-          filteredByFolders: folderFilter.size > 0,
-        });
-      }
-
-      if (prepareLogger.isLevelEnabled('trace')) {
-        const folders = Array.from(folderFilter.values());
-        if (folders.length > 0) {
-          prepareLogger.trace('Active folder filters', () => ({ folders }));
-        }
+        const ll = literal.toLocaleLowerCase();
+        const arr = claimMap.get(ll) ?? [];
+        arr.push({ id: t.id, slug: t.slug, icon: t.icon });
+        claimMap.set(ll, arr);
       }
     }
 
-    return { index: provider, ...(prepared as PreparedIndex) };
+    termEntries.sort((a, b) => b.literal.length - a.literal.length);
+    for (const [, arr] of claimMap) arr.sort((a, b) => a.id.localeCompare(b.id));
+
+    const matcher = buildMatcher(termEntries);
+
+    const targetByPath = new Map<string, TargetInfo>();
+    const targetById = new Map<string, TargetInfo>();
+    const targetBySlug = new Map<string, TargetInfo>();
+
+    for (const t of targets) {
+      if (t.sourcePath) {
+        const key = normalizePath(t.sourcePath);
+        if (key) targetByPath.set(key, t);
+      }
+      if (t.id) targetById.set(t.id, t);
+      if (t.slug) targetBySlug.set(t.slug, t);
+    }
+
+    const prepared = { targets, matcher, claimMap, targetByPath, targetById, targetBySlug };
+
+    if (prepareLogger.isLevelEnabled('debug')) {
+      prepareLogger.debug('Prepared SmartLink term matcher', {
+        targetCount: targets.length,
+        termCount: termEntries.length,
+        filteredByFolders: folderFilter.size > 0,
+      });
+    }
+
+    if (prepareLogger.isLevelEnabled('trace')) {
+      const folders = Array.from(folderFilter.values());
+      if (folders.length > 0) {
+        prepareLogger.trace('Active folder filters', () => ({ folders }));
+      }
+    }
+
+    return { index: provider, ...prepared };
   }
 
   return (tree: any, file: any) => {
     const { index, matcher, claimMap, targetByPath, targetById, targetBySlug } = ensurePreparedIndex();
 
-    const currentTarget = findCurrentTarget({
-      file,
-      index,
-      targetByPath,
-      targetById,
-      targetBySlug,
-    });
+    const currentTarget = findCurrentTarget({ file, index, targetByPath, targetById, targetBySlug });
 
     const filePath = typeof file?.path === 'string' ? file.path : undefined;
     const observedTermIds = new Set<string>();
@@ -263,9 +204,7 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
     }
 
     const onLinkInserted = (args: { text: string; slug: string; id: string; icon?: string }) => {
-      if (args.id) {
-        observedTermIds.add(args.id);
-      }
+      if (args.id) observedTermIds.add(args.id);
       if (!transformLogger.isLevelEnabled('debug')) return;
       transformLogger.debug('Smartlink inserted', () => ({
         filePath: filePath ?? null,
@@ -277,10 +216,7 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
     };
     const onShortNoteInserted = (args: { id: string }) => {
       if (!transformLogger.isLevelEnabled('debug')) return;
-      transformLogger.debug('Short-note placeholder replaced', () => ({
-        filePath: filePath ?? null,
-        tipKey: args.id,
-      }));
+      transformLogger.debug('Short-note placeholder replaced', () => ({ filePath: filePath ?? null, tipKey: args.id }));
     };
 
     const startTime = performance.now();
@@ -314,16 +250,11 @@ export default function remarkSmartlinker(opts?: RemarkSmartlinkerOptions): Tran
 
       const idx = (parent.children as Content[]).indexOf(node as any);
       if (idx >= 0) (parent.children as Content[]).splice(idx, 1, ...result.nodes);
-
     });
 
     const duration = performance.now() - startTime;
     recordTermProcessingMs(duration);
-
     updateDocTermUsage(filePath, observedTermIds);
-
-    // No extra summary logs to avoid noise; per-insertion debug logs above
-
     return tree;
   };
 }

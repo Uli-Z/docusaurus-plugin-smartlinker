@@ -66,8 +66,10 @@ function run(command: string, args: string[], options?: ExecFileSyncOptionsWithS
 beforeAll(() => {
   console.info('Preparing temporary workspace for example site build test');
   tempRoot = mkdtempSync(join(tmpdir(), 'smartlinker-example-'));
-  console.info('Packing plugin tarball with pnpm');
-  const packOutput = run('pnpm', ['pack', '--pack-destination', tempRoot], {
+  console.info('Packing plugin tarball with pnpm (workspace)');
+  // Pack only the publishable plugin workspace so the tarball includes dist/ assets
+  // even though they are not committed to git.
+  const packOutput = run('pnpm', ['-C', 'packages/docusaurus-plugin-smartlinker', 'pack', '--silent', '--pack-destination', tempRoot], {
     cwd: repoRoot,
   });
   const packLines = packOutput.trim().split(/\r?\n/).filter(Boolean);
@@ -140,13 +142,16 @@ describe('example site build', () => {
 
   it('includes dist files in the packed tarball', () => {
     const requiredEntries = [
-      'package/packages/docusaurus-plugin-smartlinker/dist/index.cjs',
-      'package/packages/docusaurus-plugin-smartlinker/dist/index.mjs',
-      'package/packages/docusaurus-plugin-smartlinker/dist/index.d.ts',
-      'package/packages/docusaurus-plugin-smartlinker/dist/theme/styles.css',
-      'package/packages/docusaurus-plugin-smartlinker/dist/remark/index.cjs',
-      'package/packages/docusaurus-plugin-smartlinker/dist/remark/index.mjs',
-      'package/packages/docusaurus-plugin-smartlinker/dist/remark/index.d.ts',
+      'package/dist/index.cjs',
+      'package/dist/index.mjs',
+      'package/dist/index.d.ts',
+      'package/dist/theme/styles.css',
+      'package/dist/remark/index.cjs',
+      'package/dist/remark/index.mjs',
+      'package/dist/remark/index.d.ts',
+      'package/README.md',
+      'package/LICENSE',
+      'package/package.json',
     ];
 
     expect(tarballEntries).toEqual(expect.arrayContaining(requiredEntries));

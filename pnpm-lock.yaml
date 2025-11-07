@@ -156,6 +156,15 @@ importers:
       mdast:
         specifier: ^3.0.0
         version: 3.0.0
+      remark-mdx:
+        specifier: ^3.1.1
+        version: 3.1.1
+      remark-parse:
+        specifier: ^11.0.0
+        version: 11.0.0
+      remark-stringify:
+        specifier: ^11.0.0
+        version: 11.0.0
       rimraf:
         specifier: ^5.0.0
         version: 5.0.10

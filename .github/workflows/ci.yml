@@ -13,6 +13,10 @@ jobs:
   build:
     name: build
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -22,10 +26,10 @@ jobs:
         with:
           version: 9.0.0
 
-      - name: Use Node.js 20
+      - name: Use Node.js ${{ matrix.node }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -35,13 +39,15 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Run plugin tests
+      - name: Run plugin tests (Node 20 only)
+        if: matrix.node == 20
         run: pnpm --filter docusaurus-plugin-smartlinker run test
 
       - name: Build plugin package
         run: pnpm --filter docusaurus-plugin-smartlinker run build
 
-      - name: Build example site (link dependency)
+      - name: Build example site (Node 20 only)
+        if: matrix.node == 20
         run: pnpm --filter @examples/site run build
 
   pack-ci:

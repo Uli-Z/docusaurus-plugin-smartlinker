@@ -11,8 +11,8 @@ const themeDistDir = join(distDir, 'theme');
 const runtimeDistDir = join(themeDistDir, 'runtime');
 const themeSrcDir = join(packageDir, 'src', 'theme');
 const tscOutDir = join(packageDir, 'dist-tsc');
-const tscSrcDir = join(tscOutDir, 'docusaurus-plugin-smartlinker', 'src');
-const tscRemarkSrcDir = join(tscOutDir, 'remark-smartlinker', 'src');
+// After consolidation, the TSC output mirrors the workspace source layout directly under dist-tsc
+const tscSrcDir = tscOutDir;
 
 function assert(condition, message) {
   if (!condition) {
@@ -41,11 +41,6 @@ if (existsSync(remarkDtsSrc)) {
   const remarkDtsMap = join(tscSrcDir, 'remark', 'index.d.ts.map');
   if (existsSync(remarkDtsMap)) {
     safeCopy(remarkDtsMap, join(remarkDistDir, 'index.d.ts.map'));
-  }
-} else {
-  const fallbackRemarkDts = join(tscRemarkSrcDir, 'index.d.ts');
-  if (existsSync(fallbackRemarkDts)) {
-    safeCopy(fallbackRemarkDts, join(remarkDistDir, 'index.d.ts'));
   }
 }
 

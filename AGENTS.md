@@ -44,7 +44,7 @@ Generated artifacts are emitted to `packages/docusaurus-plugin-smartlinker/dist/
 
 - [`package.json`](package.json): private workspace root targeting Node `>=18 <25`, configured with pnpm 9. Scripts proxy to the plugin workspace (`build`, `test`, `typecheck`), example site helpers (`site:*`), packaging (`pack:ci` which repacks the plugin tarball into `build-artifacts/`), and the tarball smoke harness (`smoke:git-install`).
 - [`packages/docusaurus-plugin-smartlinker`](packages/docusaurus-plugin-smartlinker): publishable package with TypeScript sources, `tsup.config.ts` for dual-format bundling, `scripts/postbuild-verify.mjs` to enforce dist integrity, Vitest configuration, and tracked `dist/` artifacts. The workspace now owns its README and MIT license so the published tarball is self-contained. Its `pack:ci` script chains `pnpm clean && pnpm build && pnpm pack --silent` to produce a deterministic tarball that the root script can delegate to.
-- [`packages/remark-smartlinker`](packages/remark-smartlinker): legacy workspace retained for tests and TypeScript sources; runtime bundles are emitted from the plugin’s `dist/remark`. Keep until the layout is simplified.
+- [`packages/remark-smartlinker`](packages/remark-smartlinker): legacy workspace retained temporarily. The remark sources and tests are being consolidated under `packages/docusaurus-plugin-smartlinker/src/remark` and `packages/docusaurus-plugin-smartlinker/tests`. Plan to remove this workspace once all consumers/tests migrate.
 - [`examples/site`](examples/site): Docusaurus project consuming the plugin via a workspace `link:` dependency. Commands are proxied through root `site:*` scripts.
 - [`scripts`](scripts): currently houses `git-install-smoke.mjs`, which packs the repository, rewrites the example site dependency to the generated tarball, installs, and triggers `docusaurus build`.
 - [`.github/workflows`](.github/workflows): CI workflow (`ci.yml`) performing pnpm-based validation on Node 20 and Pages deployment (`deploy-example-site.yml`).
@@ -116,6 +116,8 @@ Helpful utilities:
 - `packages/docusaurus-plugin-smartlinker/dist/theme/**/*` — runtime components and CSS copied from `src/theme/styles.css`.
 - Tarballs generated via `pnpm pack` (root or plugin workspace) contain README, LICENSE, and the dist assets required by consumers.
 
+Note: `dist/**` is not committed to git. CI and releases produce artifacts at build time.
+
 The plugin TypeScript project is configured with `moduleResolution: "nodenext"` so the shared remark sources (which live in `packages/remark-smartlinker`) can be re-exported with explicit `.js` extensions while still producing `.d.ts` bundles for both entrypoints.
 
 `postbuild-verify.mjs` ensures the required files exist, copies theme assets, enforces explicit relative import extensions, and removes legacy single-format outputs (`dist/index.js`, `dist/remark/index.js`) before cleaning the `dist-tsc` staging directory.
@@ -184,9 +186,10 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 
 - **Workflow**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
   - Triggered on pushes to `main`, pull requests targeting `main`, and manual dispatch.
-  - Two named jobs expose branch-protection checks on Node 20 with pnpm 9:
-    - `ci / build`: checkout → setup pnpm → install (`pnpm install --frozen-lockfile`) → `pnpm typecheck` → `pnpm --filter docusaurus-plugin-smartlinker run test` → `pnpm --filter docusaurus-plugin-smartlinker run build` → `pnpm --filter @examples/site run build` (link dependency path).
-    - `ci / pack-ci`: depends on `build`, re-installs dependencies, runs `pnpm -C packages/docusaurus-plugin-smartlinker run pack:ci`, asserts the tarball only contains `dist/**`, `README.md`, `LICENSE`, `package.json`, then replaces the example site's dependency with the tarball and rebuilds before resetting manifests.
+  - Build job runs on Node 20 and 22 (matrix):
+    - Node 20: full run — typecheck, tests, plugin build, example site build.
+    - Node 22: typecheck + plugin build (tests omitted until Vitest is stable).
+  - `ci / pack-ci`: depends on `build`, re-installs dependencies, runs `pnpm -C packages/docusaurus-plugin-smartlinker run pack:ci`, asserts the tarball only contains `dist/**`, `README.md`, `LICENSE`, `package.json`, then replaces the example site's dependency with the tarball and rebuilds before resetting manifests.
   - Both jobs run under Corepack-enabled pnpm 9 with frozen lockfile installs.
 - **Pages Deploy**: [`.github/workflows/deploy-example-site.yml`](.github/workflows/deploy-example-site.yml)
   - Triggered on push to `main` and `work`, plus manual dispatch.
@@ -213,6 +216,7 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 - Dependency overrides: root `package.json` enforces patched versions of React, estree utilities, and `zod`. Review periodically for updates.
 - npm audit: CI does not currently run `npm audit`; run manually if needed (`pnpm audit` / `npm audit`).
 - Secrets management: no secrets stored locally. Future secrets should use GitHub Actions Encrypted Secrets with least privilege.
+- Short note trust: `smartlink-short-note` strings are MDX/JSX compiled to React at build time. Only include trusted content. Do not compile untrusted user input into short notes or tooltip component modules.
 
 ## Example Site Integration
 
@@ -247,7 +251,7 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 
 - `pnpm test` fails under Node 22 due to tinypool worker crashes. Workaround: switch to Node 20 (`nvm use 20`) until upstream fix lands.
 - Vitest suites still emit verbose Docusaurus debug output; consider toggling `DOCUSAURUS_PLUGIN_DEBUG=0` inside tests when stabilizing.
-- `packages/remark-smartlinker` remains a placeholder workspace; consolidate once tests move under the primary package.
+- `packages/remark-smartlinker` has been consolidated into the main plugin workspace; tests and sources now live under `packages/docusaurus-plugin-smartlinker`. The legacy workspace has been removed.
 - No automated link checker exists for this documentation; review links manually during updates.
 
 ## Roadmap & Backlog
