@@ -1,5 +1,5 @@
 import { dirname, join, resolve, relative, isAbsolute } from 'node:path';
-import { existsSync, utimesSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { Buffer } from 'node:buffer';
 import { fileURLToPath } from 'node:url';
 import { performance } from 'node:perf_hooks';
@@ -70,6 +70,7 @@ type Content = {
   notes: NoteModule[];
   registry: RegistryModule;
   opts: NormalizedOptions;
+  changedTermCount: number;
 };
 
 type ResolvedFolder = NormalizedFolderOption & {
@@ -240,8 +241,6 @@ export default function smartlinkerPlugin(
     setIndexEntries,
     entryState,
     getDocsReferencingTerms,
-    existsSync,
-    utimesSync,
     toSiteRel,
     normalizePath,
     startTimer: startTimer as any,
@@ -264,7 +263,6 @@ export default function smartlinkerPlugin(
     getDocsReferencingTerms,
     normalizePath,
     existsSync,
-    utimesSync,
     toSiteRel,
     stats,
     startTimer: startTimer as any,
@@ -305,7 +303,6 @@ export default function smartlinkerPlugin(
         getDocsReferencingTerms,
         normalizePath,
         existsSync,
-        utimesSync,
         toSiteRel,
         stats,
         startTimer: startTimer as any,
@@ -339,7 +336,7 @@ export default function smartlinkerPlugin(
 
     async contentLoaded({ content, actions }: { content: Content; actions: PluginContentLoadedActions }) {
       if (!content) return;
-      const { notes, registry, entries, opts } = content;
+      const { notes, registry, entries, opts, changedTermCount } = content;
 
       const start = startTimer(contentLogger, 'info', 'debug');
 
@@ -351,6 +348,14 @@ export default function smartlinkerPlugin(
         tooltipComponentsModule,
         contentLogger,
       });
+
+      // Write a small changing marker when terms change to invalidate
+      // downstream consumers without touching source MDX files.
+      if (changedTermCount > 0) {
+        const markerName = 'smartlinker/marker.json';
+        const marker = JSON.stringify({ ts: Date.now(), changedTermCount }, null, 2);
+        await actions.createData(markerName, marker);
+      }
 
       await resolveAndPublish({
         context: { siteDir: _context.siteDir, generatedFilesDir: _context.generatedFilesDir },

@@ -59,8 +59,6 @@ export type OnFilesChangeDeps<TEntry> = {
   setIndexEntries: (entries: any[]) => void;
   entryState: { diff: (nextEntries: any[], impactedPaths: Set<string>) => { impactedTermIds: Set<string>; addedTermIds: Set<string>; removedTermIds: Set<string>; changedTermIds: Set<string> }; refresh: (entries: any[]) => void };
   getDocsReferencingTerms: (ids: Set<string>) => Iterable<string>;
-  existsSync: (p: string) => boolean;
-  utimesSync: (p: string, atime: Date, mtime: Date) => void;
   toSiteRel: (absPath: string) => string;
   normalizePath: (p: string) => string;
   startTimer: (log: { isLevelEnabled(level: string): boolean }, ...levels: string[]) => number | null;
@@ -101,34 +99,12 @@ export function createOnFilesChangeHandler(deps: OnFilesChangeDeps<any>) {
     deps.entryState.refresh(entries);
     deps.stats.entryCount = entries.length;
 
-    const docsForReload = new Set<string>(deps.getDocsReferencingTerms(changedTermIds));
-    const touchedDocs: string[] = [];
-    if (docsForReload.size > 0) {
-      const now = new Date();
-      for (const docPath of docsForReload) {
-        const absDocPath = deps.normalizePath(docPath);
-        if (!deps.existsSync(absDocPath)) continue;
-        try {
-          deps.utimesSync(absDocPath, now, now);
-          touchedDocs.push(absDocPath);
-        } catch (error) {
-          if (deps.watchLogger.isLevelEnabled('warn')) {
-            deps.watchLogger.warn('Failed to mark SmartLink consumer for rebuild', () => ({
-              file: deps.toSiteRel(absDocPath),
-              error: error instanceof Error ? error.message : String(error),
-            }));
-          }
-        }
-      }
-    }
-
     if (deps.watchLogger.isLevelEnabled('info')) {
       deps.watchLogger.info('SmartLink watch rebuild complete', {
         scannedFileCount: files.length,
         changedTermCount: changedTermIds.size,
         addedTermCount: addedTermIds.size,
         removedTermCount: removedTermIds.size,
-        rebuiltDocCount: touchedDocs.length,
         durationMs: deps.endTimer(start),
       });
     }
@@ -140,9 +116,7 @@ export function createOnFilesChangeHandler(deps: OnFilesChangeDeps<any>) {
         changedTermIds: Array.from(changedTermIds),
         addedTermIds: Array.from(addedTermIds),
         removedTermIds: Array.from(removedTermIds),
-        rebuiltDocs: touchedDocs.map((p) => deps.toSiteRel(p)),
       }));
     }
   };
 }
-

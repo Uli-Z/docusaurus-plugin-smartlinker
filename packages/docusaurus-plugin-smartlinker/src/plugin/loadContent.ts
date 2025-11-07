@@ -19,7 +19,6 @@ export function createLoadContent(deps: {
   getDocsReferencingTerms: (ids: Set<string>) => Iterable<string>;
   normalizePath: (p: string) => string;
   existsSync: (p: string) => boolean;
-  utimesSync: (p: string, a: Date, m: Date) => void;
   toSiteRel: (p: string) => string;
   stats: { entryCount: number; noteCount: number; registryBytes: number; reusedPrimedFiles: boolean; scannedFileCount: number };
   startTimer: (log: { isLevelEnabled(level: string): boolean }, ...levels: string[]) => number | null;
@@ -41,7 +40,6 @@ export function createLoadContent(deps: {
     getDocsReferencingTerms,
     normalizePath,
     existsSync,
-    utimesSync,
     toSiteRel,
     stats,
     startTimer,
@@ -49,7 +47,7 @@ export function createLoadContent(deps: {
     primedRef,
   } = deps;
 
-  return async (): Promise<{ entries: IndexRawEntry[]; notes: NoteModule[]; registry: RegistryModule; opts: NormalizedOptions }> => {
+  return async (): Promise<{ entries: IndexRawEntry[]; notes: NoteModule[]; registry: RegistryModule; opts: NormalizedOptions; changedTermCount: number }> => {
     const usingPrimed = primedRef.current !== null;
     const start = startTimer(loadLogger as any, 'info', 'debug');
     const files = primedRef.current ?? collectFiles();
@@ -90,33 +88,11 @@ export function createLoadContent(deps: {
         new Set<string>(),
       );
       if (changedTermIds.size > 0) {
-        const docsForReload = new Set<string>(getDocsReferencingTerms(changedTermIds));
-        const touchedDocs: string[] = [];
-        if (docsForReload.size > 0) {
-          const now = new Date();
-          for (const docPath of docsForReload) {
-            const absDocPath = normalizePath(docPath);
-            if (!existsSync(absDocPath)) continue;
-            try {
-              utimesSync(absDocPath, now, now);
-              touchedDocs.push(absDocPath);
-            } catch (error) {
-              if (watchLogger.isLevelEnabled('warn')) {
-                watchLogger.warn('Failed to mark SmartLink consumer for rebuild', () => ({
-                  file: toSiteRel(absDocPath),
-                  error: error instanceof Error ? error.message : String(error),
-                }));
-              }
-            }
-          }
-        }
-
         if (watchLogger.isLevelEnabled('info')) {
           watchLogger.info('Detected SmartLink term changes', {
             changedTermCount: changedTermIds.size,
             addedTermCount: addedTermIds.size,
             removedTermCount: removedTermIds.size,
-            rebuiltDocCount: touchedDocs.length,
           });
         }
 
@@ -125,9 +101,15 @@ export function createLoadContent(deps: {
             changedTermIds: Array.from(changedTermIds),
             addedTermIds: Array.from(addedTermIds),
             removedTermIds: Array.from(removedTermIds),
-            rebuiltDocs: touchedDocs.map((p) => toSiteRel(p)),
           }));
         }
+        // Return the count so contentLoaded can decide to write a marker file
+        // to trigger downstream invalidation without touching source docs.
+        stats.entryCount = entries.length;
+        stats.noteCount = notes.length;
+        stats.registryBytes = Buffer.byteLength(registry.contents, 'utf8');
+        entryState.refresh(entries);
+        return { entries, notes, registry, opts: normOpts, changedTermCount: changedTermIds.size };
       }
     } catch (err) {
       if (watchLogger.isLevelEnabled('warn')) {
@@ -160,6 +142,6 @@ export function createLoadContent(deps: {
       }));
     }
 
-    return { entries, notes, registry, opts: normOpts };
+    return { entries, notes, registry, opts: normOpts, changedTermCount: 0 };
   };
 }
