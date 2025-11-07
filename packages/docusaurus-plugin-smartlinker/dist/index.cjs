@@ -1167,9 +1167,20 @@ function buildDocLookups(docsContent) {
   }
   return { byDocId, bySource, byFrontmatterId, bySlug, byPermalink };
 }
-function resolveEntryPermalinks(options) {
-  const { entries, siteDir, docsContent } = options;
-  const lookups = buildDocLookups(docsContent);
+function createContentLookupProvider(docsContent) {
+  return {
+    getLookups() {
+      return buildDocLookups(docsContent);
+    }
+  };
+}
+function resolveEntryPermalinksUsingProvider(args) {
+  const { siteDir, entries, provider, permalinkLogger } = args;
+  const lookups = provider.getLookups();
+  const hasAnyLookupData = lookups.byDocId.size > 0 || lookups.bySource.size > 0 || lookups.byFrontmatterId.size > 0 || lookups.bySlug.size > 0 || lookups.byPermalink.size > 0;
+  if (!hasAnyLookupData && permalinkLogger?.isLevelEnabled("warn")) {
+    permalinkLogger.warn("No docs metadata available for permalink resolution");
+  }
   return entries.map((entry) => {
     const alias = toAliasedSitePath(siteDir, entry.sourcePath);
     let doc;
@@ -1253,16 +1264,18 @@ function loadDocsContentFromGenerated(generatedFilesDir) {
   return result;
 }
 async function resolveAndPublish(args) {
-  const { context, actions, opts, entries, computeDocIdForEntry, stats, contentLogger, endTimer: endTimer2, startTime } = args;
+  const { context, actions, opts, entries, computeDocIdForEntry, stats, contentLogger, endTimer: endTimer2, startTime, permalinkLogger } = args;
   const enrichedEntries = entries.map((entry) => ({
     ...entry,
     docId: entry.docId ?? computeDocIdForEntry(entry)
   }));
   const docsContent = loadDocsContentFromGenerated(context.generatedFilesDir);
-  const resolved = resolveEntryPermalinks({
+  const provider = createContentLookupProvider(docsContent);
+  const resolved = resolveEntryPermalinksUsingProvider({
     siteDir: context.siteDir,
     entries: enrichedEntries,
-    docsContent
+    provider,
+    permalinkLogger
   });
   stats.resolvedCount = resolved.length;
   publishGlobalData(actions, opts, resolved);
@@ -1639,6 +1652,7 @@ function smartlinkerPlugin(_context, optsIn) {
   const webpackLogger = logger.child("configureWebpack");
   const postBuildLogger = logger.child("postBuild");
   const watchLogger = logger.child("watch");
+  const permalinkLogger = logger.child("permalink");
   const stats = {
     scannedFileCount: 0,
     entryCount: 0,
@@ -1838,7 +1852,8 @@ function smartlinkerPlugin(_context, optsIn) {
         stats,
         contentLogger,
         endTimer,
-        startTime: start
+        startTime: start,
+        permalinkLogger
       });
     },
     async postBuild() {

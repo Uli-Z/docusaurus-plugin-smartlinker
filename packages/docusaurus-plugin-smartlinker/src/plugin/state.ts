@@ -19,9 +19,14 @@ export class EntryStateCache {
   constructor(private readonly siteDir: string) {}
 
   private computeEntrySignature(entry: IndexRawEntry): string {
+    const termsSorted = [...entry.terms]
+      .filter((t) => t != null)
+      .map((t) => t.trim())
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
     return JSON.stringify({
       slug: entry.slug,
-      terms: [...entry.terms],
+      terms: termsSorted,
       icon: entry.icon ?? null,
       shortNote: entry.shortNote ?? null,
       folderId: entry.folderId ?? null,
@@ -92,4 +97,3 @@ export class EntryStateCache {
     return { impactedTermIds, addedTermIds, removedTermIds, changedTermIds };
   }
 }
-
