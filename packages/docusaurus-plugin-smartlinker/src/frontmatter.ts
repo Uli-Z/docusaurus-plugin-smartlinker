@@ -1,4 +1,5 @@
 import matter from 'gray-matter';
+import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 import type {
   RawDocFile,
@@ -79,7 +80,16 @@ export function parseFrontmatter(files: RawDocFile[]): FrontmatterParseResult {
     }
 
     try {
-      const { data } = matter(file.content ?? '');
+      const content = (typeof file.content === 'string' && file.content.length > 0)
+        ? file.content
+        : (() => {
+            try {
+              return readFileSync(file.path, 'utf8');
+            } catch {
+              return '';
+            }
+          })();
+      const { data } = matter(content);
       const res = FM.safeParse(data ?? {});
       if (!res.success) {
         warnings.push({

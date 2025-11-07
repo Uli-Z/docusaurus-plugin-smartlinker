@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { RawDocFile } from '../types.js';
 
@@ -41,12 +41,11 @@ export function scanMdFiles(opts: ScanOptions): RawDocFile[] {
         const dot = low.lastIndexOf('.');
         const ext = dot >= 0 ? low.slice(dot) : '';
         if (exts.has(ext as any)) {
-          const content = readFileSync(p, 'utf8');
           const rel = relative(root, p).replace(/\\/g, '/');
-          files.push({ path: p, content, relativePath: rel });
+          // Defer file content read to the frontmatter parser for performance.
+          files.push({ path: p, content: '', relativePath: rel });
         }
       }
     }
   }
 }
-
