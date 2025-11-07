@@ -27,7 +27,7 @@ Smartlinker is a Docusaurus v3 plugin that turns documented terms into context-a
 Primary deliverables:
 - `docusaurus-plugin-smartlinker` npm package (plugin + remark helper + runtime theme assets bundled via tsup).
 - Example site under `examples/site` showcasing integration and serving as a smoke test subject.
-- CI pipelines that run builds, tests, packing, and site verification on Node 20 with pnpm.
+- CI pipelines that run builds, tests, packing, and site verification with pnpm.
 - GitHub Pages deployment of the example site on pushes to `main`/`work`.
 - Release tarballs attached to GitHub Releases for consumers that install directly from `.tgz` artifacts.
 
@@ -47,7 +47,7 @@ Generated artifacts are emitted to `packages/docusaurus-plugin-smartlinker/dist/
 - [`packages/remark-smartlinker`](packages/remark-smartlinker): legacy workspace retained temporarily. The remark sources and tests are being consolidated under `packages/docusaurus-plugin-smartlinker/src/remark` and `packages/docusaurus-plugin-smartlinker/tests`. Plan to remove this workspace once all consumers/tests migrate.
 - [`examples/site`](examples/site): Docusaurus project consuming the plugin via a workspace `link:` dependency. Commands are proxied through root `site:*` scripts.
 - [`scripts`](scripts): currently houses `git-install-smoke.mjs`, which packs the repository, rewrites the example site dependency to the generated tarball, installs, and triggers `docusaurus build`.
-- [`.github/workflows`](.github/workflows): CI workflow (`ci.yml`) performing pnpm-based validation on Node 20 and Pages deployment (`deploy-example-site.yml`).
+- [`.github/workflows`](.github/workflows): CI workflow (`ci.yml`) performing pnpm-based validation and Pages deployment (`deploy-example-site.yml`).
 - [`README.md`](README.md), [`AGENTS.md`](AGENTS.md), and [`RELEASE_NOTES.md`](RELEASE_NOTES.md): user-facing quick start, operations guide, and release history.
 
 ## Dependencies & Tooling
@@ -147,7 +147,7 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 | Environment | Purpose | Entry point | Notes |
 |-------------|---------|-------------|-------|
 | Local dev | Develop plugin and run example site | Developer workstation | Run `pnpm run build` before `site:*` commands |
-| CI | Validate builds/tests/smoke | GitHub Actions (`ci.yml`) | Node 20 + pnpm; runs typecheck, tests, build, site build, pack:ci |
+| CI | Validate builds/tests/smoke | GitHub Actions (`ci.yml`) | pnpm; runs typecheck, tests, build, site build, pack:ci |
 | Production docs | Publish example site | GitHub Pages (`deploy-example-site.yml`) | Triggered on push to `main`/`work` |
 | Package distribution | Publish npm releases | npm registry | Manual `npm publish` from the package directory |
 
@@ -185,9 +185,7 @@ The root README recommends installing the published `.tgz` directly from GitHub 
 
 - **Workflow**: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
   - Triggered on pushes to `main`, pull requests targeting `main`, and manual dispatch.
-  - Build job runs on Node 20 and 22 (matrix):
-    - Node 20: full run — typecheck, tests, plugin build, example site build.
-    - Node 22: typecheck + plugin build (tests omitted until Vitest is stable).
+  - Build job uses a Node.js version matrix for compatibility.
   - `ci / pack-ci`: depends on `build`, re-installs dependencies, runs `pnpm -C packages/docusaurus-plugin-smartlinker run pack:ci`, asserts the tarball only contains `dist/**`, `README.md`, `LICENSE`, `package.json`, then replaces the example site's dependency with the tarball and rebuilds before resetting manifests.
   - Both jobs run under Corepack-enabled pnpm 9 with frozen lockfile installs.
 - **Pages Deploy**: [`.github/workflows/deploy-example-site.yml`](.github/workflows/deploy-example-site.yml)

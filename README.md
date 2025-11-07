@@ -149,7 +149,7 @@ Useful extras:
 ## Continuous integration
 
 - `.github/workflows/ci.yml` runs type-checking, builds/tests the plugin, builds the example site, and validates pack/rehydration in a separate job.
-- CI targets Node 20 for full validation and includes Node 22 for build/typecheck to prepare migration once Vitest becomes stable on Node 22.
+- CI runs across multiple Node.js versions.
 
 ## Security
 

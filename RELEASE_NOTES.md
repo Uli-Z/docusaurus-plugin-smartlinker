@@ -4,7 +4,7 @@ Smartlinker 0.3.0 completes the refactor milestones and streamlines packaging:
 
 - Remark helper is consolidated into the plugin workspace under `src/remark`; legacy workspace removed. Tests migrated accordingly.
 - Repository no longer commits `dist/**`; CI builds bundles and release tarballs include the dual-format outputs for the plugin and remark helper.
-- CI matrix: Node 20 for full checks (typecheck, tests, plugin + example site), Node 22 for typecheck/build only pending Vitest stability.
+- CI runs across multiple Node.js versions to ensure compatibility.
 - Watch flow avoids touching doc mtimes; a marker file is written when terms change to trigger downstream invalidation.
 - Scanner performance: avoid reading file contents until frontmatter parsing, with early extension filtering.
 - Accessibility improvements to tooltip/SmartLink ARIA wiring and keyboard/touch handling.

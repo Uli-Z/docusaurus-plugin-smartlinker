@@ -114,12 +114,11 @@ Milestone 10 — Do not commit build artifacts
 - Acceptance:
   - Repo diffs free of dist churn; release tarballs complete.
 
-Milestone 11 — Update CI (prepare Node 22)
-- Goal: Remain stable on Node 20; gradually adopt 22.
+Milestone 11 — Update CI (version matrix)
+- Goal: Run CI across multiple supported Node.js versions.
 - Files: .github/workflows/ci.yml
 - Implementation:
-  - Matrix: Node 20 (full), Node 22 (build + typecheck; tests only when Vitest is stable).
-  - Keep smoke steps (`pack:ci` + example build).
+  - Use a Node.js version matrix with typecheck, tests, build, and smoke steps.
 - Acceptance:
   - Workflows green, clear separation of checks by Node version.
 

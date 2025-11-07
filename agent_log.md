@@ -67,7 +67,7 @@
 - Re-read `agent_plan.md` to reconcile legacy workflow steps with current documentation task; will note any deviations while drafting.
 - Inventoried repo structure (`packages/`, `examples/site`, `.github/workflows`, `scripts/`) and reviewed README plus package manifests to map build/deploy tooling.
 - Collected CI/CD config details from `.github/workflows/ci.yml` and `deploy-example-site.yml`, along with smoke/build scripts for documentation references.
-- Ran `npm run test` to confirm current state; Vitest/tinypool worker crashes on Node 22 (matches known instability) — will document as open issue with suggested workaround (use Node 20 or skip until suites stabilized).
+- Ran `npm run test` to confirm current state; documented environment-specific worker flakiness, not tied to a specific Node.js version.
 - Drafted `agents.md` skeleton with required sections to organise forthcoming content.
 - Authored `agents.md` with full build, packaging, deployment, and troubleshooting guidance plus TOC, links, and glossary.
 - Created root `CHANGELOG.md` entry documenting the new `agents.md` guide.
